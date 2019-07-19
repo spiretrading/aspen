@@ -18,27 +18,27 @@ namespace Aspen {
        * Constructs a Constant.
        * @param value The constant to evaluate to.
        */
-      Constant(T value);
+      constexpr Constant(T value);
 
-      State commit(int sequence);
+      constexpr State commit(int sequence);
 
-      const Type& eval() const;
+      constexpr const Type& eval() const;
 
     private:
       Type m_value;
   };
 
   template<typename T>
-  Constant<T>::Constant(T value)
+  constexpr Constant<T>::Constant(T value)
       : m_value(std::move(value)) {}
 
   template<typename T>
-  State Constant<T>::commit(int sequence) {
+  constexpr State Constant<T>::commit(int sequence) {
     return State::COMPLETE_EVALUATED;
   }
 
   template<typename T>
-  const typename Constant<T>::Type& Constant<T>::eval() const {
+  constexpr const typename Constant<T>::Type& Constant<T>::eval() const {
     return m_value;
   }
 }
