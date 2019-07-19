@@ -12,8 +12,6 @@ namespace Aspen {
   template<typename T>
   class Constant {
     public:
-
-      /** The type of the constant to evaluate to. */
       using Type = T;
 
       /**
