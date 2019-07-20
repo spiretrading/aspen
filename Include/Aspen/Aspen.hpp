@@ -6,6 +6,7 @@
 #include "Aspen/Maybe.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/State.hpp"
+#include "Aspen/Throw.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Trigger.hpp"
 
