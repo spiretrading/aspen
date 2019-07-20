@@ -7,6 +7,20 @@
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
+namespace Details {
+  template<typename T>
+  struct box_result {
+    using type = const T&;
+  };
+
+  template<>
+  struct box_result<void> {
+    using type = void;
+  };
+
+  template<typename T>
+  using box_result_t = typename box_result<T>::type;
+}
 
   /**
    * Wraps a reactor within a generic interface.
@@ -17,6 +31,8 @@ namespace Aspen {
     public:
       using Type = T;
 
+      using Result = Details::box_result_t<T>;
+
       /**
        * Constructs a Box.
        * @param reactor The reactor to wrap.
@@ -26,13 +42,13 @@ namespace Aspen {
 
       State commit(int sequence);
 
-      const Type& eval() const;
+      Result eval() const;
 
     private:
       struct BaseWrapper {
         virtual ~BaseWrapper() = default;
         virtual State commit(int sequence) = 0;
-        virtual const Type& eval() const = 0;
+        virtual Result eval() const = 0;
       };
       template<typename R>
       struct Wrapper final : BaseWrapper {
@@ -41,7 +57,7 @@ namespace Aspen {
         template<typename Q>
         Wrapper(Q&& reactor);
         State commit(int sequence) override;
-        const Type& eval() const override;
+        Result eval() const override;
       };
       std::unique_ptr<BaseWrapper> m_reactor;
   };
@@ -61,7 +77,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  const typename Box<T>::Type& Box<T>::eval() const {
+  typename Box<T>::Result Box<T>::eval() const {
     return m_reactor->eval();
   }
 
@@ -79,8 +95,12 @@ namespace Aspen {
 
   template<typename T>
   template<typename R>
-  const typename Box<T>::Type& Box<T>::Wrapper<R>::eval() const {
-    return m_reactor->eval();
+  typename Box<T>::Result Box<T>::Wrapper<R>::eval() const {
+    if constexpr(std::is_same_v<Result, void>) {
+      m_reactor->eval();
+    } else {
+      return m_reactor->eval();
+    }
   }
 }
 

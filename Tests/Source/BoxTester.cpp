@@ -17,3 +17,9 @@ TEST_CASE("test_pointer_box", "[Box]") {
   REQUIRE(box.commit(0) == State::COMPLETE_EVALUATED);
   REQUIRE(box.eval() == 123);
 }
+
+TEST_CASE("test_void_box", "[Box]") {
+  auto box = Box<void>(Constant(123));
+  REQUIRE(box.commit(0) == State::COMPLETE_EVALUATED);
+  REQUIRE_NOTHROW(box.eval());
+}
