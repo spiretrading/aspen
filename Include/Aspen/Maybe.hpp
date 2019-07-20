@@ -267,11 +267,12 @@ namespace Aspen {
 
   template<typename U>
   Maybe<void>& Maybe<void>::operator =(const Maybe<U>& rhs) {
-    if(maybe.has_exception()) {
+    if(rhs.has_exception()) {
       m_exception = rhs.get_exception();
     } else {
       m_exception = nullptr;
     }
+    return *this;
   }
 }
 
