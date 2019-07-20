@@ -37,8 +37,25 @@ namespace Aspen {
        */
       Maybe(std::exception_ptr exception);
 
+      /**
+       * Converts a Maybe of one type to this Maybe.
+       * @param maybe The Maybe to convert.
+       */
+      template<typename U>
+      Maybe(const Maybe<U>& maybe);
+
+      /**
+       * Moves a Maybe of one type to this Maybe.
+       * @param maybe The Maybe to convert.
+       */
+      template<typename U>
+      Maybe(Maybe<U>&& maybe);
+
       /** Implicitly converts to the underlying value. */
       operator const Type& () const;
+
+      /** Implicitly converts to the underlying value. */
+      operator Type& ();
 
       /** Returns <code>true</code> iff a value is stored. */
       bool has_value() const;
@@ -81,11 +98,17 @@ namespace Aspen {
 
       Maybe(std::exception_ptr exception);
 
+      template<typename U>
+      Maybe(const Maybe<U>& maybe);
+
       bool has_exception() const;
 
       void get() const;
 
       std::exception_ptr get_exception() const;
+
+      template<typename U>
+      Maybe& operator =(const Maybe<U>& rhs);
 
     private:
       std::exception_ptr m_exception;
@@ -112,18 +135,45 @@ namespace Aspen {
 
   template<typename T>
   Maybe<T>::Maybe(const Type& value)
-      : m_value(value) {}
+    : m_value(value) {}
 
   template<typename T>
   Maybe<T>::Maybe(Type&& value)
-      : m_value(std::move(value)) {}
+    : m_value(std::move(value)) {}
 
   template<typename T>
   Maybe<T>::Maybe(std::exception_ptr exception)
-      : m_value(std::move(exception)) {}
+    : m_value(std::move(exception)) {}
+
+  template<typename T>
+  template<typename U>
+  Maybe<T>::Maybe(const Maybe<U>& maybe)
+    : m_value([&] () -> std::variant<Type, std::exception_ptr> {
+        if(maybe.has_value()) {
+          return static_cast<const U&>(maybe);
+        } else {
+          return maybe.get_exception();
+        }
+      }()) {}
+
+  template<typename T>
+  template<typename U>
+  Maybe<T>::Maybe(Maybe<U>&& maybe)
+    : m_value([&] () -> std::variant<Type, std::exception_ptr> {
+        if(maybe.has_value()) {
+          return std::move(static_cast<U&>(maybe));
+        } else {
+          return maybe.get_exception();
+        }
+      }()) {}
 
   template<typename T>
   Maybe<T>::operator const typename Maybe<T>::Type& () const {
+    return get();
+  }
+
+  template<typename T>
+  Maybe<T>::operator typename Maybe<T>::Type& () {
     return get();
   }
 
@@ -192,7 +242,14 @@ namespace Aspen {
   }
 
   inline Maybe<void>::Maybe(std::exception_ptr exception)
-      : m_exception(std::move(exception)) {}
+    : m_exception(std::move(exception)) {}
+
+  template<typename U>
+  Maybe<void>::Maybe(const Maybe<U>& maybe) {
+    if(maybe.has_exception()) {
+      m_exception = maybe.get_exception();
+    }
+  }
 
   inline bool Maybe<void>::has_exception() const {
     return m_exception != nullptr;
@@ -206,6 +263,15 @@ namespace Aspen {
 
   inline std::exception_ptr Maybe<void>::get_exception() const {
     return m_exception;
+  }
+
+  template<typename U>
+  Maybe<void>& Maybe<void>::operator =(const Maybe<U>& rhs) {
+    if(maybe.has_exception()) {
+      m_exception = rhs.get_exception();
+    } else {
+      m_exception = nullptr;
+    }
   }
 }
 

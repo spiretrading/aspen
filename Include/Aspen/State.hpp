@@ -25,17 +25,6 @@ namespace Aspen {
     COMPLETE_EVALUATED = COMPLETE | EVALUATED
   };
 
-  /**
-   * Combines two State values together.
-   * @param lhs The State to modify.
-   * @param rhs The State to combine with lhs.
-   * @return <i>lhs</i>.
-   */
-  inline constexpr State combine(State& lhs, State rhs) {
-    lhs = static_cast<State>(static_cast<int>(lhs) | static_cast<int>(rhs));
-    return lhs;
-  }
-
   /** Returns <code>true</code> iff a reactor's state  is complete. */
   inline constexpr bool is_complete(State state) {
     return (static_cast<int>(state) & static_cast<int>(State::COMPLETE)) != 0;

@@ -31,7 +31,13 @@ namespace Aspen {
       void set_complete();
 
       /**
-       * Brings this reactor to a completion state by throwing an exception.
+       * Pushes a value and brings this reactor to a completion state.
+       * @param value The value to push.
+       */
+      void set_complete(Type value);
+
+      /**
+       * Sets an exception and brings this reactor to a completion state.
        * @param exception The exception to throw.
        */
       void set_complete(std::exception_ptr exception);
@@ -48,45 +54,63 @@ namespace Aspen {
       const Type& eval() const;
 
     private:
-      struct Entry {
-        Type m_value;
-        int m_sequence;
-      };
       std::mutex m_mutex;
-      std::deque<Entry> m_entries;
+      bool m_is_complete;
+      std::deque<Type> m_entries;
       std::exception_ptr m_exception;
       Maybe<Type> m_value;
-      int m_completion_sequence;
       Trigger* m_trigger;
       State m_state;
       int m_previous_sequence;
+      bool m_had_value;
   };
 
   template<typename T>
   Queue<T>::Queue()
-      : m_completion_sequence(-1),
-        m_trigger(nullptr),
-        m_state(State::UNINITIALIZED),
-        m_previous_sequence(-1) {}
+    : m_is_complete(false),
+      m_trigger(nullptr),
+      m_state(State::UNINITIALIZED),
+      m_previous_sequence(-1),
+      m_had_value(false) {}
 
   template<typename T>
   void Queue<T>::push(Type value) {
     auto lock = std::lock_guard(m_mutex);
-    m_entries.emplace_back(std::move(value), 0);
-    m_trigger->signal(m_entries.back().m_sequence);
+    m_entries.emplace_back(std::move(value));
+    m_had_value = true;
+    if(m_trigger != nullptr) {
+      m_trigger->signal();
+    }
   }
 
   template<typename T>
   void Queue<T>::set_complete() {
     auto lock = std::lock_guard(m_mutex);
-    m_trigger->signal(m_completion_sequence);
+    m_is_complete = true;
+    if(m_trigger != nullptr) {
+      m_trigger->signal();
+    }
+  }
+
+  template<typename T>
+  void Queue<T>::set_complete(Type value) {
+    auto lock = std::lock_guard(m_mutex);
+    m_is_complete = true;
+    m_entries.emplace_back(std::move(value));
+    m_had_value = true;
+    if(m_trigger != nullptr) {
+      m_trigger->signal();
+    }
   }
 
   template<typename T>
   void Queue<T>::set_complete(std::exception_ptr exception) {
-    m_exception = std::move(exception);
     auto lock = std::lock_guard(m_mutex);
-    m_trigger->signal(m_completion_sequence);
+    m_exception = std::move(exception);
+    m_had_value = true;
+    if(m_trigger != nullptr) {
+      m_trigger->signal();
+    }
   }
 
   template<typename T>
@@ -97,23 +121,30 @@ namespace Aspen {
 
   template<typename T>
   State Queue<T>::commit(int sequence) {
-    if(is_complete(m_state) || sequence == m_previous_sequence) {
+    if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
-    } else if(m_state == State::UNINITIALIZED) {
-      m_trigger = &Trigger::get_trigger();
     }
     auto lock = std::lock_guard(m_mutex);
-    if(sequence == m_completion_sequence) {
-      if(m_exception == nullptr) {
-        m_state = State::COMPLETE_EMPTY;
-      } else {
-        m_value = std::move(m_exception);
-        m_state = State::COMPLETE_EVALUATED;
-      }
-    } else if(!m_entries.empty() && sequence == m_entries.front().m_sequence) {
-      m_value = std::move(m_entries.front().m_value);
+    if(m_state == State::UNINITIALIZED) {
+      m_trigger = &Trigger::get_trigger();
+    }
+    if(!m_entries.empty()) {
+      m_value = std::move(m_entries.front());
       m_entries.pop_front();
-      m_state = State::EVALUATED;
+      if(m_entries.empty() && m_is_complete) {
+        m_state = State::COMPLETE_EVALUATED;
+      } else {
+        m_state = State::EVALUATED;
+      }
+    } else if(m_is_complete) {
+      if(m_had_value) {
+        m_state = State::COMPLETE;
+      } else {
+        m_state = State::COMPLETE_EMPTY;
+      }
+    } else if(m_exception != nullptr) {
+      m_value = std::move(m_exception);
+      m_state = State::COMPLETE_EVALUATED;
     } else {
       m_state = State::NONE;
     }

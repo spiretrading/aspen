@@ -30,7 +30,7 @@ namespace Aspen {
 
   template<typename T>
   constexpr Constant<T>::Constant(T value)
-      : m_value(std::move(value)) {}
+    : m_value(std::move(value)) {}
 
   template<typename T>
   constexpr State Constant<T>::commit(int sequence) {
