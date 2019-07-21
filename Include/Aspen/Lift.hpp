@@ -5,7 +5,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include "Aspen/CommitReactor.hpp"
+#include "Aspen/CommitHandler.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
 
@@ -177,7 +177,7 @@ namespace Details {
     private:
       Function m_function;
       Arguments m_arguments;
-      CommitReactor m_commit_reactor;
+      CommitHandler m_handler;
       Maybe<Type> m_value;
       State m_state;
       int m_previous_sequence;
@@ -296,7 +296,7 @@ namespace Details {
   Lift<F, A...>::Lift(FF&& function, AF&&... arguments)
     : m_function(std::forward<FF>(function)),
       m_arguments(std::forward<AF>(arguments)...),
-      m_commit_reactor(
+      m_handler(
         [&] {
           auto children = std::vector<Box<void>>();
           std::apply([&] (auto& arguments...) {
@@ -313,7 +313,7 @@ namespace Details {
     if(is_complete(m_state) || m_previous_sequence == sequence) {
       return m_state;
     }
-    m_state = m_commit_reactor.commit(sequence);
+    m_state = m_handler.commit(sequence);
     if(has_evaluation(m_state)) {
       auto invocation = invoke();
       if(invocation == State::NONE) {
