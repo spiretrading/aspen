@@ -305,7 +305,7 @@ namespace Details {
           }, m_arguments);
           return children;
         }()),
-      m_state(State::UNINITIALIZED),
+      m_state(State::NONE),
       m_previous_sequence(-1),
       m_had_evaluation(false) {}
 
@@ -360,11 +360,11 @@ namespace Details {
   template<typename FF>
   Lift<F>::Lift(FF&& function)
     : m_function(std::forward<FF>(function)),
-      m_state(State::UNINITIALIZED) {}
+      m_state(State::NONE) {}
 
   template<typename F>
   State Lift<F>::commit(int sequence) {
-    if(m_state != State::UNINITIALIZED) {
+    if(m_state != State::NONE) {
       return m_state;
     }
     auto invocation = invoke();

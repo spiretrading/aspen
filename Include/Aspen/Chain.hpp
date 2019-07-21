@@ -53,7 +53,7 @@ namespace Aspen {
     : m_initial(std::forward<AF>(initial)),
       m_continuation(std::forward<BF>(continuation)),
       m_status(Status::INITIAL),
-      m_state(State::UNINITIALIZED),
+      m_state(State::NONE),
       m_previous_sequence(-1),
       m_had_evaluation(false) {}
 

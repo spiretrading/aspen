@@ -6,9 +6,6 @@ namespace Aspen {
   //! Lists the states of a reactor after a commit operation.
   enum class State {
 
-    //! Reactor is uninitialized.
-    UNINITIALIZED = 0,
-
     //! No update.
     NONE = 1,
 

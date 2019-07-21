@@ -39,11 +39,11 @@ namespace Aspen {
 
   inline CommitHandler::Child::Child(Box<void> reactor)
     : m_reactor(std::move(reactor)),
-      m_state(State::UNINITIALIZED) {}
+      m_state(State::NONE) {}
 
   inline CommitHandler::CommitHandler(std::vector<Box<void>> children)
       : m_status(Status::INITIALIZING),
-        m_state(State::UNINITIALIZED) {
+        m_state(State::NONE) {
     for(auto& child : children) {
       m_children.emplace_back(std::move(child));
     }
@@ -54,7 +54,7 @@ namespace Aspen {
       auto initialization_count = std::size_t(0);
       auto completion_count = std::size_t(0);
       for(auto& child : m_children) {
-        if(child.m_state == State::UNINITIALIZED) {
+        if(child.m_state == State::NONE) {
           child.m_state = child.m_reactor.commit(sequence);
           if(is_complete(child.m_state)) {
             ++completion_count;
@@ -74,15 +74,19 @@ namespace Aspen {
           }
         }
       }
-      if(!m_children.empty() && initialization_count == m_children.size()) {
-        if(completion_count == m_children.size()) {
-          m_state = State::COMPLETE_EVALUATED;
+      if(m_state != State::COMPLETE_EMPTY) {
+        if(!m_children.empty() && initialization_count == m_children.size()) {
+          if(completion_count == m_children.size()) {
+            m_state = State::COMPLETE_EVALUATED;
+          } else {
+            m_state = State::EVALUATED;
+            m_status = Status::EVALUATING;
+          }
+        } else if(completion_count == m_children.size()) {
+          m_state = State::COMPLETE_EMPTY;
         } else {
-          m_state = State::EVALUATED;
-          m_status = Status::EVALUATING;
+          m_state = State::NONE;
         }
-      } else if(completion_count == m_children.size()) {
-        m_state = State::COMPLETE_EMPTY;
       }
     } else if(m_status == Status::EVALUATING) {
       m_state = State::NONE;

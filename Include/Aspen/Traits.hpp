@@ -1,5 +1,6 @@
 #ifndef ASPEN_TRAITS_HPP
 #define ASPEN_TRAITS_HPP
+#include <memory>
 #include <type_traits>
 #include "Aspen/State.hpp"
 
@@ -49,6 +50,15 @@ namespace Aspen {
 
   template<typename T>
   using reactor_result_t = typename reactor_result<T>::type;
+
+  template<typename T>
+  auto make_ptr(T&& value) {
+    if constexpr(is_reactor_pointer_v<std::decay_t<T>>) {
+      return std::forward<T>(value);
+    } else {
+      return std::make_unique<std::decay_t<T>>(std::forward<T>(value));
+    }
+  }
 }
 
 #endif

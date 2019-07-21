@@ -51,7 +51,7 @@ TEST_CASE("test_lift_one_argument_updates", "[Lift]") {
   auto reactor = Lift(square, &queue);
   auto trigger = Trigger();
   Trigger::set_trigger(trigger);
-  REQUIRE(reactor.commit(0) == State::UNINITIALIZED);
+  REQUIRE(reactor.commit(0) == State::NONE);
   queue.push(10);
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 100);

@@ -69,7 +69,7 @@ namespace Aspen {
   Queue<T>::Queue()
     : m_is_complete(false),
       m_trigger(nullptr),
-      m_state(State::UNINITIALIZED),
+      m_state(State::NONE),
       m_previous_sequence(-1),
       m_had_evaluation(false) {}
 
@@ -125,7 +125,7 @@ namespace Aspen {
       return m_state;
     }
     auto lock = std::lock_guard(m_mutex);
-    if(m_state == State::UNINITIALIZED) {
+    if(m_previous_sequence == -1) {
       m_trigger = &Trigger::get_trigger();
     }
     if(!m_entries.empty()) {
