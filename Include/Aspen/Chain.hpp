@@ -47,6 +47,16 @@ namespace Aspen {
   template<typename A, typename B>
   Chain(A&&, B&&) -> Chain<std::decay_t<A>, std::decay_t<B>>;
 
+  /**
+    * Chains two reactors together so that one runs after the other.
+    * @param initial The reactor to initially evaluate to.
+    * @param continuation The reactor to evaluate to thereafter.
+    */
+  template<typename A, typename B>
+  auto chain(A&& a, B&& b) {
+    return Chain(std::forward<A>(a), std::forward<B>(b));
+  }
+
   template<typename A, typename B>
   template<typename AF, typename BF>
   Chain<A, B>::Chain(AF&& initial, BF&& continuation)

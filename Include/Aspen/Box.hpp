@@ -65,6 +65,15 @@ namespace Details {
   template<typename R>
   Box(R&& reactor) -> Box<reactor_result_t<R>>;
 
+  /**
+    * Boxes a reactor into a generic interface.
+    * @param reactor The reactor to wrap.
+    */
+  template<typename R>
+  auto box(R&& reactor) {
+    return Box(std::forward<R>(reactor));
+  }
+
   template<typename T>
   template<typename R>
   Box<T>::Box(R&& reactor)

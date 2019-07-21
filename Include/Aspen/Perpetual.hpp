@@ -17,6 +17,11 @@ namespace Aspen {
       constexpr void eval() const;
   };
 
+  /** Returns a reactor that perpetually evaluates. */
+  inline constexpr auto perpetual() {
+    return Perpetual();
+  }
+
   inline constexpr State Perpetual::commit(int sequence) {
     return State::EVALUATED;
   }

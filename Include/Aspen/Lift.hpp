@@ -223,6 +223,16 @@ namespace Details {
   template<typename F>
   Lift(F&&) -> Lift<std::decay_t<F>>;
 
+  /**
+   * Lifts a function to operate on reactors.
+   * @param function The function to lift.
+   * @param arguments The reactors used as arguments to the function.
+   */
+  template<typename F, typename... A>
+  auto lift(F&& function, A&&... arguments) {
+    return Lift(std::forward<F>(function), std::forward<A>(arguments)...);
+  }
+
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation()
     : m_state(State::NONE) {}
@@ -262,7 +272,7 @@ namespace Details {
 
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(Type value, State state)
-    : FunctionEvaluation(Maybe(std::move(value))) {}
+    : FunctionEvaluation(Maybe(std::move(value)), state) {}
 
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(std::optional<Maybe<Type>> value,

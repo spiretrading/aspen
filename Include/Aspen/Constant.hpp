@@ -28,6 +28,15 @@ namespace Aspen {
       Type m_value;
   };
 
+  /**
+   * Wraps a constant value in a reactor.
+   * @param value The value to wrap.
+   */
+  template<typename T>
+  constexpr auto constant(T&& value) {
+    return Constant(std::forward<T>(value));
+  }
+
   template<typename T>
   constexpr Constant<T>::Constant(T value)
     : m_value(std::move(value)) {}

@@ -24,6 +24,14 @@ namespace Aspen {
       constexpr const Type& eval() const;
   };
 
+  /**
+   * Returns a reactor that never produces an evaluation.
+   */
+  template<typename T>
+  constexpr auto none() {
+    return None<T>();
+  }
+
   template<typename T>
   constexpr State None<T>::commit(int sequence) {
     return State::COMPLETE_EMPTY;

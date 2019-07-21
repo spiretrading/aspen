@@ -36,6 +36,24 @@ namespace Aspen {
       std::exception_ptr m_exception;
   };
 
+  /**
+   * Returns a reactor that always throws an exception.
+   * @param exception The exception to throw.
+   */
+  template<typename T>
+  auto throws(std::exception_ptr exception) {
+    return Throw<T>(std::move(exception));
+  }
+
+  /**
+   * Returns a reactor that always throws an exception.
+   * @param exception The exception to throw.
+   */
+  template<typename T, typename E>
+  auto throws(E exception) {
+    return Throw<T>(std::move(exception));
+  }
+
   template<typename T>
   Throw<T>::Throw(std::exception_ptr exception)
     : m_exception(std::move(exception)) {}
