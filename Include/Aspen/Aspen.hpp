@@ -6,6 +6,7 @@
 #include "Aspen/Lift.hpp"
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
+#include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Throw.hpp"
