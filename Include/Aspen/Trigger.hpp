@@ -10,8 +10,7 @@ namespace Aspen {
     public:
 
       /**
-       * Type of callback used when an update is available.
-       * @param sequence The update's sequence number.
+       * Type of callback used to indicate an update is available.
        */
       using Slot = std::function<void ()>;
 
@@ -21,7 +20,15 @@ namespace Aspen {
       /** Sets the Trigger to use within this thread. */
       static void set_trigger(Trigger& trigger);
 
-      /** Constructs a Trigger with an initial sequence of 0. */
+      /**
+       * Constructs a Trigger with no slot.
+       */
+      Trigger();
+
+      /**
+       * Constructs a Trigger.
+       * @param slot The function to call when an update is available.
+       */
       Trigger(Slot slot);
 
       /**
@@ -44,6 +51,9 @@ namespace Aspen {
   inline void Trigger::set_trigger(Trigger& trigger) {
     m_trigger = &trigger;
   }
+
+  inline Trigger::Trigger()
+      : Trigger([] {}) {}
 
   inline Trigger::Trigger(Slot slot)
       : m_slot(std::move(slot)) {}

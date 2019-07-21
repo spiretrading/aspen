@@ -29,6 +29,11 @@ namespace Aspen {
   inline constexpr bool is_complete(State state) {
     return (static_cast<int>(state) & static_cast<int>(State::COMPLETE)) != 0;
   }
+
+  /** Returns <code>true</code> iff a reactor State represents an evaluation. */
+  inline constexpr bool has_evaluation(State state) {
+    return (static_cast<int>(state) & static_cast<int>(State::EVALUATED)) != 0;
+  }
 }
 
 #endif

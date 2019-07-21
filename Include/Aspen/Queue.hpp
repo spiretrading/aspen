@@ -62,7 +62,7 @@ namespace Aspen {
       Trigger* m_trigger;
       State m_state;
       int m_previous_sequence;
-      bool m_had_value;
+      bool m_had_evaluation;
   };
 
   template<typename T>
@@ -71,13 +71,13 @@ namespace Aspen {
       m_trigger(nullptr),
       m_state(State::UNINITIALIZED),
       m_previous_sequence(-1),
-      m_had_value(false) {}
+      m_had_evaluation(false) {}
 
   template<typename T>
   void Queue<T>::push(Type value) {
     auto lock = std::lock_guard(m_mutex);
     m_entries.emplace_back(std::move(value));
-    m_had_value = true;
+    m_had_evaluation = true;
     if(m_trigger != nullptr) {
       m_trigger->signal();
     }
@@ -97,7 +97,7 @@ namespace Aspen {
     auto lock = std::lock_guard(m_mutex);
     m_is_complete = true;
     m_entries.emplace_back(std::move(value));
-    m_had_value = true;
+    m_had_evaluation = true;
     if(m_trigger != nullptr) {
       m_trigger->signal();
     }
@@ -107,7 +107,7 @@ namespace Aspen {
   void Queue<T>::set_complete(std::exception_ptr exception) {
     auto lock = std::lock_guard(m_mutex);
     m_exception = std::move(exception);
-    m_had_value = true;
+    m_had_evaluation = true;
     if(m_trigger != nullptr) {
       m_trigger->signal();
     }
@@ -137,7 +137,7 @@ namespace Aspen {
         m_state = State::EVALUATED;
       }
     } else if(m_is_complete) {
-      if(m_had_value) {
+      if(m_had_evaluation) {
         m_state = State::COMPLETE;
       } else {
         m_state = State::COMPLETE_EMPTY;
