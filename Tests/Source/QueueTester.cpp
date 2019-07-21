@@ -5,7 +5,7 @@
 using namespace Aspen;
 
 TEST_CASE("test_queue_immediate_complete", "[Queue]") {
-  auto trigger = Trigger([] {});
+  auto trigger = Trigger();
   Trigger::set_trigger(trigger);
   auto queue = Queue<int>();
   queue.set_complete();
@@ -20,7 +20,7 @@ TEST_CASE("test_queue_immediate_complete", "[Queue]") {
 }
 
 TEST_CASE("test_queue_complete_with_exception", "[Queue]") {
-  auto trigger = Trigger([] {});
+  auto trigger = Trigger();
   Trigger::set_trigger(trigger);
   auto queue = Queue<int>();
   queue.set_complete(std::runtime_error(""));
@@ -39,7 +39,7 @@ TEST_CASE("test_queue_complete_with_exception", "[Queue]") {
 }
 
 TEST_CASE("test_queue_single_value", "[Queue]") {
-  auto trigger = Trigger([] {});
+  auto trigger = Trigger();
   Trigger::set_trigger(trigger);
   auto queue = Queue<int>();
   queue.set_complete(123);
@@ -58,7 +58,7 @@ TEST_CASE("test_queue_single_value", "[Queue]") {
 }
 
 TEST_CASE("test_queue_single_value_then_complete", "[Queue]") {
-  auto trigger = Trigger([] {});
+  auto trigger = Trigger();
   Trigger::set_trigger(trigger);
   auto queue = Queue<int>();
   queue.push(321);
@@ -72,7 +72,7 @@ TEST_CASE("test_queue_single_value_then_complete", "[Queue]") {
 }
 
 TEST_CASE("test_queue_single_value_then_exception", "[Queue]") {
-  auto trigger = Trigger([] {});
+  auto trigger = Trigger();
   Trigger::set_trigger(trigger);
   auto queue = Queue<int>();
   queue.push(321);
