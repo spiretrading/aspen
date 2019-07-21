@@ -8,6 +8,7 @@
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
 
@@ -310,7 +311,7 @@ namespace Details {
 
   template<typename F, typename... A>
   State Lift<F, A...>::commit(int sequence) {
-    if(is_complete(m_state) || m_previous_sequence == sequence) {
+    if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }
     m_state = m_handler.commit(sequence);

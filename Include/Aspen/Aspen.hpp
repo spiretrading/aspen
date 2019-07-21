@@ -1,6 +1,7 @@
 #ifndef ASPEN_HPP
 #define ASPEN_HPP
 #include "Aspen/Box.hpp"
+#include "Aspen/Chain.hpp"
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Lift.hpp"
