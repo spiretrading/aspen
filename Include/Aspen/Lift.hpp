@@ -299,7 +299,7 @@ namespace Details {
       m_handler(
         [&] {
           auto children = std::vector<Box<void>>();
-          std::apply([&] (auto& arguments...) {
+          std::apply([&] (auto&... arguments) {
             (children.emplace_back(&Details::deref(arguments)), ...);
           }, m_arguments);
           return children;
