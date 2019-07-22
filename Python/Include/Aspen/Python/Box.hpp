@@ -40,7 +40,7 @@ namespace Aspen {
   template<typename T>
   void export_box(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "Box";
-    pybind11::class_<Box<T>>(module, name.c_str())
+    pybind11::class_<Box<T>, std::shared_ptr<Box<T>>>(module, name.c_str())
       .def(pybind11::init(
         [] (pybind11::object reactor) {
           return Box(PythonBox<T>(std::move(reactor)));

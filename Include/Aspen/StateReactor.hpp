@@ -20,7 +20,7 @@ namespace Aspen {
        * @param reactor The reactor to monitor.
        */
       template<typename RF>
-      StateReactor(RF&& reactor);
+      explicit StateReactor(RF&& reactor);
 
       State commit(int sequence);
 

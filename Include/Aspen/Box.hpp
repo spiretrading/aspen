@@ -39,7 +39,8 @@ namespace Details {
        * @param reactor The reactor to wrap.
        */
       template<typename R>
-      Box(R&& reactor);
+      explicit Box(R&& reactor, std::enable_if_t<!std::is_convertible_v<
+        std::decay_t<R>, Box>>* = nullptr);
 
       State commit(int sequence);
 
@@ -73,9 +74,6 @@ namespace Details {
         Result eval() const override;
       };
       std::unique_ptr<BaseWrapper> m_reactor;
-
-      template<typename R>
-      static std::unique_ptr<BaseWrapper> wrap(R&& reactor);
   };
 
   template<typename R>
@@ -92,7 +90,8 @@ namespace Details {
 
   template<typename T>
   template<typename R>
-  Box<T>::Box(R&& reactor) {
+  Box<T>::Box(R&& reactor, std::enable_if_t<!std::is_convertible_v<
+      std::decay_t<R>, Box>>*) {
     if constexpr(std::is_reference_v<decltype(
         std::declval<try_ptr_t<std::decay_t<R>>>()->eval())>) {
       m_reactor = std::make_unique<ByReferenceWrapper<std::decay_t<R>>>(

@@ -169,7 +169,7 @@ namespace Details {
        * @param arguments The arguments to apply the <i>function</i> to.
        */
       template<typename FF, typename... AF>
-      Lift(FF&& function, AF&&... arguments);
+      explicit Lift(FF&& function, AF&&... arguments);
 
       State commit(int sequence);
 
@@ -203,7 +203,7 @@ namespace Details {
        * @param function The function to apply.
        */
       template<typename FF>
-      Lift(FF&& function);
+      explicit Lift(FF&& function);
 
       State commit(int sequence);
 

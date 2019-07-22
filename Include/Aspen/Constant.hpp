@@ -18,7 +18,7 @@ namespace Aspen {
        * Constructs a Constant.
        * @param value The constant to evaluate to.
        */
-      constexpr Constant(T value);
+      constexpr explicit Constant(T value);
 
       constexpr State commit(int sequence);
 

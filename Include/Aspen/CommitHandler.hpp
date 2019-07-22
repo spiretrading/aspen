@@ -17,7 +17,7 @@ namespace Aspen {
        * Constructs a CommitHandler.
        * @param children The reactors whose commits are to be managed.
        */
-      CommitHandler(std::vector<Box<void>> children);
+      explicit CommitHandler(std::vector<Box<void>> children);
 
       State commit(int sequence);
 

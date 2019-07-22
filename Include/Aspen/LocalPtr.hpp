@@ -20,7 +20,7 @@ namespace Aspen {
        * @param args Arguments used to initialize the value.
        */
       template<typename... A>
-      LocalPtr(A&&... args);
+      explicit LocalPtr(A&&... args);
 
       /** Returns a pointer to the wrapped value. */
       Type* operator ->() const;

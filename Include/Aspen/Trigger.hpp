@@ -29,7 +29,7 @@ namespace Aspen {
        * Constructs a Trigger.
        * @param slot The function to call when an update is available.
        */
-      Trigger(Slot slot);
+      explicit Trigger(Slot slot);
 
       /**
        * Signals an update is available.

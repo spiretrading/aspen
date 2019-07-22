@@ -19,7 +19,7 @@ namespace Aspen {
        * Constructs a Throw.
        * @param exception The exception to throw.
        */
-      Throw(std::exception_ptr exception);
+      explicit Throw(std::exception_ptr exception);
 
       /**
        * Constructs a Throw.
