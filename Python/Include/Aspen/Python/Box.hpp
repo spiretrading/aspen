@@ -3,6 +3,7 @@
 #include <string>
 #include <pybind11/pybind11.h>
 #include "Aspen/Box.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
 
@@ -40,7 +41,7 @@ namespace Aspen {
   template<typename T>
   void export_box(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "Box";
-    pybind11::class_<Box<T>, std::shared_ptr<Box<T>>>(module, name.c_str())
+    pybind11::class_<Box<T>>(module, name.c_str())
       .def(pybind11::init(
         [] (pybind11::object reactor) {
           return Box(PythonBox<T>(std::move(reactor)));
@@ -52,6 +53,16 @@ namespace Aspen {
       pybind11::implicitly_convertible<Box<pybind11::object>, Box<T>>();
     }
   }
+
+  /** Exports implicit conversions from a reactor to Box types. */
+  template<typename T>
+  void implicitly_convertible_to_box() {
+    pybind11::implicitly_convertible<T, Box<reactor_result_t<T>>>();
+    pybind11::implicitly_convertible<T, Box<void>>();
+    if constexpr(!std::is_same_v<reactor_result_t<T>, pybind11::object>) {
+      pybind11::implicitly_convertible<T, Box<pybind11::object>>();
+    }
+  };
 
   template<typename T>
   PythonBox<T>::PythonBox(pybind11::object reactor)

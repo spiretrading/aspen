@@ -39,12 +39,19 @@ namespace Details {
        * @param reactor The reactor to wrap.
        */
       template<typename R>
-      explicit Box(R&& reactor, std::enable_if_t<!std::is_convertible_v<
-        std::decay_t<R>, Box>>* = nullptr);
+      explicit Box(R&& reactor);
+
+      Box(const Box& box) = default;
+
+      Box(Box&& box) = default;
 
       State commit(int sequence);
 
       Result eval() const;
+
+      Box& operator =(const Box& box) = default;
+
+      Box& operator =(Box&& box) = default;
 
     private:
       struct BaseWrapper {
@@ -73,7 +80,7 @@ namespace Details {
         State commit(int sequence) override;
         Result eval() const override;
       };
-      std::unique_ptr<BaseWrapper> m_reactor;
+      std::shared_ptr<BaseWrapper> m_reactor;
   };
 
   template<typename R>
@@ -90,14 +97,13 @@ namespace Details {
 
   template<typename T>
   template<typename R>
-  Box<T>::Box(R&& reactor, std::enable_if_t<!std::is_convertible_v<
-      std::decay_t<R>, Box>>*) {
+  Box<T>::Box(R&& reactor) {
     if constexpr(std::is_reference_v<decltype(
         std::declval<try_ptr_t<std::decay_t<R>>>()->eval())>) {
-      m_reactor = std::make_unique<ByReferenceWrapper<std::decay_t<R>>>(
+      m_reactor = std::make_shared<ByReferenceWrapper<std::decay_t<R>>>(
         std::forward<R>(reactor));
     } else {
-      m_reactor = std::make_unique<ByValueWrapper<std::decay_t<R>>>(
+      m_reactor = std::make_shared<ByValueWrapper<std::decay_t<R>>>(
         std::forward<R>(reactor));
     }
   }
