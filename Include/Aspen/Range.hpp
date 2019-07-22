@@ -43,9 +43,9 @@ namespace Aspen {
         }();
         if(c >= end.get()) {
           if(is_complete(start_state) && is_complete(end_state)) {
-            return FunctionEvaluation<int>(State::COMPLETE);
+            return FunctionEvaluation<Type>(State::COMPLETE);
           }
-          return FunctionEvaluation<int>(State::NONE);
+          return FunctionEvaluation<Type>(State::NONE);
         }
         value = c;
         if(is_complete(start_state) && is_complete(end_state) &&
