@@ -6,8 +6,12 @@
 #include "Aspen/Python/Constant.hpp"
 #include "Aspen/Python/First.hpp"
 #include "Aspen/Python/Last.hpp"
+#include "Aspen/Python/None.hpp"
 #include "Aspen/Python/Object.hpp"
+#include "Aspen/Python/Perpetual.hpp"
+#include "Aspen/Python/Queue.hpp"
 #include "Aspen/Python/Range.hpp"
 #include "Aspen/Python/State.hpp"
+#include "Aspen/Python/Trigger.hpp"
 
 #endif
