@@ -171,9 +171,17 @@ namespace Details {
       template<typename FF, typename... AF>
       explicit Lift(FF&& function, AF&&... arguments);
 
+      Lift(const Lift& lift);
+
+      Lift(Lift&& lift);
+
       State commit(int sequence);
 
       const Type& eval() const;
+
+      Lift& operator =(const Lift& lift);
+
+      Lift& operator =(Lift&& lift);
 
     private:
       Function m_function;
@@ -320,6 +328,44 @@ namespace Details {
       m_had_evaluation(false) {}
 
   template<typename F, typename... A>
+  Lift<F, A...>::Lift(const Lift& lift)
+      : m_function(lift.m_function),
+        m_arguments(lift.m_arguments),
+        m_handler(
+          [&] {
+            auto children = std::vector<Box<void>>();
+            std::apply([&] (auto&... arguments) {
+              (children.emplace_back(&Details::deref(arguments)), ...);
+            }, m_arguments);
+            return children;
+          }()),
+        m_value(lift.m_value),
+        m_state(lift.m_state),
+        m_previous_sequence(lift.m_previous_sequence),
+        m_had_evaluation(lift.m_had_evaluation) {
+    m_handler.transfer(lift.m_handler);
+  }
+
+  template<typename F, typename... A>
+  Lift<F, A...>::Lift(Lift&& lift)
+      : m_function(std::move(lift.m_function)),
+        m_arguments(std::move(lift.m_arguments)),
+        m_handler(
+          [&] {
+            auto children = std::vector<Box<void>>();
+            std::apply([&] (auto&... arguments) {
+              (children.emplace_back(&Details::deref(arguments)), ...);
+            }, m_arguments);
+            return children;
+          }()),
+        m_value(std::move(lift.m_value)),
+        m_state(std::move(lift.m_state)),
+        m_previous_sequence(std::move(lift.m_previous_sequence)),
+        m_had_evaluation(std::move(lift.m_had_evaluation)) {
+    m_handler.transfer(lift.m_handler);
+  }
+
+  template<typename F, typename... A>
   State Lift<F, A...>::commit(int sequence) {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
@@ -353,6 +399,46 @@ namespace Details {
   template<typename F, typename... A>
   const typename Lift<F, A...>::Type& Lift<F, A...>::eval() const {
     return m_value.get();
+  }
+
+  template<typename F, typename... A>
+  Lift<F, A...>& Lift<F, A...>::operator =(const Lift& lift) {
+    m_function = lift.m_function;
+    m_arguments = lift.m_arguments;
+    m_handler = CommitHandler(
+      [&] {
+        auto children = std::vector<Box<void>>();
+        std::apply([&] (auto&... arguments) {
+          (children.emplace_back(&Details::deref(arguments)), ...);
+        }, m_arguments);
+        return children;
+      }());
+    m_handler.transfer(lift.m_handler);
+    m_value = lift.m_value;
+    m_state = lift.m_state;
+    m_previous_sequence = lift.m_previous_sequence;
+    m_had_evaluation = lift.m_had_evaluation;
+    return *this;
+  }
+
+  template<typename F, typename... A>
+  Lift<F, A...>& Lift<F, A...>::operator =(Lift&& lift) {
+    m_function = std::move(lift.m_function);
+    m_arguments = std::move(lift.m_arguments);
+    m_handler = CommitHandler(
+      [&] {
+        auto children = std::vector<Box<void>>();
+        std::apply([&] (auto&... arguments) {
+          (children.emplace_back(&Details::deref(arguments)), ...);
+        }, m_arguments);
+        return children;
+      }());
+    m_handler.transfer(lift.m_handler);
+    m_value = std::move(lift.m_value);
+    m_state = std::move(lift.m_state);
+    m_previous_sequence = std::move(lift.m_previous_sequence);
+    m_had_evaluation = std::move(lift.m_had_evaluation);
+    return *this;
   }
 
   template<typename F, typename... A>

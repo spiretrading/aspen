@@ -19,6 +19,16 @@ namespace Aspen {
        */
       explicit CommitHandler(std::vector<Box<void>> children);
 
+      /** Transfers the state of a CommitHandler.
+       * @param handler The handler whose state is to be transferred.
+       */
+      void transfer(const CommitHandler& handler);
+
+      /**
+       * Commits all children and returns their aggregate State.
+       * @param sequence The commit's sequence.
+       * @return The aggregate State of all children.
+       */
       State commit(int sequence);
 
     private:
@@ -46,6 +56,12 @@ namespace Aspen {
         m_state(State::NONE) {
     for(auto& child : children) {
       m_children.emplace_back(std::move(child));
+    }
+  }
+
+  inline void CommitHandler::transfer(const CommitHandler& handler) {
+    for(auto i = std::size_t(0); i != handler.m_children.size(); ++i) {
+      m_children[i].m_state = handler.m_children[i].m_state;
     }
   }
 
