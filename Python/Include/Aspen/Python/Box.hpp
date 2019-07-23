@@ -20,7 +20,7 @@ namespace Aspen {
        * Constructs a PythonBox from a Python object.
        * @param reactor The Python object implementing the reactor to box.
        */
-      PythonBox(pybind11::object reactor);
+      explicit PythonBox(pybind11::object reactor);
 
       State commit(int sequence);
 
