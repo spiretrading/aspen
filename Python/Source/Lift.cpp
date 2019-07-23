@@ -58,4 +58,8 @@ void Aspen::export_lift(pybind11::module& module) {
     .def("commit", &PythonLift::commit)
     .def("eval", &PythonLift::eval);
   implicitly_convertible_to_box<PythonLift>();
+  module.def("lift", [] (object callable, const args& arguments) {
+    return PythonLift(CallableWrapper{std::move(callable)},
+      ArgumentsReactor(arguments));
+  });
 }
