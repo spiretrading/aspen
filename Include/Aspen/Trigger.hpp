@@ -15,7 +15,10 @@ namespace Aspen {
       using Slot = std::function<void ()>;
 
       /** Returns the Trigger currently being used. */
-      static Trigger& get_trigger();
+      static Trigger* get_trigger();
+
+      /** Sets the Trigger to use within this thread. */
+      static void set_trigger(Trigger* trigger);
 
       /** Sets the Trigger to use within this thread. */
       static void set_trigger(Trigger& trigger);
@@ -44,12 +47,16 @@ namespace Aspen {
       Trigger& operator =(const Trigger&) = delete;
   };
 
-  inline Trigger& Trigger::get_trigger() {
-    return *m_trigger;
+  inline Trigger* Trigger::get_trigger() {
+    return m_trigger;
+  }
+
+  inline void Trigger::set_trigger(Trigger* trigger) {
+    m_trigger = trigger;
   }
 
   inline void Trigger::set_trigger(Trigger& trigger) {
-    m_trigger = &trigger;
+    set_trigger(&trigger);
   }
 
   inline Trigger::Trigger()

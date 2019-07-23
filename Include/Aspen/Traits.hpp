@@ -52,6 +52,19 @@ namespace Aspen {
   using reactor_result_t = typename reactor_result<T>::type;
 
   template<typename T>
+  struct eval_result {
+    using type = const T&;
+  };
+
+  template<>
+  struct eval_result<void> {
+    using type = void;
+  };
+
+  template<typename T>
+  using eval_result_t = typename eval_result<T>::type;
+
+  template<typename T>
   auto make_ptr(T&& value) {
     if constexpr(is_reactor_pointer_v<std::decay_t<T>>) {
       return std::forward<T>(value);

@@ -8,20 +8,6 @@
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
-namespace Details {
-  template<typename T>
-  struct box_result {
-    using type = const T&;
-  };
-
-  template<>
-  struct box_result<void> {
-    using type = void;
-  };
-
-  template<typename T>
-  using box_result_t = typename box_result<T>::type;
-}
 
   /**
    * Wraps a reactor within a generic interface.
@@ -32,7 +18,7 @@ namespace Details {
     public:
       using Type = T;
 
-      using Result = Details::box_result_t<T>;
+      using Result = eval_result_t<T>;
 
       /**
        * Constructs a Box.

@@ -126,7 +126,7 @@ namespace Aspen {
     }
     auto lock = std::lock_guard(m_mutex);
     if(m_previous_sequence == -1) {
-      m_trigger = &Trigger::get_trigger();
+      m_trigger = Trigger::get_trigger();
     }
     if(!m_entries.empty()) {
       m_value = std::move(m_entries.front());

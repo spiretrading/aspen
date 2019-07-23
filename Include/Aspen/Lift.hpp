@@ -88,6 +88,25 @@ namespace Aspen {
     FunctionEvaluation(State state);
   };
 
+  template<>
+  struct FunctionEvaluation<void> {
+    using Type = void;
+    std::optional<Maybe<Type>> m_value;
+    State m_state;
+
+    FunctionEvaluation();
+
+    FunctionEvaluation(Maybe<Type> value);
+
+    FunctionEvaluation(std::optional<Maybe<Type>> value);
+
+    FunctionEvaluation(Maybe<Type> value, State state);
+
+    FunctionEvaluation(std::optional<Maybe<Type>> value, State state);
+
+    FunctionEvaluation(State state);
+  };
+
 namespace Details {
   template<typename T>
   struct function_reactor_result {
@@ -138,8 +157,10 @@ namespace Details {
     State operator ()(V& value, F& function, const P& pack) const {
       std::apply(
         [&] (const auto&... arguments) {
-          return FunctionEvaluation<void>(function(
-            try_call([&] { return deref(arguments).eval(); })...));
+          return FunctionEvaluation<void>(try_call([&] {
+            return function(
+              try_call([&] { return deref(arguments).eval(); })...);
+          }));
         }, pack);
       return State::EVALUATED;
     }
@@ -177,7 +198,7 @@ namespace Details {
 
       State commit(int sequence);
 
-      const Type& eval() const;
+      eval_result_t<Type> eval() const;
 
       Lift& operator =(const Lift& lift);
 
@@ -215,7 +236,7 @@ namespace Details {
 
       State commit(int sequence);
 
-      const Type& eval() const;
+      eval_result_t<Type> eval() const;
 
     private:
       Function m_function;
@@ -310,6 +331,55 @@ namespace Details {
     assert(!has_evaluation(m_state));
   }
 
+  inline FunctionEvaluation<void>::FunctionEvaluation()
+    : m_state(State::NONE) {}
+
+  inline FunctionEvaluation<void>::FunctionEvaluation(Maybe<Type> value)
+    : m_value(std::move(value)),
+      m_state(State::EVALUATED) {}
+
+
+  inline FunctionEvaluation<void>::FunctionEvaluation(
+      std::optional<Maybe<Type>> value)
+      : m_value(std::move(value)) {
+    if(m_value.has_value()) {
+      m_state = State::EVALUATED;
+    } else {
+      m_state = State::NONE;
+    }
+  }
+
+  inline FunctionEvaluation<void>::FunctionEvaluation(Maybe<Type> value,
+      State state)
+      : m_value(std::move(value)) {
+    if(is_complete(state)) {
+      m_state = State::COMPLETE_EVALUATED;
+    } else {
+      m_state = State::EVALUATED;
+    }
+  }
+
+  inline FunctionEvaluation<void>::FunctionEvaluation(
+      std::optional<Maybe<Type>> value, State state)
+      : m_value(std::move(value)) {
+    if(m_value.has_value()) {
+      if(is_complete(state)) {
+        m_state = State::COMPLETE_EVALUATED;
+      } else {
+        m_state = State::EVALUATED;
+      }
+    } else if(is_complete(state)) {
+      m_state = State::COMPLETE;
+    } else {
+      m_state = State::NONE;
+    }
+  }
+
+  inline FunctionEvaluation<void>::FunctionEvaluation(State state)
+      : m_state(state) {
+    assert(!has_evaluation(m_state));
+  }
+
   template<typename F, typename... A>
   template<typename FF, typename... AF>
   Lift<F, A...>::Lift(FF&& function, AF&&... arguments)
@@ -397,7 +467,7 @@ namespace Details {
   }
 
   template<typename F, typename... A>
-  const typename Lift<F, A...>::Type& Lift<F, A...>::eval() const {
+  eval_result_t<typename Lift<F, A...>::Type> Lift<F, A...>::eval() const {
     return m_value.get();
   }
 
@@ -473,7 +543,7 @@ namespace Details {
   }
 
   template<typename F>
-  const typename Lift<F>::Type& Lift<F>::eval() const {
+  eval_result_t<typename Lift<F>::Type> Lift<F>::eval() const {
     return m_value.get();
   }
 
