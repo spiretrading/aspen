@@ -4,6 +4,7 @@
 #include "Aspen/Python/Chain.hpp"
 #include "Aspen/Python/CommitHandler.hpp"
 #include "Aspen/Python/Constant.hpp"
+#include "Aspen/Python/Executor.hpp"
 #include "Aspen/Python/First.hpp"
 #include "Aspen/Python/Last.hpp"
 #include "Aspen/Python/None.hpp"

@@ -3,6 +3,7 @@
 #include "Aspen/Python/Chain.hpp"
 #include "Aspen/Python/CommitHandler.hpp"
 #include "Aspen/Python/Constant.hpp"
+#include "Aspen/Python/Executor.hpp"
 #include "Aspen/Python/First.hpp"
 #include "Aspen/Python/Last.hpp"
 #include "Aspen/Python/None.hpp"
@@ -20,6 +21,7 @@ PYBIND11_MODULE(aspen, module) {
   export_chain(module);
   export_commit_handler(module);
   export_constant(module);
+  export_executor(module);
   export_first(module);
   export_last(module);
   export_none(module);

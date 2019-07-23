@@ -15,12 +15,6 @@ namespace Aspen {
        * Constructs an Executor.
        * @param reactor The reactor to execute.
        */
-      explicit Executor(Box<void> reactor);
-
-      /**
-       * Constructs an Executor.
-       * @param reactor The reactor to execute.
-       */
       template<typename R>
       explicit Executor(R&& reactor);
 
@@ -43,15 +37,12 @@ namespace Aspen {
       void on_update();
   };
 
-  inline Executor::Executor(Box<void> reactor)
-    : m_trigger([=] { on_update(); }),
-      m_sequence(0),
-      m_reactor(std::move(reactor)),
-      m_has_update(false) {}
-
   template<typename R>
   Executor::Executor(R&& reactor)
-    : Executor(Box(std::forward<R>(reactor))) {}
+    : m_trigger([=] { on_update(); }),
+      m_sequence(0),
+      m_reactor(std::forward<R>(reactor)),
+      m_has_update(false) {}
 
   inline void Executor::run_until_none() {
     auto old_trigger = Trigger::get_trigger();
