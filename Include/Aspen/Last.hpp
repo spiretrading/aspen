@@ -14,17 +14,16 @@ namespace Details {
     using Type = T;
     std::optional<Type> m_last;
 
-    std::optional<Type> operator ()(const Type& value, State state) {
-      if(state == State::COMPLETE_EVALUATED) {
-        return value;
-      } else if(state == State::NONE) {
-        return std::nullopt;
-      } else if(has_evaluation(state)) {
-        m_last = value;
-        return std::nullopt;
-      } else {
+    std::optional<Type> operator ()(Type value, State state) {
+      if(is_complete(state)) {
+        if(has_evaluation(state)) {
+          return value;
+        }
         return std::move(m_last);
+      } else if(has_evaluation(state)) {
+        m_last = std::move(value);
       }
+      return std::nullopt;
     }
   };
 }
