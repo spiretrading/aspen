@@ -211,6 +211,7 @@ namespace Details {
       Maybe<Type> m_value;
       State m_state;
       int m_previous_sequence;
+      bool m_has_continuation;
       bool m_had_evaluation;
 
       State invoke();
@@ -294,6 +295,8 @@ namespace Details {
       : m_value(std::move(value)) {
     if(is_complete(state)) {
       m_state = State::COMPLETE_EVALUATED;
+    } else if(has_continuation(state)) {
+      m_state = State::CONTINUE_EVALUATED;
     } else {
       m_state = State::EVALUATED;
     }
@@ -310,11 +313,15 @@ namespace Details {
     if(m_value.has_value()) {
       if(is_complete(state)) {
         m_state = State::COMPLETE_EVALUATED;
+      } else if(has_continuation(state)) {
+        m_state = State::CONTINUE_EVALUATED;
       } else {
         m_state = State::EVALUATED;
       }
     } else if(is_complete(state)) {
       m_state = State::COMPLETE;
+    } else if(has_continuation(state)) {
+      m_state = State::CONTINUE;
     } else {
       m_state = State::NONE;
     }
@@ -337,7 +344,6 @@ namespace Details {
   inline FunctionEvaluation<void>::FunctionEvaluation(Maybe<Type> value)
     : m_value(std::move(value)),
       m_state(State::EVALUATED) {}
-
 
   inline FunctionEvaluation<void>::FunctionEvaluation(
       std::optional<Maybe<Type>> value)
@@ -395,6 +401,7 @@ namespace Details {
         }()),
       m_state(State::NONE),
       m_previous_sequence(-1),
+      m_has_continuation(false),
       m_had_evaluation(false) {}
 
   template<typename F, typename... A>
@@ -412,6 +419,7 @@ namespace Details {
         m_value(lift.m_value),
         m_state(lift.m_state),
         m_previous_sequence(lift.m_previous_sequence),
+        m_has_continuation(lift.m_has_continuation),
         m_had_evaluation(lift.m_had_evaluation) {
     m_handler.transfer(lift.m_handler);
   }
@@ -431,6 +439,7 @@ namespace Details {
         m_value(std::move(lift.m_value)),
         m_state(std::move(lift.m_state)),
         m_previous_sequence(std::move(lift.m_previous_sequence)),
+        m_has_continuation(std::move(lift.m_has_continuation)),
         m_had_evaluation(std::move(lift.m_had_evaluation)) {
     m_handler.transfer(lift.m_handler);
   }
@@ -440,26 +449,41 @@ namespace Details {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }
-    m_state = m_handler.commit(sequence);
-    if(has_evaluation(m_state)) {
+    auto state = m_handler.commit(sequence);
+    if(has_evaluation(state) || m_has_continuation) {
+      m_has_continuation = false;
       auto invocation = invoke();
       if(invocation == State::NONE) {
-        if(is_complete(m_state)) {
+        if(is_complete(state)) {
           if(m_had_evaluation) {
-            m_state = State::COMPLETE_EVALUATED;
+            m_state = State::COMPLETE;
           } else {
             m_state = State::COMPLETE_EMPTY;
           }
+        } else if(has_continuation(state)) {
+          m_state = State::CONTINUE;
         } else {
           m_state = State::NONE;
         }
       } else if(is_complete(invocation)) {
-        if(m_had_evaluation || has_evaluation(invocation)) {
+        if(has_evaluation(invocation)) {
           m_state = State::COMPLETE_EVALUATED;
+        } else if(m_had_evaluation) {
+          m_state = State::COMPLETE;
         } else {
           m_state = State::COMPLETE_EMPTY;
         }
+      } else {
+        m_state = invocation;
+        m_has_continuation = has_continuation(invocation);
+        if(has_continuation(state)) {
+          m_state = combine(m_state, State::CONTINUE);
+        } else if(is_complete(state) && !m_has_continuation) {
+          m_state = combine(m_state, State::COMPLETE);
+        }
       }
+    } else {
+      m_state = state;
     }
     m_previous_sequence = sequence;
     m_had_evaluation |= has_evaluation(m_state);
@@ -487,6 +511,7 @@ namespace Details {
     m_value = lift.m_value;
     m_state = lift.m_state;
     m_previous_sequence = lift.m_previous_sequence;
+    m_has_continuation = lift.m_has_continuation;
     m_had_evaluation = lift.m_had_evaluation;
     return *this;
   }
@@ -507,6 +532,7 @@ namespace Details {
     m_value = std::move(lift.m_value);
     m_state = std::move(lift.m_state);
     m_previous_sequence = std::move(lift.m_previous_sequence);
+    m_has_continuation = std::move(lift.m_has_continuation);
     m_had_evaluation = std::move(lift.m_had_evaluation);
     return *this;
   }

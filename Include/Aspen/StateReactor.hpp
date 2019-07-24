@@ -53,7 +53,7 @@ namespace Aspen {
       m_state = State::EVALUATED;
     }
     if(has_continuation(m_value)) {
-      m_state |= State::CONTINUE;
+      m_state = combine(m_state, State::CONTINUE);
     }
     return m_state;
   }

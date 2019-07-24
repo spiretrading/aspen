@@ -47,13 +47,10 @@ namespace Aspen {
   inline void Executor::run_until_none() {
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
-    while(true) {
-      auto state = m_reactor.commit(m_sequence);
+    while(has_continuation(m_reactor.commit(m_sequence))) {
       ++m_sequence;
-      if(state == State::NONE || is_complete(state)) {
-        break;
-      }
     }
+    ++m_sequence;
     Trigger::set_trigger(old_trigger);
   }
 
@@ -65,7 +62,7 @@ namespace Aspen {
       ++m_sequence;
       if(is_complete(state)) {
         break;
-      } else if(state == State::NONE) {
+      } else if(!has_continuation(state)) {
         auto lock = std::unique_lock(m_mutex);
         while(!m_has_update) {
           m_update_condition.wait(lock);

@@ -69,11 +69,14 @@ namespace Aspen {
     if(m_status == Status::INITIALIZING) {
       auto initialization_count = std::size_t(0);
       auto completion_count = std::size_t(0);
+      auto has_continue = false;
       for(auto& child : m_children) {
         if(child.m_state == State::NONE) {
           child.m_state = child.m_reactor.commit(sequence);
           if(is_complete(child.m_state)) {
             ++completion_count;
+          } else {
+            has_continue |= has_continuation(child.m_state);
           }
           if(has_evaluation(child.m_state)) {
             ++initialization_count;
@@ -87,6 +90,8 @@ namespace Aspen {
           if(is_complete(state)) {
             ++completion_count;
             child.m_state = state;
+          } else {
+            has_continue |= has_continuation(child.m_state);
           }
         }
       }
@@ -96,22 +101,30 @@ namespace Aspen {
             m_state = State::COMPLETE_EVALUATED;
           } else {
             m_state = State::EVALUATED;
+            if(has_continue) {
+              m_state = combine(m_state, State::CONTINUE);
+            }
             m_status = Status::EVALUATING;
           }
         } else if(completion_count == m_children.size()) {
           m_state = State::COMPLETE_EMPTY;
         } else {
           m_state = State::NONE;
+          if(has_continue) {
+            m_state = combine(m_state, State::CONTINUE);
+          }
         }
       }
     } else if(m_status == Status::EVALUATING) {
       m_state = State::NONE;
       auto completion_count = std::size_t(0);
+      auto has_continue = false;
       for(auto& child : m_children) {
         if(is_complete(child.m_state)) {
           ++completion_count;
         } else {
           child.m_state = child.m_reactor.commit(sequence);
+          has_continue |= has_continuation(child.m_state);
           if(has_evaluation(child.m_state)) {
             m_state = State::EVALUATED;
           }
@@ -122,6 +135,8 @@ namespace Aspen {
       }
       if(completion_count == m_children.size()) {
         m_state = State::COMPLETE_EVALUATED;
+      } else if(has_continue) {
+        m_state = combine(m_state, State::CONTINUE);
       }
     }
     return m_state;

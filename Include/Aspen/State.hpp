@@ -19,7 +19,7 @@ namespace Aspen {
     CONTINUE = 4,
 
     //! The reactor has a new value and should immediately be committed again.
-    CONTINUE_EVALUTED = EVALUATED | CONTINUE,
+    CONTINUE_EVALUATED = EVALUATED | CONTINUE,
 
     //! The reactor has come to an end.
     COMPLETE = 8,
@@ -31,23 +31,28 @@ namespace Aspen {
     COMPLETE_EVALUATED = COMPLETE | EVALUATED
   };
 
+  /** Returns the combination of two States. */
+  constexpr State combine(State a, State b) {
+    return static_cast<State>(static_cast<int>(a) | static_cast<int>(b));
+  }
+
   /** Returns <code>true</code> iff a reactor State is in an EVALUATED state. */
-  inline constexpr bool has_evaluation(State state) {
+  constexpr bool has_evaluation(State state) {
     return (static_cast<int>(state) & static_cast<int>(State::EVALUATED)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in an EMPTY state. */
-  inline constexpr bool is_empty(State state) {
+  constexpr bool is_empty(State state) {
     return (static_cast<int>(state) & static_cast<int>(State::EMPTY)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in a CONTINUE state. */
-  inline constexpr bool has_continuation(State state) {
+  constexpr bool has_continuation(State state) {
     return (static_cast<int>(state) & static_cast<int>(State::CONTINUE)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in a COMPLETE state. */
-  inline constexpr bool is_complete(State state) {
+  constexpr bool is_complete(State state) {
     return (static_cast<int>(state) & static_cast<int>(State::COMPLETE)) != 0;
   }
 }

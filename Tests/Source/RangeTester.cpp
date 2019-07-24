@@ -21,7 +21,7 @@ TEST_CASE("test_single_range", "[Range]") {
 
 TEST_CASE("test_double_range", "[Range]") {
   auto reactor = range(constant(10), constant(12));
-  REQUIRE(reactor.commit(0) == State::EVALUATED);
+  REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
   REQUIRE(reactor.eval() == 10);
   REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 11);

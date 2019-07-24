@@ -51,7 +51,7 @@ namespace Aspen {
             *value + step.get() >= end.get()) {
           return FunctionEvaluation(*value, State::COMPLETE);
         }
-        return FunctionEvaluation(*value);
+        return FunctionEvaluation(*value, State::CONTINUE_EVALUATED);
       }, std::move(start_reactor), std::move(start_updates),
       std::move(stop_reactor), std::move(stop_updates), std::move(step_reactor),
       std::move(step_updates));

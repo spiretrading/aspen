@@ -133,9 +133,9 @@ namespace Aspen {
       m_entries.pop_front();
       m_state = State::EVALUATED;
       if(!m_entries.empty() || m_exception != nullptr) {
-        m_state |= State::CONTINUE;
+        m_state = combine(m_state, State::CONTINUE);
       } else if(m_is_complete) {
-        m_state |= State::COMPLETE;
+        m_state = combine(m_state, State::COMPLETE);
       }
     } else if(m_exception != nullptr) {
       m_value = std::move(m_exception);
@@ -143,7 +143,7 @@ namespace Aspen {
     } else if(m_is_complete) {
       m_state = State::COMPLETE;
       if(!m_had_evaluation) {
-        m_state |= State::EMPTY;
+        m_state = combine(m_state, State::EMPTY);
       }
     } else {
       m_state = State::NONE;
