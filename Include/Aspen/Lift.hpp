@@ -450,7 +450,8 @@ namespace Details {
       return m_state;
     }
     auto state = m_handler.commit(sequence);
-    if(has_evaluation(state) || m_has_continuation) {
+    if(has_evaluation(state) || m_has_continuation ||
+        is_complete(state) && !is_empty(state) && !m_had_evaluation) {
       m_has_continuation = false;
       auto invocation = invoke();
       if(invocation == State::NONE) {

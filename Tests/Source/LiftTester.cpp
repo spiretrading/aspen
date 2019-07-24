@@ -64,3 +64,13 @@ TEST_CASE("test_lift_one_argument_updates", "[Lift]") {
   REQUIRE(reactor.commit(5) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 16);
 }
+
+TEST_CASE("test_complete_arguments", "[Lift]") {
+  auto queue = Queue<int>();
+  queue.push(10);
+  queue.commit(0);
+  queue.set_complete();
+  auto reactor = Lift(square, &queue);
+  REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+  REQUIRE(reactor.eval() == 100);
+}
