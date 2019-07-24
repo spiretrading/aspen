@@ -71,7 +71,7 @@ namespace Aspen {
       auto completion_count = std::size_t(0);
       auto has_continue = false;
       for(auto& child : m_children) {
-        if(child.m_state == State::NONE) {
+        if(!has_evaluation(child.m_state)) {
           child.m_state = child.m_reactor.commit(sequence);
           if(is_complete(child.m_state)) {
             ++completion_count;
@@ -91,7 +91,7 @@ namespace Aspen {
             ++completion_count;
             child.m_state = state;
           } else {
-            has_continue |= has_continuation(child.m_state);
+            has_continue |= has_continuation(state);
           }
         }
       }
