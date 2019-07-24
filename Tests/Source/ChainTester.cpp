@@ -9,7 +9,7 @@ using namespace Aspen;
 TEST_CASE("test_constant_chain", "[Chain]") {
   auto reactor = Chain(Constant(100), Constant(200));
   auto state = reactor.commit(0);
-  REQUIRE(state == State::EVALUATED);
+  REQUIRE(state == State::CONTINUE_EVALUATED);
   REQUIRE(reactor.eval() == 100);
   state = reactor.commit(1);
   REQUIRE(state == State::COMPLETE_EVALUATED);
@@ -19,7 +19,7 @@ TEST_CASE("test_constant_chain", "[Chain]") {
 TEST_CASE("test_single_chain", "[Chain]") {
   auto reactor = Chain(Constant(911), None<int>());
   auto state = reactor.commit(0);
-  REQUIRE(state == State::EVALUATED);
+  REQUIRE(state == State::CONTINUE_EVALUATED);
   REQUIRE(reactor.eval() == 911);
   state = reactor.commit(1);
   REQUIRE(state == State::COMPLETE);
@@ -45,6 +45,8 @@ TEST_CASE("test_chain_with_initial_complete", "[Chain]") {
   queue.commit(0);
   queue.set_complete();
   auto reactor = Chain(&queue, Constant(123));
-  REQUIRE(reactor.commit(1) == State::EVALUATED);
+  REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
   REQUIRE(reactor.eval() == 5);
+  REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+  REQUIRE(reactor.eval() == 123);
 }

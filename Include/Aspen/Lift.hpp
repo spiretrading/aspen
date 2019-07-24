@@ -189,8 +189,8 @@ namespace Details {
        * @param function The function to apply.
        * @param arguments The arguments to apply the <i>function</i> to.
        */
-      template<typename FF, typename... AF>
-      explicit Lift(FF&& function, AF&&... arguments);
+      template<typename FF, typename AF, typename... AR>
+      Lift(FF&& function, AF&& argument, AR&&... arguments);
 
       Lift(const Lift& lift);
 
@@ -247,8 +247,9 @@ namespace Details {
       State invoke();
   };
 
-  template<typename F, typename... A>
-  Lift(F&&, A&&...) -> Lift<std::decay_t<F>, std::decay_t<A>...>;
+  template<typename F, typename AF, typename... AR>
+  Lift(F&&, AF&&, AR&&...) -> Lift<std::decay_t<F>, std::decay_t<AF>,
+    std::decay_t<AR>...>;
 
   template<typename F>
   Lift(F&&) -> Lift<std::decay_t<F>>;
@@ -387,10 +388,10 @@ namespace Details {
   }
 
   template<typename F, typename... A>
-  template<typename FF, typename... AF>
-  Lift<F, A...>::Lift(FF&& function, AF&&... arguments)
+  template<typename FF, typename AF, typename... AR>
+  Lift<F, A...>::Lift(FF&& function, AF&& argument, AR&&... arguments)
     : m_function(std::forward<FF>(function)),
-      m_arguments(std::forward<AF>(arguments)...),
+      m_arguments(std::forward<AF>(argument), std::forward<AR>(arguments)...),
       m_handler(
         [&] {
           auto children = std::vector<Box<void>>();
@@ -451,7 +452,7 @@ namespace Details {
     }
     auto state = m_handler.commit(sequence);
     if(has_evaluation(state) || m_has_continuation ||
-        is_complete(state) && !is_empty(state) && !m_had_evaluation) {
+        is_complete(state) && !is_empty(state)) {
       m_has_continuation = false;
       auto invocation = invoke();
       if(invocation == State::NONE) {

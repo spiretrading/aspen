@@ -87,6 +87,41 @@ namespace Aspen {
     return std::make_shared<FoldArgument<T>>();
   }
 
+  /**
+   * Builds a Fold reactor.
+   * @param evaluator The reactor used to evaluate/update the series of
+   *        values.
+   * @param left The reactor used as the left-hand/first argument to the
+   *        evaluator.
+   * @param right The reactor used as the right-hand/second argument to the
+   *        evaluator.
+   * @param series The reactor producing the series.
+   */
+  template<typename E, typename S>
+  auto fold(E&& evaluator,
+      std::shared_ptr<FoldArgument<reactor_result_t<E>>> left,
+      std::shared_ptr<FoldArgument<reactor_result_t<E>>> right, S&& series) {
+    return Fold(std::forward<E>(evaluator), std::move(left), std::move(right),
+      std::forward<S>(series));
+  }
+
+  /**
+   * Builds a Fold reactor by directly lifting a function.
+   * @param f The function used to fold the series.
+   * @param series The reactor producing the series to fold.
+   */
+  template<typename F, typename S>
+  auto fold(F&& f, S&& series) {
+    using SeriesType = reactor_result_t<S>;
+    using Type = std::decay_t<decltype(
+      std::declval<F>()(std::declval<SeriesType>(),
+      std::declval<SeriesType>()))>;
+    auto left = make_fold_argument<SeriesType>();
+    auto right = make_fold_argument<SeriesType>();
+    return Fold(Lift(std::forward<F>(f), left, right), left, right,
+      std::forward<S>(series));
+  }
+
   template<typename T>
   FoldArgument<T>::FoldArgument()
     : m_state(State::NONE),
@@ -134,23 +169,32 @@ namespace Aspen {
       return m_state;
     }
     auto series_state = m_series->commit(sequence);
-    if(series_state == State::NONE) {
-      m_state = State::NONE;
-    } else if(has_evaluation(series_state)) {
+    if(series_state == State::NONE || series_state == State::CONTINUE ||
+        series_state == State::COMPLETE_EMPTY) {
+      m_state = series_state;
+    } else if(has_evaluation(series_state) ||
+        is_complete(series_state) && !is_empty(series_state)) {
       if(!m_previous_value.has_value()) {
-        m_previous_value = try_call([&] { return m_series.eval(); });
-        m_update = BaseReactor::Update::NONE;
-        return BaseReactor::Update::NONE;
+        if(is_complete(series_state)) {
+          m_state = State::COMPLETE_EMPTY;
+        } else {
+          m_previous_value = try_call([&] { return m_series->eval(); });
+          m_state = State::NONE;
+        }
+      } else {
+        m_left->update(std::move(*m_previous_value));
+        m_right->update(try_call([&] { return m_series->eval(); }));
+        m_state = m_evaluator->commit(sequence);
+        if(has_evaluation(m_state)) {
+          m_value = try_call([&] { return m_evaluator->eval(); });
+          m_previous_value = m_value;
+        }
       }
-      m_leftChild->Set(std::move(*m_previousValue), sequenceNumber);
-      m_rightChild->Set(TryEval(*m_producer), sequenceNumber);
-      m_update = m_evaluation->Commit(sequenceNumber);
-      if(HasEval(m_update)) {
-        m_value = TryEval(*m_evaluation);
-        m_previousValue = m_value;
-      }
-
-
+    }
+    if(has_continuation(series_state)) {
+      m_state = combine(m_state, State::CONTINUE);
+    } else if(is_complete(series_state)) {
+      m_state = combine(m_state, State::COMPLETE);
     }
     m_previous_sequence = sequence;
     return m_state;

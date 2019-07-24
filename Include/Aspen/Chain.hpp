@@ -77,7 +77,7 @@ namespace Aspen {
       if(is_complete(update)) {
         if(!is_empty(update)) {
           m_status = Status::TRANSITIONING;
-          m_state = State::EVALUATED;
+          m_state = State::CONTINUE_EVALUATED;
         } else {
           m_status = Status::CONTINUATION;
         }
