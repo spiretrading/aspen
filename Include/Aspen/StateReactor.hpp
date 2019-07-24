@@ -39,6 +39,7 @@ namespace Aspen {
   template<typename RF>
   StateReactor<R>::StateReactor(RF&& reactor)
     : m_reactor(std::forward<RF>(reactor)),
+      m_value(State::EMPTY),
       m_state(State::NONE) {}
 
   template<typename R>
@@ -46,12 +47,17 @@ namespace Aspen {
     if(is_complete(m_state)) {
       return m_state;
     }
-    m_value = m_reactor->commit(sequence);
-    if(is_complete(m_value)) {
+    auto value = m_reactor->commit(sequence);
+    if(is_complete(value)) {
       m_state = State::COMPLETE_EVALUATED;
-    } else {
-      m_state = State::EVALUATED;
+    } else if(value == State::NONE) {
+      if(m_value == State::NONE) {
+        m_state = State::NONE;
+      } else {
+        m_state = State::EVALUATED;
+      }
     }
+    m_value = value;
     if(has_continuation(m_value)) {
       m_state = combine(m_state, State::CONTINUE);
     }
