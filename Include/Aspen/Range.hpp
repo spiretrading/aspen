@@ -6,7 +6,6 @@
 #include "Aspen/Constant.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Maybe.hpp"
-#include "Aspen/Perpetual.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/Traits.hpp"
@@ -31,8 +30,8 @@ namespace Aspen {
     auto step_updates = StateReactor(&*step_reactor);
     return lift(
       [value = std::optional<Type>()](const auto& start, State start_state,
-          const auto& end, State end_state, const auto& step, State step_state,
-          Maybe<void> ignored) mutable {
+          const auto& end, State end_state, const auto& step,
+          State step_state) mutable {
         auto c = [&] {
           if(!value.has_value()) {
             return start.get();
@@ -52,10 +51,10 @@ namespace Aspen {
             *value + step.get() >= end.get()) {
           return FunctionEvaluation(*value, State::COMPLETE);
         }
-        return FunctionEvaluation(*value);
+        return FunctionEvaluation(*value, State::CONTINUE_EVALUATED);
       }, std::move(start_reactor), std::move(start_updates),
       std::move(stop_reactor), std::move(stop_updates), std::move(step_reactor),
-      std::move(step_updates), perpetual());
+      std::move(step_updates));
   }
 
   /**

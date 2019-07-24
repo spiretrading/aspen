@@ -74,11 +74,13 @@ namespace Aspen {
     }
     if(m_status == Status::INITIAL) {
       auto update = m_initial->commit(sequence);
-      if(update == State::COMPLETE_EVALUATED) {
-        m_status = Status::TRANSITIONING;
-        m_state = State::EVALUATED;
-      } else if(update == State::COMPLETE_EMPTY) {
-        m_status = Status::CONTINUATION;
+      if(is_complete(update)) {
+        if(has_evaluation(update)) {
+          m_status = Status::TRANSITIONING;
+          m_state = State::EVALUATED;
+        } else {
+          m_status = Status::CONTINUATION;
+        }
       } else {
         m_state = update;
       }
@@ -92,7 +94,7 @@ namespace Aspen {
         if(m_had_evaluation) {
           m_state = State::COMPLETE;
         } else {
-          m_state = update;
+          m_state = State::COMPLETE_EMPTY;
         }
       } else {
         m_state = update;
