@@ -1,4 +1,5 @@
 #include <catch2/catch.hpp>
+#include "Aspen/Queue.hpp"
 #include "Aspen/Range.hpp"
 
 using namespace Aspen;
@@ -25,4 +26,12 @@ TEST_CASE("test_double_range", "[Range]") {
   REQUIRE(reactor.eval() == 10);
   REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 11);
+}
+
+TEST_CASE("test_end_complete", "[Range]") {
+  auto queue = Queue<int>();
+  auto reactor = range(&queue, constant(10));
+  queue.push(8);
+  REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+  REQUIRE(reactor.eval() == 8);
 }

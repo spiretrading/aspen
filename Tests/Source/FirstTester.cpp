@@ -18,7 +18,6 @@ TEST_CASE("test_first_none", "[First]") {
 }
 
 TEST_CASE("test_first_multiple", "[First]") {
-  auto trigger = Trigger();
   auto queue = Queue<int>();
   auto reactor = first(&queue);
   REQUIRE(reactor.commit(0) == State::NONE);

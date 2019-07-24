@@ -50,12 +50,10 @@ namespace Aspen {
     auto value = m_reactor->commit(sequence);
     if(is_complete(value)) {
       m_state = State::COMPLETE_EVALUATED;
-    } else if(value == State::NONE) {
-      if(m_value == State::NONE) {
-        m_state = State::NONE;
-      } else {
-        m_state = State::EVALUATED;
-      }
+    } else if(value == State::NONE && m_value == State::NONE) {
+      m_state = State::NONE;
+    } else {
+      m_state = State::EVALUATED;
     }
     m_value = value;
     if(has_continuation(m_value)) {

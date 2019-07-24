@@ -18,7 +18,6 @@ TEST_CASE("test_last_none", "[Last]") {
 }
 
 TEST_CASE("test_last_multiple", "[Last]") {
-  auto trigger = Trigger();
   auto queue = Queue<int>();
   auto reactor = last(&queue);
   REQUIRE(reactor.commit(0) == State::NONE);
@@ -32,7 +31,6 @@ TEST_CASE("test_last_multiple", "[Last]") {
 }
 
 TEST_CASE("test_last_delayed_complete", "[Last]") {
-  auto trigger = Trigger();
   auto queue = Queue<int>();
   auto reactor = last(&queue);
   REQUIRE(reactor.commit(0) == State::NONE);
