@@ -17,6 +17,7 @@ namespace Details {
     std::optional<Type> operator ()(Type value, State state) {
       if(is_complete(state)) {
         if(has_evaluation(state)) {
+          m_last = std::nullopt;
           return value;
         }
         return std::move(m_last);

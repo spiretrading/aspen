@@ -75,7 +75,7 @@ namespace Aspen {
     if(m_status == Status::INITIAL) {
       auto update = m_initial->commit(sequence);
       if(is_complete(update)) {
-        if(has_evaluation(update)) {
+        if(!is_empty(update)) {
           m_status = Status::TRANSITIONING;
           m_state = State::EVALUATED;
         } else {

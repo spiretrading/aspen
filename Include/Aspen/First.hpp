@@ -15,7 +15,7 @@ namespace Aspen {
     return Lift(
       [] (auto&& value) {
         return FunctionEvaluation(std::forward<decltype(value)>(value),
-          State::COMPLETE);
+          State::COMPLETE_EVALUATED);
       }, std::forward<Reactor>(source));
   }
 }
