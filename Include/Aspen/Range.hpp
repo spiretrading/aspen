@@ -41,15 +41,18 @@ namespace Aspen {
           }
         }();
         if(c >= end.get()) {
-          if(is_complete(start_state) && is_complete(end_state)) {
+          if(is_complete(end_state)) {
             return FunctionEvaluation<Type>(State::COMPLETE);
           }
           return FunctionEvaluation<Type>(State::NONE);
         }
         value = c;
-        if(is_complete(start_state) && is_complete(end_state) &&
-            *value + step.get() >= end.get()) {
-          return FunctionEvaluation(*value, State::COMPLETE);
+        if(*value + step.get() >= end.get()) {
+          if(is_complete(end_state)) {
+            return FunctionEvaluation(*value, State::COMPLETE);
+          } else {
+            return FunctionEvaluation(*value);
+          }
         }
         return FunctionEvaluation(*value, State::CONTINUE_EVALUATED);
       }, std::move(start_reactor), std::move(start_updates),
