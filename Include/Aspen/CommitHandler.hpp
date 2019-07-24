@@ -40,7 +40,8 @@ namespace Aspen {
       };
       enum class Status {
         INITIALIZING,
-        EVALUATING
+        EVALUATING,
+        FINAL
       };
       std::vector<Child> m_children;
       Status m_status;
@@ -71,21 +72,24 @@ namespace Aspen {
       auto completion_count = std::size_t(0);
       auto has_continue = false;
       for(auto& child : m_children) {
-        if(!has_evaluation(child.m_state)) {
+        if(is_complete(child.m_state)) {
+          ++completion_count;
+        } else if(!has_evaluation(child.m_state)) {
           child.m_state = child.m_reactor.commit(sequence);
           if(is_complete(child.m_state)) {
+            if(is_empty(child.m_state)) {
+              m_status = Status::FINAL;
+              m_state = State::COMPLETE_EMPTY;
+              break;
+            }
             ++completion_count;
           } else {
             has_continue |= has_continuation(child.m_state);
           }
           if(has_evaluation(child.m_state)) {
             ++initialization_count;
-          } else if(is_complete(child.m_state)) {
-            m_state = State::COMPLETE_EMPTY;
-            break;
           }
         } else {
-          ++initialization_count;
           auto state = child.m_reactor.commit(sequence);
           if(is_complete(state)) {
             ++completion_count;
@@ -93,25 +97,33 @@ namespace Aspen {
           } else {
             has_continue |= has_continuation(state);
           }
+          if(has_evaluation(child.m_state)) {
+            ++initialization_count;
+          }
         }
       }
       if(m_state != State::COMPLETE_EMPTY) {
-        if(!m_children.empty() && initialization_count == m_children.size()) {
+        if(m_children.empty()) {
+          m_state = State::COMPLETE_EMPTY;
+          m_status = Status::FINAL;
+        } else {
           if(completion_count == m_children.size()) {
-            m_state = State::COMPLETE_EVALUATED;
-          } else {
+            m_state = State::COMPLETE;
+            if(initialization_count != 0) {
+              m_state = combine(m_state, State::EVALUATED);
+            }
+            m_status = Status::FINAL;
+          } else if(initialization_count == m_children.size()) {
             m_state = State::EVALUATED;
             if(has_continue) {
               m_state = combine(m_state, State::CONTINUE);
             }
             m_status = Status::EVALUATING;
-          }
-        } else if(completion_count == m_children.size()) {
-          m_state = State::COMPLETE_EMPTY;
-        } else {
-          m_state = State::NONE;
-          if(has_continue) {
-            m_state = combine(m_state, State::CONTINUE);
+          } else {
+            m_state = State::NONE;
+            if(has_continue) {
+              m_state = combine(m_state, State::CONTINUE);
+            }
           }
         }
       }
@@ -134,7 +146,7 @@ namespace Aspen {
         }
       }
       if(completion_count == m_children.size()) {
-        m_state = State::COMPLETE_EVALUATED;
+        m_state = combine(m_state, State::COMPLETE);
       } else if(has_continue) {
         m_state = combine(m_state, State::CONTINUE);
       }
