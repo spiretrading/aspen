@@ -5,9 +5,9 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include "Aspen/CommitHandler.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
+#include "Aspen/StaticCommitHandler.hpp"
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
@@ -207,7 +207,8 @@ namespace Details {
     private:
       Function m_function;
       Arguments m_arguments;
-      CommitHandler m_handler;
+      StaticCommitHandler<decltype(&Details::deref(std::declval<A&>()))...>
+        m_handler;
       Maybe<Type> m_value;
       State m_state;
       int m_previous_sequence;
@@ -392,14 +393,9 @@ namespace Details {
   Lift<F, A...>::Lift(FF&& function, AF&& argument, AR&&... arguments)
     : m_function(std::forward<FF>(function)),
       m_arguments(std::forward<AF>(argument), std::forward<AR>(arguments)...),
-      m_handler(
-        [&] {
-          auto children = std::vector<Box<void>>();
-          std::apply([&] (auto&... arguments) {
-            (children.emplace_back(&Details::deref(arguments)), ...);
-          }, m_arguments);
-          return children;
-        }()),
+      m_handler(std::apply([] (auto&&... arguments) {
+        return std::make_tuple(&Details::deref(arguments)...);
+      }, m_arguments)),
       m_state(State::NONE),
       m_previous_sequence(-1),
       m_has_continuation(false),
@@ -409,14 +405,9 @@ namespace Details {
   Lift<F, A...>::Lift(const Lift& lift)
       : m_function(lift.m_function),
         m_arguments(lift.m_arguments),
-        m_handler(
-          [&] {
-            auto children = std::vector<Box<void>>();
-            std::apply([&] (auto&... arguments) {
-              (children.emplace_back(&Details::deref(arguments)), ...);
-            }, m_arguments);
-            return children;
-          }()),
+        m_handler(std::apply([] (auto&&... arguments) {
+          return std::make_tuple(&Details::deref(arguments)...);
+        }, m_arguments)),
         m_value(lift.m_value),
         m_state(lift.m_state),
         m_previous_sequence(lift.m_previous_sequence),
@@ -429,14 +420,9 @@ namespace Details {
   Lift<F, A...>::Lift(Lift&& lift)
       : m_function(std::move(lift.m_function)),
         m_arguments(std::move(lift.m_arguments)),
-        m_handler(
-          [&] {
-            auto children = std::vector<Box<void>>();
-            std::apply([&] (auto&... arguments) {
-              (children.emplace_back(&Details::deref(arguments)), ...);
-            }, m_arguments);
-            return children;
-          }()),
+        m_handler(std::apply([] (auto&&... arguments) {
+          return std::make_tuple(&Details::deref(arguments)...);
+        }, m_arguments)),
         m_value(std::move(lift.m_value)),
         m_state(std::move(lift.m_state)),
         m_previous_sequence(std::move(lift.m_previous_sequence)),
@@ -501,14 +487,10 @@ namespace Details {
   Lift<F, A...>& Lift<F, A...>::operator =(const Lift& lift) {
     m_function = lift.m_function;
     m_arguments = lift.m_arguments;
-    m_handler = CommitHandler(
-      [&] {
-        auto children = std::vector<Box<void>>();
-        std::apply([&] (auto&... arguments) {
-          (children.emplace_back(&Details::deref(arguments)), ...);
-        }, m_arguments);
-        return children;
-      }());
+    m_handler = StaticCommitHandler(std::apply(
+      [] (auto&&... arguments) {
+        return std::make_tuple(&Details::deref(arguments)...);
+      }, m_arguments));
     m_handler.transfer(lift.m_handler);
     m_value = lift.m_value;
     m_state = lift.m_state;
@@ -522,14 +504,10 @@ namespace Details {
   Lift<F, A...>& Lift<F, A...>::operator =(Lift&& lift) {
     m_function = std::move(lift.m_function);
     m_arguments = std::move(lift.m_arguments);
-    m_handler = CommitHandler(
-      [&] {
-        auto children = std::vector<Box<void>>();
-        std::apply([&] (auto&... arguments) {
-          (children.emplace_back(&Details::deref(arguments)), ...);
-        }, m_arguments);
-        return children;
-      }());
+    m_handler = StaticCommitHandler(std::apply(
+      [] (auto&&... arguments) {
+        return std::make_tuple(&Details::deref(arguments)...);
+      }, m_arguments));
     m_handler.transfer(lift.m_handler);
     m_value = std::move(lift.m_value);
     m_state = std::move(lift.m_state);

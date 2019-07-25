@@ -1,4 +1,5 @@
 #include "Aspen/Python/Lift.hpp"
+#include "Aspen/CommitHandler.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Python/Box.hpp"
 

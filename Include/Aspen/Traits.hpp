@@ -72,6 +72,22 @@ namespace Aspen {
       return std::make_unique<std::decay_t<T>>(std::forward<T>(value));
     }
   }
+
+  template<std::size_t I = 0, typename... T, typename F>
+  void for_each(std::tuple<T...>& t, F&& f) {
+    if constexpr(I != sizeof...(T)) {
+      f(std::get<I>(t));
+      for_each<I + 1>(t, std::forward<F>(f));
+    }
+  }
+
+  template<std::size_t I, std::size_t J, typename F>
+  void for_each(F&& f) {
+    if constexpr(I != J) {
+      f(std::integral_constant<std::size_t, I>());
+      for_each<I + 1, J>(std::forward<F>(f));
+    }
+  }
 }
 
 #endif

@@ -17,6 +17,7 @@
 #include "Aspen/Range.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StateReactor.hpp"
+#include "Aspen/StaticCommitHandler.hpp"
 #include "Aspen/Throw.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Trigger.hpp"

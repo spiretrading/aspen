@@ -12,17 +12,10 @@ namespace Details {
   template<typename T>
   struct LastCore {
     using Type = T;
-    std::optional<Type> m_last;
 
     std::optional<Type> operator ()(Type value, State state) {
       if(is_complete(state)) {
-        if(has_evaluation(state)) {
-          m_last = std::nullopt;
-          return value;
-        }
-        return std::move(m_last);
-      } else if(has_evaluation(state)) {
-        m_last = std::move(value);
+        return value;
       }
       return std::nullopt;
     }
