@@ -14,6 +14,7 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Perpetual.hpp"
 #include "Aspen/Queue.hpp"
+#include "Aspen/Range.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/Throw.hpp"
