@@ -64,6 +64,22 @@ namespace Aspen {
   template<typename T>
   using eval_result_t = typename eval_result<T>::type;
 
+  /** Tests if a function invoked with a given list of arguments is noexcept. */
+  template<typename F, typename... A>
+  struct is_noexcept_function : std::bool_constant<
+    noexcept(std::declval<F>()(std::declval<A>()...))> {};
+
+  template<typename F, typename... A>
+  constexpr auto is_noexcept_function_v = is_noexcept_function<F, A...>::value;
+
+  /** Tests if a reactor's eval method is noexcept. */
+  template<typename R>
+  struct is_noexcept_reactor : std::bool_constant<
+    noexcept(std::declval<dereference_reactor_t<R>>().eval())> {};
+
+  template<typename R>
+  constexpr auto is_noexcept_reactor_v = is_noexcept_reactor<R>::value;
+
   template<typename T>
   auto make_ptr(T&& value) {
     if constexpr(is_reactor_pointer_v<std::decay_t<T>>) {

@@ -147,6 +147,7 @@ namespace Aspen {
       }
       if(completion_count == m_children.size()) {
         m_state = combine(m_state, State::COMPLETE);
+        m_status = Status::FINAL;
       } else if(has_continue) {
         m_state = combine(m_state, State::CONTINUE);
       }

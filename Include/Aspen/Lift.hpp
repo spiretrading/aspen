@@ -169,6 +169,14 @@ namespace Details {
       return State::EVALUATED;
     }
   };
+
+  template<typename F, typename... A>
+  struct is_lift_noexcept : std::bool_constant<is_noexcept_function_v<F,
+    const try_maybe_t<reactor_result_t<A>, !is_noexcept_reactor_v<A>>& ...> &&
+    std::conjunction_v<is_noexcept_reactor<A>...>> {};
+
+  template<typename F, typename... A>
+  constexpr auto is_lift_noexcept_v = is_lift_noexcept<F, A...>::value;
 }
 
   /**
@@ -188,6 +196,9 @@ namespace Details {
       /** A tuple containing the list of arguments to apply to the function. */
       using Arguments = std::tuple<A...>;
 
+      /** Whether this reactor's eval is noexcept. */
+      static constexpr auto is_noexcept = Details::is_lift_noexcept_v<F, A...>;
+
       /**
        * Constructs a function reactor.
        * @param function The function to apply.
@@ -202,7 +213,7 @@ namespace Details {
 
       State commit(int sequence) noexcept;
 
-      eval_result_t<Type> eval() const;
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
 
       Lift& operator =(const Lift& lift);
 
@@ -213,7 +224,7 @@ namespace Details {
       Arguments m_arguments;
       StaticCommitHandler<decltype(&Details::deref(std::declval<A&>()))...>
         m_handler;
-      Maybe<Type> m_value;
+      try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
       State m_state;
       int m_previous_sequence;
       bool m_has_continuation;
@@ -484,8 +495,13 @@ namespace Details {
   }
 
   template<typename F, typename... A>
-  eval_result_t<typename Lift<F, A...>::Type> Lift<F, A...>::eval() const {
-    return *m_value;
+  eval_result_t<typename Lift<F, A...>::Type> Lift<F, A...>::eval() const
+      noexcept(is_noexcept){
+    if constexpr(std::is_same_v<Type, void> && !is_noexcept) {
+      m_value.get();
+    } else {
+      return m_value;
+    }
   }
 
   template<typename F, typename... A>
@@ -524,12 +540,17 @@ namespace Details {
 
   template<typename F, typename... A>
   State Lift<F, A...>::invoke() {
-    try {
+    if constexpr(is_noexcept) {
       return Details::FunctionEvaluator<Type>()(m_value, m_function,
         m_arguments);
-    } catch(const std::exception&) {
-      m_value = std::current_exception();
-      return State::EVALUATED;
+    } else {
+      try {
+        return Details::FunctionEvaluator<Type>()(m_value, m_function,
+          m_arguments);
+      } catch(const std::exception&) {
+        m_value = std::current_exception();
+        return State::EVALUATED;
+      }
     }
   }
 

@@ -31,7 +31,7 @@ namespace Aspen {
     return lift(
       [value = std::optional<Type>()](const reactor_result_t<S>& start,
           State start_state, const reactor_result_t<E>& end, State end_state,
-          const reactor_result_t<T>& step, State step_state) mutable {
+          const reactor_result_t<T>& step, State step_state) mutable noexcept {
         auto c = [&] {
           if(!value.has_value()) {
             return start;

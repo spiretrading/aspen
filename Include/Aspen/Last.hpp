@@ -13,7 +13,7 @@ namespace Details {
   struct LastCore {
     using Type = T;
 
-    std::optional<Type> operator ()(Type value, State state) {
+    std::optional<Type> operator ()(Type value, State state) noexcept {
       if(is_complete(state)) {
         return value;
       }

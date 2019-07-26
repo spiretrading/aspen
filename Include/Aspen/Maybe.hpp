@@ -131,6 +131,19 @@ namespace Aspen {
   };
 
   /**
+   * Type trait that wraps a type in a Maybe depending on a condition.
+   * @param <T> The type to potentially wrap.
+   * @param <C> The condition used to test if <code>T</code> is wrapped.
+   */
+  template<typename T, bool C>
+  struct try_maybe {
+    using type = std::conditional_t<C, Maybe<T>, T>;
+  };
+
+  template<typename T, bool C>
+  using try_maybe_t = typename try_maybe<T, C>::type;
+
+  /**
    * Tries calling a function, capturing any thrown exception.
    * @param f The function to call.
    * @return The result of <i>f</i>.

@@ -195,6 +195,7 @@ namespace Aspen {
         }
       });
       if(completion_count == sizeof...(R)) {
+        m_status = Status::FINAL;
         m_state = combine(m_state, State::COMPLETE);
       } else if(has_continue) {
         m_state = combine(m_state, State::CONTINUE);
