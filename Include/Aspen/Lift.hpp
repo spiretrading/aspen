@@ -248,6 +248,7 @@ namespace Details {
       Function m_function;
       Maybe<Type> m_value;
       State m_state;
+      int m_previous_sequence;
 
       State invoke();
   };
@@ -536,19 +537,27 @@ namespace Details {
   template<typename FF>
   Lift<F>::Lift(FF&& function)
     : m_function(std::forward<FF>(function)),
-      m_state(State::NONE) {}
+      m_state(State::NONE),
+      m_previous_sequence(-1) {}
 
   template<typename F>
   State Lift<F>::commit(int sequence) noexcept {
-    if(m_state != State::NONE) {
+    if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }
     auto invocation = invoke();
     if(has_evaluation(invocation)) {
-      m_state = State::COMPLETE_EVALUATED;
-    } else {
+      if(has_continuation(invocation)) {
+        m_state = State::CONTINUE_EVALUATED;
+      } else {
+        m_state = State::COMPLETE_EVALUATED;
+      }
+    } else if(m_state == State::NONE) {
       m_state = State::COMPLETE_EMPTY;
+    } else {
+      m_state = State::COMPLETE;
     }
+    m_previous_sequence = sequence;
     return m_state;
   }
 
