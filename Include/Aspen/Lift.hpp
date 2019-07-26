@@ -480,7 +480,7 @@ namespace Details {
 
   template<typename F, typename... A>
   eval_result_t<typename Lift<F, A...>::Type> Lift<F, A...>::eval() const {
-    return m_value.get();
+    return *m_value;
   }
 
   template<typename F, typename... A>
@@ -550,7 +550,7 @@ namespace Details {
 
   template<typename F>
   eval_result_t<typename Lift<F>::Type> Lift<F>::eval() const {
-    return m_value.get();
+    return *m_value;
   }
 
   template<typename F>

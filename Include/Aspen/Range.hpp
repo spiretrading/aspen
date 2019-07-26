@@ -34,20 +34,20 @@ namespace Aspen {
           State step_state) mutable {
         auto c = [&] {
           if(!value.has_value()) {
-            return start.get();
+            return *start;
           } else {
-            auto increment = *value + step.get();
-            return std::max(start.get(), increment);
+            auto increment = *value + *step;
+            return std::max(*start, increment);
           }
         }();
-        if(c >= end.get()) {
+        if(c >= *end) {
           if(is_complete(end_state)) {
             return FunctionEvaluation<Type>(State::COMPLETE);
           }
           return FunctionEvaluation<Type>(State::NONE);
         }
         value = c;
-        if(*value + step.get() >= end.get()) {
+        if(*value + *step >= *end) {
           if(is_complete(end_state)) {
             return FunctionEvaluation(*value, State::COMPLETE);
           } else {

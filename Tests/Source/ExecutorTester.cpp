@@ -14,7 +14,7 @@ TEST_CASE("test_run_until_none_empty", "[Executor]") {
   auto result = std::optional<int>();
   auto executor = Executor(
     lift([&] (const auto& value) {
-      result = value.get();
+      result = *value;
     }, none<int>()));
   executor.run_until_none();
   REQUIRE(!result.has_value());
@@ -24,7 +24,7 @@ TEST_CASE("test_run_until_none_constant", "[Executor]") {
   auto result = std::optional<int>();
   auto executor = Executor(
     lift([&] (const auto& value) {
-      result = value.get();
+      result = *value;
     }, constant(5)));
   executor.run_until_none();
   REQUIRE(result.has_value());
@@ -36,7 +36,7 @@ TEST_CASE("test_run_until_complete", "[Executor]") {
   auto results = std::vector<int>();
   auto executor = Executor(
     lift([&] (const auto& value) {
-      results.push_back(value.get());
+      results.push_back(*value);
     }, &queue));
   auto executor_thread = std::thread([&] {
     executor.run_until_complete();

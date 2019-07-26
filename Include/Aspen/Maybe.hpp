@@ -72,6 +72,18 @@ namespace Aspen {
       /** Returns the exception. */
       std::exception_ptr get_exception() const;
 
+      //! Returns a reference to the value.
+      const Type& operator *() const;
+
+      //! Returns a pointer to the value.
+      const Type* operator ->() const;
+
+      //! Returns a reference to the value.
+      Type& operator *();
+
+      //! Returns a pointer to the value.
+      Type* operator ->();
+
       template<typename U>
       Maybe& operator =(const Maybe<U>& rhs);
 
@@ -107,6 +119,10 @@ namespace Aspen {
 
       std::exception_ptr get_exception() const;
 
+      void operator *() const;
+
+      void operator ->() const;
+
       template<typename U>
       Maybe& operator =(const Maybe<U>& rhs);
 
@@ -120,18 +136,23 @@ namespace Aspen {
    * @return The result of <i>f</i>.
    */
   template<typename F>
-  Maybe<std::invoke_result_t<F>> try_call(F&& f) {
-    try {
-      if constexpr(std::is_same_v<std::invoke_result_t<F>, void>) {
-        f();
-        return {};
-      } else {
-        return f();
+  auto try_call(F&& f) {
+    if constexpr(noexcept(f())) {
+      return f();
+    } else {
+      using Type = std::invoke_result_t<F>;
+      try {
+        if constexpr(std::is_same_v<Type, void>) {
+          f();
+          return Maybe<Type>();
+        } else {
+          return Maybe<Type>(f());
+        }
+      } catch(...) {
+        return Maybe<Type>(std::current_exception());
       }
-    } catch(...) {
-      return std::current_exception();
     }
-  };
+  }
 
   template<typename T>
   Maybe<T>::Maybe(const Type& value)
@@ -214,6 +235,26 @@ namespace Aspen {
   }
 
   template<typename T>
+  const typename Maybe<T>::Type& Maybe<T>::operator *() const {
+    return get();
+  }
+
+  template<typename T>
+  const typename Maybe<T>::Type* Maybe<T>::operator ->() const {
+    return &get();
+  }
+
+  template<typename T>
+  typename Maybe<T>::Type& Maybe<T>::operator *() {
+    return get();
+  }
+
+  template<typename T>
+  typename Maybe<T>::Type* Maybe<T>::operator ->() {
+    return &get();
+  }
+
+  template<typename T>
   template<typename U>
   Maybe<T>& Maybe<T>::operator =(const Maybe<U>& rhs) {
     m_value = rhs.m_value;
@@ -263,6 +304,14 @@ namespace Aspen {
 
   inline std::exception_ptr Maybe<void>::get_exception() const {
     return m_exception;
+  }
+
+  inline void Maybe<void>::operator *() const {
+    get();
+  }
+
+  inline void Maybe<void>::operator ->() const {
+    get();
   }
 
   template<typename U>
