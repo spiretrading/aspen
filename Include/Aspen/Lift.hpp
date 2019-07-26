@@ -196,7 +196,7 @@ namespace Details {
 
       Lift(Lift&& lift);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -236,7 +236,7 @@ namespace Details {
       template<typename FF>
       explicit Lift(FF&& function);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -432,7 +432,7 @@ namespace Details {
   }
 
   template<typename F, typename... A>
-  State Lift<F, A...>::commit(int sequence) {
+  State Lift<F, A...>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }
@@ -535,7 +535,7 @@ namespace Details {
       m_state(State::NONE) {}
 
   template<typename F>
-  State Lift<F>::commit(int sequence) {
+  State Lift<F>::commit(int sequence) noexcept {
     if(m_state != State::NONE) {
       return m_state;
     }

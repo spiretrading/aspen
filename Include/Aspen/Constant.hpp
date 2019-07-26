@@ -20,9 +20,9 @@ namespace Aspen {
        */
       constexpr explicit Constant(T value);
 
-      constexpr State commit(int sequence);
+      constexpr State commit(int sequence) noexcept;
 
-      constexpr const Type& eval() const;
+      constexpr const Type& eval() const noexcept;
 
     private:
       Type m_value;
@@ -42,12 +42,13 @@ namespace Aspen {
     : m_value(std::move(value)) {}
 
   template<typename T>
-  constexpr State Constant<T>::commit(int sequence) {
+  constexpr State Constant<T>::commit(int sequence) noexcept {
     return State::COMPLETE_EVALUATED;
   }
 
   template<typename T>
-  constexpr const typename Constant<T>::Type& Constant<T>::eval() const {
+  constexpr const typename Constant<T>::Type& Constant<T>::eval()
+      const noexcept {
     return m_value;
   }
 }

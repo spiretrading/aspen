@@ -12,21 +12,21 @@ namespace Aspen {
     public:
       using Type = void;
 
-      constexpr State commit(int sequence);
+      constexpr State commit(int sequence) noexcept;
 
-      constexpr void eval() const;
+      constexpr void eval() const noexcept;
   };
 
   /** Returns a reactor that perpetually evaluates. */
-  constexpr auto perpetual() {
+  constexpr auto perpetual() noexcept {
     return Perpetual();
   }
 
-  constexpr State Perpetual::commit(int sequence) {
+  constexpr State Perpetual::commit(int sequence) noexcept {
     return State::CONTINUE_EVALUATED;
   }
 
-  constexpr void Perpetual::eval() const {}
+  constexpr void Perpetual::eval() const noexcept {}
 }
 
 #endif

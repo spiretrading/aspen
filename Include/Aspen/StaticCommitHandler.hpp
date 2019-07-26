@@ -39,14 +39,14 @@ namespace Aspen {
        * Transfers the state of a StaticCommitHandler.
        * @param handler The handler whose state is to be transferred.
        */
-      void transfer(const StaticCommitHandler& handler);
+      void transfer(const StaticCommitHandler& handler) noexcept;
 
       /**
        * Commits all children and returns their aggregate State.
        * @param sequence The commit's sequence.
        * @return The aggregate State of all children.
        */
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
     private:
       template<typename C>
@@ -103,7 +103,8 @@ namespace Aspen {
       m_state(State::NONE) {}
 
   template<typename... R>
-  void StaticCommitHandler<R...>::transfer(const StaticCommitHandler& handler) {
+  void StaticCommitHandler<R...>::transfer(
+      const StaticCommitHandler& handler) noexcept {
     for_each<std::size_t{0}, sizeof...(R)>([&] (auto index) {
       std::get<decltype(index)::value>(m_children).m_state =
         std::get<decltype(index)::value>(handler.m_children).m_state;
@@ -111,7 +112,7 @@ namespace Aspen {
   }
 
   template<typename... R>
-  State StaticCommitHandler<R...>::commit(int sequence) {
+  State StaticCommitHandler<R...>::commit(int sequence) noexcept {
     if(m_status == Status::INITIALIZING) {
       auto initialization_count = std::size_t(0);
       auto completion_count = std::size_t(0);

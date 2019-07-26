@@ -49,7 +49,7 @@ namespace Aspen {
       template<typename E>
       void set_complete(const E& exception);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       const Type& eval() const;
 
@@ -120,7 +120,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  State Queue<T>::commit(int sequence) {
+  State Queue<T>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }

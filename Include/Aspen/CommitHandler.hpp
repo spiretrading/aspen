@@ -22,14 +22,14 @@ namespace Aspen {
       /** Transfers the state of a CommitHandler.
        * @param handler The handler whose state is to be transferred.
        */
-      void transfer(const CommitHandler& handler);
+      void transfer(const CommitHandler& handler) noexcept;
 
       /**
        * Commits all children and returns their aggregate State.
        * @param sequence The commit's sequence.
        * @return The aggregate State of all children.
        */
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
     private:
       struct Child {
@@ -60,13 +60,13 @@ namespace Aspen {
     }
   }
 
-  inline void CommitHandler::transfer(const CommitHandler& handler) {
+  inline void CommitHandler::transfer(const CommitHandler& handler) noexcept {
     for(auto i = std::size_t(0); i != handler.m_children.size(); ++i) {
       m_children[i].m_state = handler.m_children[i].m_state;
     }
   }
 
-  inline State CommitHandler::commit(int sequence) {
+  inline State CommitHandler::commit(int sequence) noexcept {
     if(m_status == Status::INITIALIZING) {
       auto initialization_count = std::size_t(0);
       auto completion_count = std::size_t(0);

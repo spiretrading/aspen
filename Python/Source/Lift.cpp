@@ -34,7 +34,7 @@ namespace {
       }
     }
 
-    State commit(int sequence) {
+    State commit(int sequence) noexcept {
       return m_handler.commit(sequence);
     }
 

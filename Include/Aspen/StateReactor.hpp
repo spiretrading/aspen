@@ -22,9 +22,9 @@ namespace Aspen {
       template<typename RF>
       explicit StateReactor(RF&& reactor);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
-      Type eval() const;
+      Type eval() const noexcept;
 
     private:
       try_ptr_t<R> m_reactor;
@@ -43,7 +43,7 @@ namespace Aspen {
       m_state(State::NONE) {}
 
   template<typename R>
-  State StateReactor<R>::commit(int sequence) {
+  State StateReactor<R>::commit(int sequence) noexcept {
     if(is_complete(m_state)) {
       return m_state;
     }
@@ -63,7 +63,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  typename StateReactor<R>::Type StateReactor<R>::eval() const {
+  typename StateReactor<R>::Type StateReactor<R>::eval() const noexcept {
     return m_value;
   }
 }

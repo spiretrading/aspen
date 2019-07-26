@@ -31,7 +31,7 @@ namespace Aspen {
 
       Box(Box&& box) = default;
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       Result eval() const;
 
@@ -42,7 +42,7 @@ namespace Aspen {
     private:
       struct BaseWrapper {
         virtual ~BaseWrapper() = default;
-        virtual State commit(int sequence) = 0;
+        virtual State commit(int sequence) noexcept = 0;
         virtual Result eval() const = 0;
       };
       template<typename R>
@@ -51,7 +51,7 @@ namespace Aspen {
 
         template<typename Q>
         ByReferenceWrapper(Q&& reactor);
-        State commit(int sequence) override;
+        State commit(int sequence) noexcept override;
         Result eval() const override;
       };
       template<typename R>
@@ -63,7 +63,7 @@ namespace Aspen {
 
         template<typename Q>
         ByValueWrapper(Q&& reactor);
-        State commit(int sequence) override;
+        State commit(int sequence) noexcept override;
         Result eval() const override;
       };
       std::shared_ptr<BaseWrapper> m_reactor;
@@ -95,7 +95,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  State Box<T>::commit(int sequence) {
+  State Box<T>::commit(int sequence) noexcept {
     return m_reactor->commit(sequence);
   }
 
@@ -112,7 +112,7 @@ namespace Aspen {
 
   template<typename T>
   template<typename R>
-  State Box<T>::ByReferenceWrapper<R>::commit(int sequence) {
+  State Box<T>::ByReferenceWrapper<R>::commit(int sequence) noexcept {
     return m_reactor->commit(sequence);
   }
 
@@ -136,7 +136,7 @@ namespace Aspen {
 
   template<typename T>
   template<typename R>
-  State Box<T>::ByValueWrapper<R>::commit(int sequence) {
+  State Box<T>::ByValueWrapper<R>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }

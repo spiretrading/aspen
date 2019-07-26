@@ -21,9 +21,9 @@ namespace Aspen {
       using Type = T;
 
       /** Constructs a FoldArgument. */
-      FoldArgument();
+      FoldArgument() noexcept;
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       const Type& eval() const;
 
@@ -61,7 +61,7 @@ namespace Aspen {
       Fold(EF&& evaluator, std::shared_ptr<FoldArgument<Type>> left,
         std::shared_ptr<FoldArgument<Type>> right, SF&& series);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       const Type& eval() const;
 
@@ -123,12 +123,12 @@ namespace Aspen {
   }
 
   template<typename T>
-  FoldArgument<T>::FoldArgument()
+  FoldArgument<T>::FoldArgument() noexcept
     : m_state(State::NONE),
       m_previous_sequence(-1) {}
 
   template<typename T>
-  State FoldArgument<T>::commit(int sequence) {
+  State FoldArgument<T>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence) {
       return m_state;
     } else if(m_next_value.has_value()) {
@@ -164,7 +164,7 @@ namespace Aspen {
       m_previous_sequence(-1) {}
 
   template<typename E, typename S>
-  State Fold<E, S>::commit(int sequence) {
+  State Fold<E, S>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }

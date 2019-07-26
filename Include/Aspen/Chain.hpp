@@ -26,7 +26,7 @@ namespace Aspen {
       template<typename AF, typename BF>
       Chain(AF&& initial, BF&& continuation);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       const Type& eval() const;
 
@@ -68,7 +68,7 @@ namespace Aspen {
       m_had_evaluation(false) {}
 
   template<typename A, typename B>
-  State Chain<A, B>::commit(int sequence) {
+  State Chain<A, B>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }

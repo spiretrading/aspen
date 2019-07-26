@@ -19,7 +19,7 @@ namespace Aspen {
        */
       constexpr None() = default;
 
-      constexpr State commit(int sequence);
+      constexpr State commit(int sequence) noexcept;
 
       constexpr const Type& eval() const;
   };
@@ -33,7 +33,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  constexpr State None<T>::commit(int sequence) {
+  constexpr State None<T>::commit(int sequence) noexcept {
     return State::COMPLETE_EMPTY;
   }
 

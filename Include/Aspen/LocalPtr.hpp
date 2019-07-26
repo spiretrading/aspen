@@ -20,10 +20,10 @@ namespace Aspen {
        * @param args Arguments used to initialize the value.
        */
       template<typename... A>
-      explicit LocalPtr(A&&... args);
+      constexpr explicit LocalPtr(A&&... args);
 
       /** Returns a pointer to the wrapped value. */
-      Type* operator ->() const;
+      constexpr Type* operator ->() const noexcept;
 
     private:
       mutable Type m_value;
@@ -45,11 +45,12 @@ namespace Aspen {
 
   template<typename T>
   template<typename... A>
-  LocalPtr<T>::LocalPtr(A&&... value)
+  constexpr LocalPtr<T>::LocalPtr(A&&... value)
     : m_value(std::forward<A>(value)...) {}
 
   template<typename T>
-  typename LocalPtr<T>::Type* LocalPtr<T>::operator ->() const {
+  constexpr typename LocalPtr<T>::Type* LocalPtr<T>::operator ->()
+      const noexcept {
     return &m_value;
   }
 }

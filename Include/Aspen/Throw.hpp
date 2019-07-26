@@ -28,7 +28,7 @@ namespace Aspen {
       template<typename E>
       Throw(E exception);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       const Type& eval() const;
 
@@ -64,7 +64,7 @@ namespace Aspen {
     : Throw(std::make_exception_ptr(std::move(exception))) {}
 
   template<typename T>
-  State Throw<T>::commit(int sequence) {
+  State Throw<T>::commit(int sequence) noexcept {
     return State::COMPLETE_EVALUATED;
   }
 

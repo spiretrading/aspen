@@ -22,7 +22,7 @@ namespace Aspen {
        */
       explicit PythonBox(pybind11::object reactor);
 
-      State commit(int sequence);
+      State commit(int sequence) noexcept;
 
       Type eval() const;
 
@@ -69,7 +69,7 @@ namespace Aspen {
     : m_reactor(std::move(reactor)) {}
 
   template<typename T>
-  State PythonBox<T>::commit(int sequence) {
+  State PythonBox<T>::commit(int sequence) noexcept {
     return m_reactor.attr("commit")(sequence).cast<State>();
   }
 
