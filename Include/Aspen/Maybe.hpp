@@ -136,11 +136,11 @@ namespace Aspen {
    * @return The result of <i>f</i>.
    */
   template<typename F>
-  auto try_call(F&& f) {
+  decltype(auto) try_call(F&& f) {
     if constexpr(noexcept(f())) {
       return f();
     } else {
-      using Type = std::invoke_result_t<F>;
+      using Type = std::decay_t<std::invoke_result_t<F>>;
       try {
         if constexpr(std::is_same_v<Type, void>) {
           f();
