@@ -98,14 +98,14 @@ namespace Aspen {
   StaticCommitHandler<R...>::StaticCommitHandler(std::tuple<A...> children)
     : m_children(std::apply([] (auto&&... arguments) {
         return std::make_tuple(Child(std::move(arguments))...);
-      }, children)),
+      }, std::move(children))),
       m_status(Status::INITIALIZING),
       m_state(State::NONE) {}
 
   template<typename... R>
   void StaticCommitHandler<R...>::transfer(
       const StaticCommitHandler& handler) noexcept {
-    for_each<std::size_t{0}, sizeof...(R)>([&] (auto index) {
+    for_each<std::size_t{0}, sizeof...(R)>([&] (auto index) noexcept {
       std::get<decltype(index)::value>(m_children).m_state =
         std::get<decltype(index)::value>(handler.m_children).m_state;
     });
@@ -117,7 +117,7 @@ namespace Aspen {
       auto initialization_count = std::size_t(0);
       auto completion_count = std::size_t(0);
       auto has_continue = false;
-      for_each(m_children, [&] (auto& child) {
+      for_each(m_children, [&] (auto& child) noexcept {
         if(m_state == State::COMPLETE_EMPTY) {
           return;
         }
@@ -180,7 +180,7 @@ namespace Aspen {
       m_state = State::NONE;
       auto completion_count = std::size_t(0);
       auto has_continue = false;
-      for_each(m_children, [&] (auto& child) {
+      for_each(m_children, [&] (auto& child) noexcept {
         if(is_complete(child.m_state)) {
           ++completion_count;
         } else {

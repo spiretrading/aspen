@@ -127,7 +127,7 @@ namespace Details {
   using function_reactor_result_t = typename function_reactor_result<T>::type;
 
   template<typename T>
-  decltype(auto) deref(T& value) {
+  decltype(auto) deref(T& value) noexcept {
     if constexpr(is_reactor_pointer_v<T>) {
       return *value;
     } else {
@@ -142,7 +142,9 @@ namespace Details {
       auto evaluation = std::apply(
         [&] (const auto&... arguments) {
           return FunctionEvaluation<T>(function(
-            try_call([&] { return deref(arguments).eval(); })...));
+            try_call([&] () noexcept(noexcept(deref(arguments).eval())) {
+              return deref(arguments).eval();
+            })...));
         }, pack);
       if(evaluation.m_value.has_value()) {
         value = std::move(*evaluation.m_value);
@@ -159,7 +161,9 @@ namespace Details {
         [&] (const auto&... arguments) {
           return FunctionEvaluation<void>(try_call([&] {
             return function(
-              try_call([&] { return deref(arguments).eval(); })...);
+              try_call([&] () noexcept(noexcept(deref(arguments).eval())) {
+                return deref(arguments).eval();
+              })...);
           }));
         }, pack);
       return State::EVALUATED;

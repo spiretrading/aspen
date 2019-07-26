@@ -24,7 +24,7 @@ TEST_CASE("test_run_until_none_constant", "[Executor]") {
   auto result = std::optional<int>();
   auto executor = Executor(
     lift([&] (const auto& value) {
-      result = *value;
+      result = value;
     }, constant(5)));
   executor.run_until_none();
   REQUIRE(result.has_value());

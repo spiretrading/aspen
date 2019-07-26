@@ -29,25 +29,25 @@ namespace Aspen {
     auto step_reactor = make_ptr(std::forward<T>(step));
     auto step_updates = StateReactor(&*step_reactor);
     return lift(
-      [value = std::optional<Type>()](const auto& start, State start_state,
-          const auto& end, State end_state, const auto& step,
-          State step_state) mutable {
+      [value = std::optional<Type>()](const reactor_result_t<S>& start,
+          State start_state, const reactor_result_t<E>& end, State end_state,
+          const reactor_result_t<T>& step, State step_state) mutable {
         auto c = [&] {
           if(!value.has_value()) {
-            return *start;
+            return start;
           } else {
-            auto increment = *value + *step;
-            return std::max(*start, increment);
+            auto increment = *value + step;
+            return std::max(start, increment);
           }
         }();
-        if(c >= *end) {
+        if(c >= end) {
           if(is_complete(end_state)) {
             return FunctionEvaluation<Type>(State::COMPLETE);
           }
           return FunctionEvaluation<Type>(State::NONE);
         }
         value = c;
-        if(*value + *step >= *end) {
+        if(*value + step >= end) {
           if(is_complete(end_state)) {
             return FunctionEvaluation(*value, State::COMPLETE);
           } else {
