@@ -22,12 +22,30 @@ namespace Aspen {
       template<typename... A>
       constexpr explicit LocalPtr(A&&... args);
 
+      /** Implicitly converts to the underlying value. */
+      constexpr operator const Type& () const;
+
+      /** Implicitly converts to the underlying value. */
+      constexpr operator Type& ();
+
+      //! Returns a reference to the value.
+      constexpr const Type& operator *() const noexcept;
+
       /** Returns a pointer to the wrapped value. */
-      constexpr Type* operator ->() const noexcept;
+      constexpr const Type* operator ->() const noexcept;
+
+      //! Returns a reference to the value.
+      constexpr Type& operator *() noexcept;
+
+      /** Returns a pointer to the wrapped value. */
+      constexpr Type* operator ->() noexcept;
 
     private:
-      mutable Type m_value;
+      Type m_value;
   };
+
+  template<typename T>
+  LocalPtr(T&& value) -> LocalPtr<std::decay_t<T>>;
 
   /** Trait used to determine whether a type should be wrapped by a LocalPtr. */
   template<typename T, typename=void>
@@ -49,8 +67,34 @@ namespace Aspen {
     : m_value(std::forward<A>(value)...) {}
 
   template<typename T>
-  constexpr typename LocalPtr<T>::Type* LocalPtr<T>::operator ->()
+  constexpr LocalPtr<T>::operator const typename LocalPtr<T>::Type& () const {
+    return m_value;
+  }
+
+  template<typename T>
+  constexpr LocalPtr<T>::operator typename LocalPtr<T>::Type& () {
+    return m_value;
+  }
+
+  template<typename T>
+  constexpr const typename LocalPtr<T>::Type& LocalPtr<T>::operator *()
       const noexcept {
+    return m_value;
+  }
+
+  template<typename T>
+  constexpr const typename LocalPtr<T>::Type* LocalPtr<T>::operator ->()
+      const noexcept {
+    return &m_value;
+  }
+
+  template<typename T>
+  constexpr typename LocalPtr<T>::Type& LocalPtr<T>::operator *() noexcept {
+    return m_value;
+  }
+
+  template<typename T>
+  constexpr typename LocalPtr<T>::Type* LocalPtr<T>::operator ->() noexcept {
     return &m_value;
   }
 }

@@ -2,6 +2,8 @@
 #define ASPEN_TRAITS_HPP
 #include <memory>
 #include <type_traits>
+#include "Aspen/LocalPtr.hpp"
+#include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
 
 namespace Aspen {
@@ -102,6 +104,15 @@ namespace Aspen {
     if constexpr(I != J) {
       f(std::integral_constant<std::size_t, I>());
       for_each<I + 1, J>(std::forward<F>(f));
+    }
+  }
+
+  template<typename R>
+  auto try_eval(const R& reactor) {
+    if constexpr(is_noexcept_reactor_v<R>) {
+      return LocalPtr(reactor.eval());
+    } else {
+      return try_call([&] { return reactor.eval(); });
     }
   }
 }
