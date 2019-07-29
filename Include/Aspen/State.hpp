@@ -18,6 +18,9 @@ namespace Aspen {
     //! The reactor should immediately be committed again.
     CONTINUE = 4,
 
+    //! The reactor is empty and should immediately be committed again.
+    CONTINUE_EMPTY = EMPTY | CONTINUE,
+
     //! The reactor has a new value and should immediately be committed again.
     CONTINUE_EVALUATED = EVALUATED | CONTINUE,
 

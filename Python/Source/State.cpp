@@ -10,6 +10,7 @@ void Aspen::export_state(pybind11::module& module) {
     .value("EMPTY", State::EMPTY)
     .value("EVALUATED", State::EVALUATED)
     .value("CONTINUE", State::CONTINUE)
+    .value("CONTINUE_EMPTY", State::CONTINUE_EMPTY)
     .value("CONTINUE_EVALUATED", State::CONTINUE_EVALUATED)
     .value("COMPLETE", State::COMPLETE)
     .value("COMPLETE_EMPTY", State::COMPLETE_EMPTY)
