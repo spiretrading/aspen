@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
-#include "Aspen/Queue.hpp"
 #include "Aspen/None.hpp"
+#include "Aspen/Queue.hpp"
 
 using namespace Aspen;
 
@@ -39,14 +39,43 @@ TEST_CASE("test_empty_chain", "[Chain]") {
   REQUIRE(state == State::COMPLETE_EMPTY);
 }
 
-TEST_CASE("test_chain_with_initial_complete", "[Chain]") {
+TEST_CASE("test_chain_initial_complete_none", "[Chain]") {
   auto queue = Queue<int>();
   queue.push(5);
   queue.commit(0);
-  queue.set_complete();
-  auto reactor = Chain(&queue, Constant(123));
-  REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+  auto reactor = Chain(&queue, None<int>());
+  REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 5);
+  queue.set_complete();
+  REQUIRE(reactor.commit(2) == State::COMPLETE);
+  REQUIRE(reactor.eval() == 5);
+}
+
+TEST_CASE("test_chain_immediate_complete", "[Chain]") {
+  auto queue = Queue<int>();
+  auto reactor = Chain(None<int>(), &queue);
+  REQUIRE(reactor.commit(0) == State::EMPTY);
+  queue.push(21);
+  REQUIRE(reactor.commit(1) == State::EVALUATED);
+  REQUIRE(reactor.eval() == 21);
+}
+
+TEST_CASE("test_chain_immediate_continue", "[Chain]") {
+  auto queue = Queue<int>();
+  queue.push(21);
+  auto reactor = Chain(None<int>(), &queue);
+  REQUIRE(reactor.commit(0) == State::EVALUATED);
+  REQUIRE(reactor.eval() == 21);
+}
+
+TEST_CASE("test_chain_initial_complete", "[Chain]") {
+  auto queue = Queue<int>();
+  queue.push(5);
+  queue.commit(0);
+  auto reactor = Chain(&queue, Constant(123));
+  REQUIRE(reactor.commit(1) == State::EVALUATED);
+  REQUIRE(reactor.eval() == 5);
+  queue.set_complete();
   REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 123);
 }

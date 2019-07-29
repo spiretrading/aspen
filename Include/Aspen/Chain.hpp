@@ -41,7 +41,6 @@ namespace Aspen {
       Status m_status;
       State m_state;
       int m_previous_sequence;
-      bool m_had_evaluation;
   };
 
   template<typename A, typename B>
@@ -63,9 +62,8 @@ namespace Aspen {
     : m_initial(std::forward<AF>(initial)),
       m_continuation(std::forward<BF>(continuation)),
       m_status(Status::INITIAL),
-      m_state(State::NONE),
-      m_previous_sequence(-1),
-      m_had_evaluation(false) {}
+      m_state(State::EMPTY),
+      m_previous_sequence(-1) {}
 
   template<typename A, typename B>
   State Chain<A, B>::commit(int sequence) noexcept {
@@ -75,11 +73,16 @@ namespace Aspen {
     if(m_status == Status::INITIAL) {
       auto update = m_initial->commit(sequence);
       if(is_complete(update)) {
-        if(!is_empty(update)) {
+        if(!is_empty(update) && is_empty(m_state) || has_evaluation(update)) {
           m_status = Status::TRANSITIONING;
           m_state = State::CONTINUE_EVALUATED;
         } else {
           m_status = Status::CONTINUATION;
+        }
+      } else if(is_empty(m_state) && !is_empty(update)) {
+        m_state = State::EVALUATED;
+        if(has_continuation(update)) {
+          m_state = combine(m_state, State::CONTINUE);
         }
       } else {
         m_state = update;
@@ -91,17 +94,23 @@ namespace Aspen {
       auto update = m_continuation->commit(sequence);
       if(update == State::COMPLETE_EMPTY) {
         m_status = Status::INITIAL;
-        if(m_had_evaluation) {
+        if(!is_empty(m_state)) {
           m_state = State::COMPLETE;
         } else {
           m_state = State::COMPLETE_EMPTY;
         }
       } else {
-        m_state = update;
+        if(is_empty(update)) {
+          if(is_empty(m_state)) {
+            m_state = update;
+          } else {
+          }
+        } else {
+          m_state = update;
+        }
       }
     }
     m_previous_sequence = sequence;
-    m_had_evaluation |= has_evaluation(m_state);
     return m_state;
   }
 
