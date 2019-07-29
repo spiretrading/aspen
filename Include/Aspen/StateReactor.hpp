@@ -39,8 +39,8 @@ namespace Aspen {
   template<typename RF>
   StateReactor<R>::StateReactor(RF&& reactor)
     : m_reactor(std::forward<RF>(reactor)),
-      m_value(State::EMPTY),
-      m_state(State::NONE) {}
+      m_value(State::EVALUATED),
+      m_state(State::EMPTY) {}
 
   template<typename R>
   State StateReactor<R>::commit(int sequence) noexcept {
@@ -50,7 +50,8 @@ namespace Aspen {
     auto value = m_reactor->commit(sequence);
     if(is_complete(value)) {
       m_state = State::COMPLETE_EVALUATED;
-    } else if(value == State::NONE && m_value == State::NONE) {
+    } else if(value == State::NONE && m_value == State::NONE ||
+        value == State::EMPTY && m_value == State::EMPTY) {
       m_state = State::NONE;
     } else {
       m_state = State::EVALUATED;
