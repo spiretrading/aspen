@@ -50,11 +50,11 @@ namespace Aspen {
 
   inline CommitHandler::Child::Child(Box<void> reactor)
     : m_reactor(std::move(reactor)),
-      m_state(State::NONE) {}
+      m_state(State::EMPTY) {}
 
   inline CommitHandler::CommitHandler(std::vector<Box<void>> children)
       : m_status(Status::INITIALIZING),
-        m_state(State::NONE) {
+        m_state(State::EMPTY) {
     for(auto& child : children) {
       m_children.emplace_back(std::move(child));
     }
@@ -120,7 +120,7 @@ namespace Aspen {
             }
             m_status = Status::EVALUATING;
           } else {
-            m_state = State::NONE;
+            m_state = State::EMPTY;
             if(has_continue) {
               m_state = combine(m_state, State::CONTINUE);
             }

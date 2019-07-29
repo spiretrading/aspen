@@ -84,14 +84,14 @@ namespace Aspen {
   template<typename CF>
   StaticCommitHandler<R...>::Child<C>::Child(CF&& reactor)
     : m_reactor(std::forward<CF>(reactor)),
-      m_state(State::NONE) {}
+      m_state(State::EMPTY) {}
 
   template<typename... R>
   template<typename... A>
   StaticCommitHandler<R...>::StaticCommitHandler(A&&... children)
     : m_children(std::forward<A>(children)...),
       m_status(Status::INITIALIZING),
-      m_state(State::NONE) {}
+      m_state(State::EMPTY) {}
 
   template<typename... R>
   template<typename... A>
@@ -100,7 +100,7 @@ namespace Aspen {
         return std::make_tuple(Child(std::move(arguments))...);
       }, std::move(children))),
       m_status(Status::INITIALIZING),
-      m_state(State::NONE) {}
+      m_state(State::EMPTY) {}
 
   template<typename... R>
   void StaticCommitHandler<R...>::transfer(
@@ -169,7 +169,7 @@ namespace Aspen {
             }
             m_status = Status::EVALUATING;
           } else {
-            m_state = State::NONE;
+            m_state = State::EMPTY;
             if(has_continue) {
               m_state = combine(m_state, State::CONTINUE);
             }
