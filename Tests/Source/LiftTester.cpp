@@ -14,10 +14,6 @@ namespace {
     throw std::runtime_error("");
   }
 
-  std::optional<int> no_parameter_function_empty() {
-    return std::nullopt;
-  }
-
   int square(int x) {
     return x * x;
   }
@@ -35,11 +31,6 @@ TEST_CASE("test_lift_no_parameters_throw", "[Lift]") {
   REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
 }
 
-TEST_CASE("test_lift_no_parameters_empty", "[Lift]") {
-  auto reactor = Lift(no_parameter_function_empty);
-  REQUIRE(reactor.commit(0) == State::COMPLETE_EMPTY);
-}
-
 TEST_CASE("test_lift_constant_argument", "[Lift]") {
   auto reactor = Lift(square, Constant(5));
   REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
@@ -49,7 +40,7 @@ TEST_CASE("test_lift_constant_argument", "[Lift]") {
 TEST_CASE("test_lift_one_argument_updates", "[Lift]") {
   auto queue = Queue<int>();
   auto reactor = Lift(square, &queue);
-  REQUIRE(reactor.commit(0) == State::NONE);
+  REQUIRE(reactor.commit(0) == State::EMPTY);
   queue.push(10);
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 100);

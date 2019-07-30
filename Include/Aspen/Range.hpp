@@ -32,6 +32,7 @@ namespace Aspen {
       [value = std::optional<Type>()](const reactor_result_t<S>& start,
           State start_state, const reactor_result_t<E>& end, State end_state,
           const reactor_result_t<T>& step, State step_state) mutable noexcept {
+/*
         auto c = [&] {
           if(!value.has_value()) {
             return start;
@@ -55,6 +56,8 @@ namespace Aspen {
           }
         }
         return FunctionEvaluation(*value, State::CONTINUE_EVALUATED);
+*/
+        return 0;
       }, std::move(start_reactor), std::move(start_updates),
       std::move(stop_reactor), std::move(stop_updates), std::move(step_reactor),
       std::move(step_updates));

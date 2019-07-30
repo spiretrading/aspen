@@ -8,7 +8,7 @@ using namespace pybind11;
 
 namespace {
   struct CallableWrapper {
-    FunctionEvaluation<object> operator ()(const args& arguments) {
+    object operator ()(const args& arguments) {
       return m_callable(*arguments);
     }
 
