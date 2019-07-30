@@ -4,6 +4,7 @@
 #include "Aspen/Chain.hpp"
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Constant.hpp"
+#include "Aspen/Discard.hpp"
 #include "Aspen/Executor.hpp"
 #include "Aspen/First.hpp"
 #include "Aspen/Fold.hpp"

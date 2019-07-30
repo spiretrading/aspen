@@ -52,6 +52,11 @@ namespace Aspen {
   Switch(T&&, S&&) -> Switch<std::decay_t<T>, std::decay_t<S>>;
 
   template<typename T, typename S>
+  auto switch_(T&& trigger, S&& series) {
+    return Switch(std::forward<T>(trigger), std::forward<S>(series));
+  }
+
+  template<typename T, typename S>
   template<typename TF, typename SF>
   Switch<T, S>::Switch(TF&& toggle, SF&& series)
     : m_toggle(std::forward<TF>(toggle)),
