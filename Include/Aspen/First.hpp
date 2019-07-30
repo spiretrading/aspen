@@ -13,7 +13,7 @@ namespace Aspen {
   template<typename Reactor>
   auto first(Reactor&& source) {
     return Lift(
-      [] (auto&& value) {
+      [] (auto&& value) noexcept {
         return std::forward<decltype(value)>(value);
       }, std::forward<Reactor>(source));
   }

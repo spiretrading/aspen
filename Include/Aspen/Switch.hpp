@@ -8,6 +8,14 @@
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
+
+  /**
+   * Implements a reactor that can be used to determine when a child reactor is
+   * committed and evaluated.
+   * @param <T> The type of reactor used to determine whether to
+   *            commit/evaluate.
+   * @param <S> The type of reactor to commit/evaluate to based on the toggle.
+   */
   template<typename T, typename S>
   class Switch {
     public:
@@ -16,6 +24,13 @@ namespace Aspen {
       static constexpr auto is_noexcept = is_noexcept_reactor_v<T> &&
         is_noexcept_reactor_v<S>;
 
+      /**
+       * Constructs a Switch reactor.
+       * @param toggle The reactor used to determine whether to commit and
+       *        evaluate.
+       * @param series The reactor to commit/evaluate based on whether the
+       *        <i>toggle</i> evaluates to <code>true</code>.
+       */
       template<typename TF, typename SF>
       Switch(TF&& toggle, SF&& series);
 
