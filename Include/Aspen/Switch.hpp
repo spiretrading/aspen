@@ -111,7 +111,11 @@ namespace Aspen {
           m_state = State::COMPLETE;
         }
       } else if(has_continuation(m_toggle_state)) {
-        m_state = combine(m_state, State::CONTINUE);
+        if(is_empty(m_state)) {
+          m_state = State::CONTINUE_EMPTY;
+        } else {
+          m_state = State::CONTINUE;
+        }
       } else if(!is_empty(m_state)) {
         m_state = State::NONE;
       } else {

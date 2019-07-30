@@ -20,7 +20,7 @@ TEST_CASE("test_first_none", "[First]") {
 TEST_CASE("test_first_multiple", "[First]") {
   auto queue = Queue<int>();
   auto reactor = first(&queue);
-  REQUIRE(reactor.commit(0) == State::NONE);
+  REQUIRE(reactor.commit(0) == State::EMPTY);
   queue.push(10);
   REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 10);

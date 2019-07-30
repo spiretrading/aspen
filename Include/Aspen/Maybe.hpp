@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include "Aspen/LocalPtr.hpp"
 
 namespace Aspen {
 
@@ -137,7 +138,7 @@ namespace Aspen {
    */
   template<typename T, bool C>
   struct try_maybe {
-    using type = std::conditional_t<C, Maybe<T>, T>;
+    using type = std::conditional_t<C, Maybe<T>, LocalPtr<T>>;
   };
 
   template<typename T, bool C>
