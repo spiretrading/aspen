@@ -4,7 +4,7 @@
 namespace Aspen {
 
   //! Lists the states of a reactor after a commit operation.
-  enum class State {
+  enum class State : unsigned char {
 
     //! No update.
     NONE = 0,
@@ -36,27 +36,44 @@ namespace Aspen {
 
   /** Returns the combination of two States. */
   constexpr State combine(State a, State b) {
-    return static_cast<State>(static_cast<int>(a) | static_cast<int>(b));
+    return static_cast<State>(
+      static_cast<unsigned char>(a) | static_cast<unsigned char>(b));
   }
 
   /** Returns <code>true</code> iff a reactor State is in an EVALUATED state. */
   constexpr bool has_evaluation(State state) {
-    return (static_cast<int>(state) & static_cast<int>(State::EVALUATED)) != 0;
+    return (static_cast<unsigned char>(state) & static_cast<unsigned char>(
+      State::EVALUATED)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in an EMPTY state. */
   constexpr bool is_empty(State state) {
-    return (static_cast<int>(state) & static_cast<int>(State::EMPTY)) != 0;
+    return (static_cast<unsigned char>(state) &
+      static_cast<unsigned char>(State::EMPTY)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in a CONTINUE state. */
   constexpr bool has_continuation(State state) {
-    return (static_cast<int>(state) & static_cast<int>(State::CONTINUE)) != 0;
+    return (static_cast<unsigned char>(state) &
+      static_cast<unsigned char>(State::CONTINUE)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in a COMPLETE state. */
   constexpr bool is_complete(State state) {
-    return (static_cast<int>(state) & static_cast<int>(State::COMPLETE)) != 0;
+    return (static_cast<unsigned char>(state) &
+      static_cast<unsigned char>(State::COMPLETE)) != 0;
+  }
+
+  /** Sets a state flag. */
+  constexpr State set(State state, State update) {
+    return static_cast<State>(static_cast<unsigned char>(state) |
+      static_cast<unsigned char>(update));
+  }
+
+  /** Resets a state flag. */
+  constexpr State reset(State state, State update) {
+    return static_cast<State>(static_cast<unsigned char>(state) &
+      ~static_cast<unsigned char>(update));
   }
 }
 

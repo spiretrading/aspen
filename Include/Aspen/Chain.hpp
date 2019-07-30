@@ -34,7 +34,8 @@ namespace Aspen {
       enum class Status {
         INITIAL,
         TRANSITIONING,
-        CONTINUATION
+        CONTINUATION,
+        PROXY_CONTINUATION
       };
       try_ptr_t<A> m_initial;
       try_ptr_t<B> m_continuation;
@@ -73,41 +74,41 @@ namespace Aspen {
     if(m_status == Status::INITIAL) {
       auto update = m_initial->commit(sequence);
       if(is_complete(update)) {
-        if(!is_empty(update) && is_empty(m_state) || has_evaluation(update)) {
+        if(is_empty(update)) {
+          m_status = Status::PROXY_CONTINUATION;
+        } else if(has_evaluation(update) || is_empty(m_state)) {
           m_status = Status::TRANSITIONING;
           m_state = State::CONTINUE_EVALUATED;
         } else {
           m_status = Status::CONTINUATION;
         }
-      } else if(is_empty(m_state) && !is_empty(update)) {
-        m_state = State::EVALUATED;
-        if(has_continuation(update)) {
-          m_state = combine(m_state, State::CONTINUE);
-        }
+      } else if(!is_empty(update) && is_empty(m_state)) {
+        m_state = set(update, State::EVALUATED);
       } else {
         m_state = update;
       }
     } else if(m_status == Status::TRANSITIONING) {
       m_status = Status::CONTINUATION;
     }
-    if(m_status == Status::CONTINUATION) {
+    if(m_status == Status::PROXY_CONTINUATION) {
+      m_state = m_continuation->commit(sequence);
+    } else if(m_status == Status::CONTINUATION) {
       auto update = m_continuation->commit(sequence);
       if(update == State::COMPLETE_EMPTY) {
         m_status = Status::INITIAL;
-        if(!is_empty(m_state)) {
-          m_state = State::COMPLETE;
-        } else {
+        if(is_empty(m_state)) {
           m_state = State::COMPLETE_EMPTY;
+        } else {
+          m_state = State::COMPLETE;
+        }
+      } else if(is_empty(update)) {
+        if(has_continuation(update)) {
+          m_state = State::CONTINUE;
+        } else {
+          m_state = State::NONE;
         }
       } else {
-        if(is_empty(update)) {
-          if(is_empty(m_state)) {
-            m_state = update;
-          } else {
-          }
-        } else {
-          m_state = update;
-        }
+        m_state = update;
       }
     }
     m_previous_sequence = sequence;
@@ -116,7 +117,8 @@ namespace Aspen {
 
   template<typename A, typename B>
   const typename Chain<A, B>::Type& Chain<A, B>::eval() const {
-    if(m_status != Status::CONTINUATION) {
+    if(m_status == Status::INITIAL ||
+        m_status == Status::TRANSITIONING) {
       return m_initial->eval();
     } else {
       return m_continuation->eval();
