@@ -174,9 +174,23 @@ namespace Details {
     }
   };
 
+  template<typename T>
+  struct unwrap_local_ptr {
+    using type = T;
+  };
+
+  template<typename T>
+  struct unwrap_local_ptr<LocalPtr<T>> {
+    using type = T;
+  };
+
+  template<typename T>
+  using unwrap_local_ptr_t = typename unwrap_local_ptr<T>::type;
+
   template<typename F, typename... A>
   struct is_lift_noexcept : std::bool_constant<is_noexcept_function_v<F,
-    const try_maybe_t<reactor_result_t<A>, !is_noexcept_reactor_v<A>>& ...> &&
+    const unwrap_local_ptr_t<try_maybe_t<reactor_result_t<A>,
+    !is_noexcept_reactor_v<A>>>& ...> &&
     std::conjunction_v<is_noexcept_reactor<A>...>> {};
 
   template<typename F, typename... A>

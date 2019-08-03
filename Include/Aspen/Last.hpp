@@ -20,8 +20,8 @@ namespace Aspen {
     return Lift(
       [] (auto&& value, State state) noexcept -> FunctionEvaluation<Type> {
         if(is_complete(state)) {
-          return {std::forward<decltype(value)>(value),
-            State::COMPLETE_EVALUATED};
+          return FunctionEvaluation<Type>(std::forward<decltype(value)>(value),
+            State::COMPLETE_EVALUATED);
         }
         return State::NONE;
       }, std::move(source_reactor), StateReactor(&*source_reactor));

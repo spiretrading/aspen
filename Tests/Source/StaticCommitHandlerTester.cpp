@@ -5,7 +5,7 @@
 using namespace Aspen;
 
 TEST_CASE("test_empty_static_commit", "[StaticCommitHandler]") {
-  auto reactor = StaticCommitHandler();
+  auto reactor = StaticCommitHandler<>();
   REQUIRE(reactor.commit(0) == State::COMPLETE_EMPTY);
 }
 

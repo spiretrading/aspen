@@ -3,8 +3,8 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include "Aspen/State.hpp"
 #include "Aspen/LocalPtr.hpp"
+#include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
@@ -57,8 +57,6 @@ namespace Aspen {
         template<typename CF>
         Child(CF&& reactor);
       };
-      template<typename C>
-      Child(C&&) -> Child<std::decay_t<C>>;
       enum class Status {
         INITIALIZING,
         EVALUATING,
@@ -68,12 +66,21 @@ namespace Aspen {
       Status m_status;
       State m_state;
 
+      template<typename CF>
+      static auto make_child(CF&& reactor);
       StaticCommitHandler(const StaticCommitHandler&) = delete;
       StaticCommitHandler& operator =(const StaticCommitHandler&) = delete;
   };
 
   template<typename... A>
   StaticCommitHandler(A&&...) -> StaticCommitHandler<std::decay_t<A>...>;
+
+  template<typename A>
+  StaticCommitHandler(A&&) -> StaticCommitHandler<std::decay_t<A>>;
+
+  template<typename A1, typename A2>
+  StaticCommitHandler(A1&&, A2&&) -> StaticCommitHandler<std::decay_t<A1>,
+    std::decay_t<A2>>;
 
   template<typename... A>
   StaticCommitHandler(std::tuple<A...>) ->
@@ -97,7 +104,7 @@ namespace Aspen {
   template<typename... A>
   StaticCommitHandler<R...>::StaticCommitHandler(std::tuple<A...> children)
     : m_children(std::apply([] (auto&&... arguments) {
-        return std::make_tuple(Child(std::move(arguments))...);
+        return std::make_tuple(make_child(std::move(arguments))...);
       }, std::move(children))),
       m_status(Status::INITIALIZING),
       m_state(State::EMPTY) {}
@@ -202,6 +209,12 @@ namespace Aspen {
       }
     }
     return m_state;
+  }
+
+  template<typename... R>
+  template<typename CF>
+  auto StaticCommitHandler<R...>::make_child(CF&& reactor) {
+    return Child<std::decay_t<CF>>(std::forward<CF>(reactor));
   }
 }
 

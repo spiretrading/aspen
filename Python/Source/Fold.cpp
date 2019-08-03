@@ -6,7 +6,10 @@ using namespace pybind11;
 
 void Aspen::export_fold_argument(pybind11::module& module) {
   export_fold_argument<object>(module, "");
-  module.def("make_fold_argument", make_fold_argument<object>);
+  module.def("make_fold_argument",
+    [] {
+      return make_fold_argument<object>();
+    });
 }
 
 void Aspen::export_fold(pybind11::module& module) {

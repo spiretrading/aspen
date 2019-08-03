@@ -46,7 +46,7 @@ namespace Aspen {
        */
       template<typename U>
       Maybe(const Maybe<U>& maybe) noexcept(
-        std::is_nothrow_constructible<Type, const U&>);
+        std::is_nothrow_constructible_v<Type, const U&>);
 
       /**
        * Moves a Maybe of one type to this Maybe.
@@ -54,7 +54,7 @@ namespace Aspen {
        */
       template<typename U>
       Maybe(Maybe<U>&& maybe) noexcept(
-        std::is_nothrow_constructible<Type, U&&>);
+        std::is_nothrow_constructible_v<Type, U&&>);
 
       /** Implicitly converts to the underlying value. */
       operator const Type& () const;
@@ -193,7 +193,7 @@ namespace Aspen {
   template<typename T>
   template<typename U>
   Maybe<T>::Maybe(const Maybe<U>& maybe) noexcept(
-    std::is_nothrow_constructible<Type, const U&>)
+    std::is_nothrow_constructible_v<Type, const U&>)
     : m_value([&] () -> std::variant<Type, std::exception_ptr> {
         if(maybe.has_value()) {
           return static_cast<const U&>(maybe);
@@ -205,7 +205,7 @@ namespace Aspen {
   template<typename T>
   template<typename U>
   Maybe<T>::Maybe(Maybe<U>&& maybe) noexcept(
-    std::is_nothrow_constructible<Type, U&&>)
+    std::is_nothrow_constructible_v<Type, U&&>)
     : m_value([&] () -> std::variant<Type, std::exception_ptr> {
         if(maybe.has_value()) {
           return std::move(static_cast<U&>(maybe));
