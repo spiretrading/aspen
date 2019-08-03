@@ -5,6 +5,18 @@
 #include "Aspen/Switch.hpp"
 
 namespace Aspen {
+namespace Details {
+  template<typename Type>
+  struct DiscardCore {
+    template<typename T>
+    std::optional<Type> operator ()(bool toggle, T&& series) const noexcept {
+      if(toggle) {
+        return std::forward<T>(series);
+      }
+      return std::nullopt;
+    }
+  };
+}
 
   /**
    * Implements a reactor that discards values produced by its child whenever
@@ -15,11 +27,9 @@ namespace Aspen {
    */
   template<typename Toggle, typename Series>
   auto discard(Toggle&& toggle, Series&& series) {
-    auto series_reactor = make_ptr(std::forward<Series>(series));
-    return Switch(Lift([] (auto&& t, auto&& s) noexcept -> decltype(auto) {
-      return std::forward<decltype(t)>(t);
-    }, std::forward<Toggle>(toggle), std::move(series_reactor)),
-      &*series_reactor);
+    using Type = reactor_result_t<Series>;
+    return Lift(Details::DiscardCore<Type>(), std::forward<Toggle>(toggle),
+      std::forward<Series>(series));
   }
 }
 
