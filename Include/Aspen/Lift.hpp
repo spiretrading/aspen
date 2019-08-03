@@ -147,7 +147,11 @@ namespace Details {
             })...));
         }, pack);
       if(evaluation.m_value.has_value()) {
-        value = std::move(*evaluation.m_value);
+        if constexpr(std::is_same_v<V, LocalPtr<T>>) {
+          *value = std::move(*evaluation.m_value);
+        } else {
+          value = std::move(*evaluation.m_value);
+        }
       }
       return evaluation.m_state;
     }
@@ -251,9 +255,17 @@ namespace Details {
       template<typename FF>
       explicit Lift(FF&& function);
 
+      Lift(const Lift& lift) = default;
+
+      Lift(Lift&& lift) = default;
+
       State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const;
+
+      Lift& operator =(const Lift& lift) = default;
+
+      Lift& operator =(Lift&& lift) = default;
 
     private:
       Function m_function;
@@ -538,17 +550,14 @@ namespace Details {
 
   template<typename F, typename... A>
   State Lift<F, A...>::invoke() {
-    if constexpr(is_noexcept) {
+    try {
       return Details::FunctionEvaluator<Type>()(m_value, m_function,
         m_arguments);
-    } else {
-      try {
-        return Details::FunctionEvaluator<Type>()(m_value, m_function,
-          m_arguments);
-      } catch(const std::exception&) {
+    } catch(const std::exception&) {
+      if constexpr(!is_noexcept) {
         m_value = std::current_exception();
-        return State::EVALUATED;
       }
+      return State::EVALUATED;
     }
   }
 
@@ -591,7 +600,9 @@ namespace Details {
       return Details::FunctionEvaluator<Type>()(m_value, m_function,
         std::tuple<>());
     } catch(const std::exception&) {
-      m_value = std::current_exception();
+      if constexpr(!is_noexcept) {
+        m_value = std::current_exception();
+      }
       return State::EVALUATED;
     }
   }

@@ -22,6 +22,10 @@ namespace Aspen {
       template<typename... A>
       constexpr explicit LocalPtr(A&&... args);
 
+      constexpr LocalPtr(const LocalPtr& args) = default;
+
+      constexpr LocalPtr(LocalPtr&& args) = default;
+
       /** Implicitly converts to the underlying value. */
       constexpr operator const Type& () const;
 
@@ -39,6 +43,10 @@ namespace Aspen {
 
       /** Returns a pointer to the wrapped value. */
       constexpr Type* operator ->() noexcept;
+
+      constexpr LocalPtr& operator =(const LocalPtr& ptr) = default;
+
+      constexpr LocalPtr& operator =(LocalPtr&& ptr) = default;
 
     private:
       Type m_value;
