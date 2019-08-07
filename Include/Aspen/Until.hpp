@@ -63,7 +63,29 @@ namespace Aspen {
       return m_state;
     }
     auto condition_state = m_condition->commit(sequence);
-    if(has_evaluation(condition_state) || 
+    if(has_evaluation(condition_state) ||
+        is_empty(m_state) && !is_empty(condition_state)) {
+      auto condition = try_eval(*m_condition);
+      try {
+        if(*condition) {
+          m_series = std::nullopt;
+          if(is_empty(m_state)) {
+            m_state = State::COMPLETE_EMPTY;
+          } else {
+            m_state = State::COMPLETE;
+          }
+        }
+      } catch(const std::exception&) {
+        m_value = std::current_exception();
+      }
+    }
+    if(m_series.has_value()) {
+      auto series_state = m_series->commit(sequence);
+      if(has_evaluation(series_state) ||
+          is_empty(m_state) && !is_empty(series_state)) {
+        m_value = try_eval(*m_series);
+      }
+    }
     m_previous_sequence = sequence;
     return m_state;
   }
