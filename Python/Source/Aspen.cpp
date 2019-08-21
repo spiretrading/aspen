@@ -22,4 +22,5 @@ PYBIND11_MODULE(aspen, module) {
   export_state(module);
   export_switch(module);
   export_trigger(module);
+  export_until(module);
 }

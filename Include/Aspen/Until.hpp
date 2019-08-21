@@ -35,7 +35,7 @@ namespace Aspen {
     private:
       try_ptr_t<C> m_condition;
       std::optional<T> m_series;
-      try_maybe_t<Type, is_noexcept> m_value;
+      try_maybe_t<Type, !is_noexcept> m_value;
       State m_condition_state;
       State m_state;
       int m_previous_sequence;
@@ -84,7 +84,9 @@ namespace Aspen {
             }
           }
         } catch(const std::exception&) {
-          m_value = std::current_exception();
+          if constexpr(!is_noexcept) {
+            m_value = std::current_exception();
+          }
         }
       }
     }
@@ -93,6 +95,17 @@ namespace Aspen {
       if(has_evaluation(series_state) ||
           is_empty(m_state) && !is_empty(series_state)) {
         m_value = try_eval(*m_series);
+        m_state = State::EVALUATED;
+      } else if(is_empty(m_state)) {
+        m_state = State::EMPTY;
+      } else {
+        m_state = State::NONE;
+      }
+      if(is_complete(series_state)) {
+        m_state = combine(m_state, State::COMPLETE);
+      } else if(has_continuation(m_condition_state) ||
+          has_continuation(series_state)) {
+        m_state = combine(m_state, State::CONTINUE);
       }
     }
     m_previous_sequence = sequence;
