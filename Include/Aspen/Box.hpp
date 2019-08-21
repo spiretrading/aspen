@@ -70,7 +70,7 @@ namespace Aspen {
   };
 
   template<typename R>
-  Box(R&& reactor) -> Box<reactor_result_t<R>>;
+  Box(R&& reactor) -> Box<reactor_result_t<to_reactor_result_t<R>>>;
 
   /**
     * Boxes a reactor into a generic interface.
@@ -84,13 +84,14 @@ namespace Aspen {
   template<typename T>
   template<typename R>
   Box<T>::Box(R&& reactor) {
+    using Reactor = to_reactor_result_t<R>;
     if constexpr(std::is_reference_v<decltype(
-        std::declval<try_ptr_t<std::decay_t<R>>>()->eval())>) {
-      m_reactor = std::make_shared<ByReferenceWrapper<std::decay_t<R>>>(
-        std::forward<R>(reactor));
+        std::declval<try_ptr_t<Reactor>>()->eval())>) {
+      m_reactor = std::make_shared<ByReferenceWrapper<Reactor>>(
+        to_reactor(std::forward<R>(reactor)));
     } else {
-      m_reactor = std::make_shared<ByValueWrapper<std::decay_t<R>>>(
-        std::forward<R>(reactor));
+      m_reactor = std::make_shared<ByValueWrapper<Reactor>>(
+        to_reactor(std::forward<R>(reactor)));
     }
   }
 

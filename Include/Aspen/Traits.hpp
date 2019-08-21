@@ -2,6 +2,7 @@
 #define ASPEN_TRAITS_HPP
 #include <memory>
 #include <type_traits>
+#include "Aspen/Constant.hpp"
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
@@ -13,12 +14,12 @@ namespace Aspen {
   struct is_reactor : std::false_type {};
 
   template<typename T>
-  struct is_reactor<T, std::enable_if_t<
-    std::is_same_v<decltype(std::declval<T>().commit(int())), State>>> :
+  struct is_reactor<T, std::enable_if_t<std::is_same_v<
+    decltype(std::declval<T>().commit(std::declval<int>())), State>>> :
     std::true_type {};
 
   template<typename T>
-  constexpr auto is_reactor_v = is_reactor<T>::value;
+  constexpr bool is_reactor_v = is_reactor<T>::value;
 
   /** Trait testing whether a type is a pointer reactor. */
   template<typename T, typename=void>
@@ -29,7 +30,7 @@ namespace Aspen {
     decltype(*std::declval<T>())>>> : std::true_type {};
 
   template<typename T>
-  constexpr auto is_reactor_pointer_v = is_reactor_pointer<T>::value;
+  constexpr bool is_reactor_pointer_v = is_reactor_pointer<T>::value;
 
   /** Trait used to dereference a pointer to a reactor if needed. */
   template<typename T, typename=void>
@@ -115,6 +116,34 @@ namespace Aspen {
       return try_call([&] { return reactor.eval(); });
     }
   }
+
+  /**
+   * Embeds a value within a reactor unless the value is already a reactor.
+   * @param value The value to wrap.
+   */
+  template<typename T>
+  constexpr decltype(auto) to_reactor(T&& value) {
+    if constexpr(is_reactor_v<std::decay_t<T>> ||
+        is_reactor_pointer_v<std::decay_t<T>>) {
+      return std::forward<T>(value);
+    } else {
+      return Constant(std::forward<T>(value));
+    }
+  }
+
+  template<typename T, typename=void>
+  struct to_reactor_result {
+    using type = Constant<std::decay_t<T>>;
+  };
+
+  template<typename T>
+  struct to_reactor_result<T, std::enable_if_t<
+      is_reactor_v<T> || is_reactor_pointer_v<T>>> {
+    using type = std::decay_t<T>;
+  };
+
+  template<typename T>
+  using to_reactor_result_t = typename to_reactor_result<T>::type;
 }
 
 #endif
