@@ -36,9 +36,13 @@ namespace Aspen {
       try_ptr_t<C> m_condition;
       std::optional<T> m_series;
       try_maybe_t<Type, is_noexcept> m_value;
+      State m_condition_state;
       State m_state;
       int m_previous_sequence;
   };
+
+  template<typename C, typename T>
+  Until(C&&, T&&) -> Until<std::decay_t<C>, std::decay_t<T>>;
 
   /**
    * Returns a reactor that commits its child until a condition is reached.
@@ -55,28 +59,33 @@ namespace Aspen {
   template<typename CF, typename TF>
   Until<C, T>::Until(CF&& condition, TF&& series)
     : m_condition(std::forward<CF>(condition)),
-      m_series(std::forward<TF>(series)) {}
+      m_series(std::forward<TF>(series)),
+      m_condition_state(State::EMPTY),
+      m_state(State::EMPTY),
+      m_previous_sequence(-1) {}
 
   template<typename C, typename T>
   State Until<C, T>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }
-    auto condition_state = m_condition->commit(sequence);
-    if(has_evaluation(condition_state) ||
-        is_empty(m_state) && !is_empty(condition_state)) {
-      auto condition = try_eval(*m_condition);
-      try {
-        if(*condition) {
-          m_series = std::nullopt;
-          if(is_empty(m_state)) {
-            m_state = State::COMPLETE_EMPTY;
-          } else {
-            m_state = State::COMPLETE;
+    if(!is_complete(m_condition_state)) {
+      m_condition_state = m_condition->commit(sequence);
+      if(has_evaluation(m_condition_state) ||
+          is_empty(m_state) && !is_empty(m_condition_state)) {
+        auto condition = try_eval(*m_condition);
+        try {
+          if(*condition) {
+            m_series = std::nullopt;
+            if(is_empty(m_state)) {
+              m_state = State::COMPLETE_EMPTY;
+            } else {
+              m_state = State::COMPLETE;
+            }
           }
+        } catch(const std::exception&) {
+          m_value = std::current_exception();
         }
-      } catch(const std::exception&) {
-        m_value = std::current_exception();
       }
     }
     if(m_series.has_value()) {
