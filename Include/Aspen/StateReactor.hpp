@@ -1,8 +1,9 @@
 #ifndef ASPEN_STATE_REACTOR_HPP
 #define ASPEN_STATE_REACTOR_HPP
-#include <type_traits>
+#include <utility>
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/State.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
 
@@ -33,7 +34,7 @@ namespace Aspen {
   };
 
   template<typename R>
-  StateReactor(R&&) -> StateReactor<std::decay_t<R>>;
+  StateReactor(R&&) -> StateReactor<to_reactor_t<R>>;
 
   template<typename R>
   template<typename RF>

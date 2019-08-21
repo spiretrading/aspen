@@ -42,7 +42,7 @@ namespace Aspen {
   };
 
   template<typename C, typename T>
-  Until(C&&, T&&) -> Until<std::decay_t<C>, std::decay_t<T>>;
+  Until(C&&, T&&) -> Until<to_reactor_t<C>, to_reactor_t<T>>;
 
   /**
    * Returns a reactor that commits its child until a condition is reached.

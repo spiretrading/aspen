@@ -49,7 +49,7 @@ namespace Aspen {
   };
 
   template<typename T, typename S>
-  Switch(T&&, S&&) -> Switch<std::decay_t<T>, std::decay_t<S>>;
+  Switch(T&&, S&&) -> Switch<to_reactor_t<T>, to_reactor_t<S>>;
 
   template<typename T, typename S>
   auto switch_(T&& trigger, S&& series) {

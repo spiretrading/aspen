@@ -68,7 +68,7 @@ namespace Aspen {
    */
   template<typename S, typename E>
   auto range(S&& start, E&& stop) {
-    return range(std::forward<S>(start), std::forward<E>(stop), constant(1));
+    return range(std::forward<S>(start), std::forward<E>(stop), 1);
   }
 }
 

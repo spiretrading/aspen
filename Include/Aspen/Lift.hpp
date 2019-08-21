@@ -291,8 +291,8 @@ namespace Details {
   };
 
   template<typename F, typename AF, typename... AR>
-  Lift(F&&, AF&&, AR&&...) -> Lift<std::decay_t<F>, std::decay_t<AF>,
-    std::decay_t<AR>...>;
+  Lift(F&&, AF&&, AR&&...) -> Lift<std::decay_t<F>, to_reactor_t<AF>,
+    to_reactor_t<AR>...>;
 
   template<typename F>
   Lift(F&&) -> Lift<std::decay_t<F>>;

@@ -76,10 +76,10 @@ namespace Aspen {
       int m_previous_sequence;
   };
 
-  template<typename EF, typename SF>
-  Fold(EF&&, std::shared_ptr<FoldArgument<reactor_result_t<EF>>>,
-    std::shared_ptr<FoldArgument<reactor_result_t<EF>>>, SF&&) ->
-    Fold<std::decay_t<EF>, std::decay_t<SF>>;
+  template<typename E, typename S>
+  Fold(E&&, std::shared_ptr<FoldArgument<reactor_result_t<E>>>,
+    std::shared_ptr<FoldArgument<reactor_result_t<E>>>, S&&) ->
+    Fold<to_reactor_t<E>, to_reactor_t<S>>;
 
   /** Returns a new FoldArgument. */
   template<typename T>

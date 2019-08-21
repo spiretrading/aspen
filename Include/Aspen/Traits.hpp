@@ -45,10 +45,25 @@ namespace Aspen {
   template<typename T>
   using dereference_reactor_t = typename dereference_reactor<T>::type;
 
+  /** Trait used to wrap a type into a reactor. */
+  template<typename T, typename=void>
+  struct to_reactor {
+    using type = Constant<std::decay_t<T>>;
+  };
+
+  template<typename T>
+  struct to_reactor<T, std::enable_if_t<
+      is_reactor_v<T> || is_reactor_pointer_v<T>>> {
+    using type = std::decay_t<T>;
+  };
+
+  template<typename T>
+  using to_reactor_t = typename to_reactor<T>::type;
+
   /** Trait used to determine what type a reactor evaluates to. */
   template<typename T>
   struct reactor_result {
-    using type = typename dereference_reactor_t<T>::Type;
+    using type = typename dereference_reactor_t<to_reactor_t<T>>::Type;
   };
 
   template<typename T>
@@ -88,7 +103,7 @@ namespace Aspen {
     if constexpr(is_reactor_pointer_v<std::decay_t<T>>) {
       return std::forward<T>(value);
     } else {
-      return std::make_unique<std::decay_t<T>>(std::forward<T>(value));
+      return std::make_unique<to_reactor_t<T>>(std::forward<T>(value));
     }
   }
 
@@ -116,34 +131,6 @@ namespace Aspen {
       return try_call([&] { return reactor.eval(); });
     }
   }
-
-  /**
-   * Embeds a value within a reactor unless the value is already a reactor.
-   * @param value The value to wrap.
-   */
-  template<typename T>
-  constexpr decltype(auto) to_reactor(T&& value) {
-    if constexpr(is_reactor_v<std::decay_t<T>> ||
-        is_reactor_pointer_v<std::decay_t<T>>) {
-      return std::forward<T>(value);
-    } else {
-      return Constant(std::forward<T>(value));
-    }
-  }
-
-  template<typename T, typename=void>
-  struct to_reactor_result {
-    using type = Constant<std::decay_t<T>>;
-  };
-
-  template<typename T>
-  struct to_reactor_result<T, std::enable_if_t<
-      is_reactor_v<T> || is_reactor_pointer_v<T>>> {
-    using type = std::decay_t<T>;
-  };
-
-  template<typename T>
-  using to_reactor_result_t = typename to_reactor_result<T>::type;
 }
 
 #endif

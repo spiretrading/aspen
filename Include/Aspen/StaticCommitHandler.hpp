@@ -73,18 +73,18 @@ namespace Aspen {
   };
 
   template<typename... A>
-  StaticCommitHandler(A&&...) -> StaticCommitHandler<std::decay_t<A>...>;
+  StaticCommitHandler(A&&...) -> StaticCommitHandler<to_reactor_t<A>...>;
 
   template<typename A>
-  StaticCommitHandler(A&&) -> StaticCommitHandler<std::decay_t<A>>;
+  StaticCommitHandler(A&&) -> StaticCommitHandler<to_reactor_t<A>>;
 
   template<typename A1, typename A2>
-  StaticCommitHandler(A1&&, A2&&) -> StaticCommitHandler<std::decay_t<A1>,
-    std::decay_t<A2>>;
+  StaticCommitHandler(A1&&, A2&&) -> StaticCommitHandler<to_reactor_t<A1>,
+    to_reactor_t<A2>>;
 
   template<typename... A>
   StaticCommitHandler(std::tuple<A...>) ->
-    StaticCommitHandler<std::decay_t<A>...>;
+    StaticCommitHandler<to_reactor_t<A>...>;
 
   template<typename... R>
   template<typename C>

@@ -16,7 +16,7 @@ namespace Aspen {
   template<typename A, typename B>
   class Chain {
     public:
-      using Type = reactor_result_t<to_reactor_result_t<A>>;
+      using Type = reactor_result_t<A>;
 
       /**
        * Constructs a Chain.
@@ -37,15 +37,15 @@ namespace Aspen {
         CONTINUATION,
         PROXY_CONTINUATION
       };
-      try_ptr_t<to_reactor_result_t<A>> m_initial;
-      try_ptr_t<to_reactor_result_t<B>> m_continuation;
+      try_ptr_t<A> m_initial;
+      try_ptr_t<B> m_continuation;
       Status m_status;
       State m_state;
       int m_previous_sequence;
   };
 
   template<typename A, typename B>
-  Chain(A&&, B&&) -> Chain<to_reactor_result_t<A>, to_reactor_result_t<B>>;
+  Chain(A&&, B&&) -> Chain<to_reactor_t<A>, to_reactor_t<B>>;
 
   /**
     * Chains two reactors together so that one runs after the other.
@@ -60,8 +60,8 @@ namespace Aspen {
   template<typename A, typename B>
   template<typename AF, typename BF>
   Chain<A, B>::Chain(AF&& initial, BF&& continuation)
-    : m_initial(to_reactor(std::forward<AF>(initial))),
-      m_continuation(to_reactor(std::forward<BF>(continuation))),
+    : m_initial(std::forward<AF>(initial)),
+      m_continuation(std::forward<BF>(continuation)),
       m_status(Status::INITIAL),
       m_state(State::EMPTY),
       m_previous_sequence(-1) {}
