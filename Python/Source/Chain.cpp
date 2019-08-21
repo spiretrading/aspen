@@ -6,7 +6,7 @@ using namespace pybind11;
 void Aspen::export_chain(pybind11::module& module) {
   export_chain<Box<object>, Box<object>>(module, "");
   module.def("chain",
-    [] (const Box<object>& a, const Box<object>& b) {
-      return chain(a, b);
+    [] (Box<object> a, Box<object> b) {
+      return chain(std::move(a), std::move(b));
     });
 }

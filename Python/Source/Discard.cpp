@@ -7,7 +7,8 @@ using namespace pybind11;
 
 void Aspen::export_discard(pybind11::module& module) {
   module.def("discard",
-    [] (Box<bool> toggle, Box<object> series) {
-      return Box(discard(std::move(toggle), std::move(series)));
+    [] (object toggle, Box<object> series) {
+      return Box(discard(Box(PythonBox<bool>(std::move(toggle))),
+        std::move(series)));
     });
 }
