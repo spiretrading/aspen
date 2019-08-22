@@ -18,6 +18,9 @@ namespace Aspen {
   template<typename T, typename S>
   void export_switch(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "Switch";
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<Switch<T, S>>(module, name.c_str())
       .def(pybind11::init<T, S>())
       .def("commit", &Switch<T, S>::commit)

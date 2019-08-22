@@ -18,6 +18,9 @@ namespace Aspen {
   template<typename A, typename B>
   void export_chain(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "Chain";
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<Chain<A, B>>(module, name.c_str())
       .def(pybind11::init<A, B>())
       .def("commit", &Chain<A, B>::commit)

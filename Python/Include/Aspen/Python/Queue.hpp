@@ -18,6 +18,9 @@ namespace Aspen {
   template<typename T>
   void export_queue(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + std::string("Queue");
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<Queue<T>>(module, name.c_str())
       .def(pybind11::init<>())
       .def("push", &Queue<T>::push)

@@ -18,6 +18,9 @@ namespace Aspen {
   template<typename C, typename T>
   void export_until(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "Until";
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<Until<C, T>>(module, name.c_str())
       .def(pybind11::init<C, T>())
       .def("commit", &Until<C, T>::commit)

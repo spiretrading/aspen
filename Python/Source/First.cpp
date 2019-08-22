@@ -7,7 +7,7 @@ using namespace pybind11;
 
 void Aspen::export_first(pybind11::module& module) {
   module.def("first",
-    [] (object source) {
-      return Box(first(to_python_reactor(std::move(source))));
+    [] (Box<object> source) {
+      return Box(first(std::move(source)));
     });
 }

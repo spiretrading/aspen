@@ -18,6 +18,9 @@ namespace Aspen {
   template<typename T>
   void export_constant(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + std::string("Constant");
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<Constant<T>>(module, name.c_str())
       .def(pybind11::init<T>())
       .def("commit", &Constant<T>::commit)

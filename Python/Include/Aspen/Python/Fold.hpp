@@ -19,6 +19,9 @@ namespace Aspen {
   void export_fold_argument(pybind11::module& module,
       const std::string& prefix) {
     auto name = prefix + "FoldArgument";
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<FoldArgument<T>, std::shared_ptr<FoldArgument<T>>>(module,
         name.c_str())
       .def(pybind11::init<>())
@@ -42,8 +45,11 @@ namespace Aspen {
   template<typename E, typename S>
   void export_fold(pybind11::module& module, const std::string& prefix) {
     using Type = reactor_result_t<Fold<E, S>>;
-    export_fold_argument<Type>(module, prefix);
     auto name = prefix + "Fold";
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
+    export_fold_argument<Type>(module, prefix);
     pybind11::class_<Fold<E, S>>(module, name.c_str())
       .def(pybind11::init<E, std::shared_ptr<FoldArgument<Type>>,
         std::shared_ptr<FoldArgument<Type>>, S>())

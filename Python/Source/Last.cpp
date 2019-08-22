@@ -7,7 +7,7 @@ using namespace pybind11;
 
 void Aspen::export_last(pybind11::module& module) {
   module.def("last",
-    [] (object source) {
-      return Box(last(to_python_reactor(std::move(source))));
+    [] (Box<object> source) {
+      return Box(last(std::move(source)));
     });
 }

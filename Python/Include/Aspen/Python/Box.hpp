@@ -63,6 +63,9 @@ namespace Aspen {
   template<typename T>
   void export_box(pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "Box";
+    if(pybind11::hasattr(module, name.c_str())) {
+      return;
+    }
     pybind11::class_<Box<T>>(module, name.c_str())
       .def(pybind11::init(
         [] (pybind11::object reactor) {
@@ -74,6 +77,7 @@ namespace Aspen {
       pybind11::implicitly_convertible<Box<T>, Box<pybind11::object>>();
       pybind11::implicitly_convertible<Box<pybind11::object>, Box<T>>();
     }
+    pybind11::implicitly_convertible<pybind11::object, Box<T>>();
   }
 
   /** Exports implicit conversions from a reactor to Box types. */
