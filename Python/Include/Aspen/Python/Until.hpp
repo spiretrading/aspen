@@ -1,9 +1,10 @@
 #ifndef ASPEN_PYTHON_UNTIL_HPP
 #define ASPEN_PYTHON_UNTIL_HPP
 #include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
-#include "Aspen/Python/Box.hpp"
 #include "Aspen/Until.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {
 
@@ -21,11 +22,8 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    pybind11::class_<Until<C, T>>(module, name.c_str())
-      .def(pybind11::init<C, T>())
-      .def("commit", &Until<C, T>::commit)
-      .def("eval", &Until<C, T>::eval);
-    implicitly_convertible_to_box<Until<C, T>>();
+    export_reactor<Until<C, T>>(module, name)
+      .def(pybind11::init<C, T>());
     if constexpr(!std::is_same_v<C, Box<bool>> ||
         !std::is_same_v<T, Box<pybind11::object>>) {
       pybind11::implicitly_convertible<Until<C, T>, Until<Box<bool>,

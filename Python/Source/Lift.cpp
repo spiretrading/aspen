@@ -2,6 +2,7 @@
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 using namespace Aspen;
 using namespace pybind11;
@@ -54,15 +55,12 @@ namespace {
 
 void Aspen::export_lift(pybind11::module& module) {
   using PythonLift = Lift<CallableWrapper, Box<args>>;
-  class_<PythonLift>(module, "Lift")
+  export_reactor<PythonLift>(module, "Lift")
     .def(init(
       [] (object callable, const args& arguments) {
         return PythonLift(CallableWrapper{std::move(callable)},
           ArgumentsReactor(arguments));
-      }))
-    .def("commit", &PythonLift::commit)
-    .def("eval", &PythonLift::eval);
-  implicitly_convertible_to_box<PythonLift>();
+      }));
   module.def("lift", [] (object callable, const args& arguments) {
     return PythonLift(CallableWrapper{std::move(callable)},
       ArgumentsReactor(arguments));

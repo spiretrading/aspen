@@ -5,9 +5,37 @@
 namespace pybind11 {
   object operator +(const object& left, const object& right);
 
+  object operator -(const object& left, const object& right);
+
+  object operator *(const object& left, const object& right);
+
+  object operator /(const object& left, const object& right);
+
+  object operator %(const object& left, const object& right);
+
+  object operator ^(const object& left, const object& right);
+
+  object operator &(const object& left, const object& right);
+
+  object operator |(const object& left, const object& right);
+
+  object operator ~(const object& value);
+
+  object operator <<(const object& left, const object& right);
+
+  object operator >>(const object& left, const object& right);
+
   bool operator <(const object& left, const object& right);
 
+  bool operator <=(const object& left, const object& right);
+
   bool operator >=(const object& left, const object& right);
+
+  bool operator >(const object& left, const object& right);
+
+  object operator -(const object& value);
+
+  object operator +(const object& value);
 }
 
 #endif

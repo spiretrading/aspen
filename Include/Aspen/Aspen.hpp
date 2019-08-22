@@ -14,6 +14,7 @@
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/None.hpp"
+#include "Aspen/Operators.hpp"
 #include "Aspen/Perpetual.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Range.hpp"

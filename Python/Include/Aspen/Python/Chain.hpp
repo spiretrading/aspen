@@ -1,9 +1,10 @@
 #ifndef ASPEN_PYTHON_CHAIN_HPP
 #define ASPEN_PYTHON_CHAIN_HPP
 #include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 #include "Aspen/Chain.hpp"
-#include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {
 
@@ -21,11 +22,8 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    pybind11::class_<Chain<A, B>>(module, name.c_str())
-      .def(pybind11::init<A, B>())
-      .def("commit", &Chain<A, B>::commit)
-      .def("eval", &Chain<A, B>::eval);
-    implicitly_convertible_to_box<Chain<A, B>>();
+    export_reactor<Chain<A, B>>(module, name)
+      .def(pybind11::init<A, B>());
     if constexpr(!std::is_same_v<A, Box<pybind11::object>> ||
         !std::is_same_v<B, Box<pybind11::object>>) {
       pybind11::implicitly_convertible<Chain<A, B>,

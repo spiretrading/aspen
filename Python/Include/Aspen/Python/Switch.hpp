@@ -1,9 +1,10 @@
 #ifndef ASPEN_PYTHON_SWITCH_HPP
 #define ASPEN_PYTHON_SWITCH_HPP
 #include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 #include "Aspen/Switch.hpp"
-#include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {
 
@@ -21,11 +22,8 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    pybind11::class_<Switch<T, S>>(module, name.c_str())
-      .def(pybind11::init<T, S>())
-      .def("commit", &Switch<T, S>::commit)
-      .def("eval", &Switch<T, S>::eval);
-    implicitly_convertible_to_box<Switch<T, S>>();
+    export_reactor<Switch<T, S>>(module, name)
+      .def(pybind11::init<T, S>());
     if constexpr(!std::is_same_v<T, Box<bool>> ||
         !std::is_same_v<S, Box<pybind11::object>>) {
       pybind11::implicitly_convertible<Switch<T, S>,

@@ -1,4 +1,5 @@
 #include "Aspen/Python/Switch.hpp"
+#include "Aspen/Python/Box.hpp"
 
 using namespace Aspen;
 using namespace pybind11;

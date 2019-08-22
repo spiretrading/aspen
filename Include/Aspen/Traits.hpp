@@ -32,6 +32,14 @@ namespace Aspen {
   template<typename T>
   constexpr bool is_reactor_pointer_v = is_reactor_pointer<T>::value;
 
+  /** Trait to test whether a type is a reactor or a pointer to a reactor. */
+  template<typename T>
+  struct is_reactor_or_pointer :
+    std::disjunction<is_reactor<T>, is_reactor_pointer<T>> {};
+
+  template<typename T>
+  constexpr bool is_reactor_or_pointer_v = is_reactor_or_pointer<T>::value;
+
   /** Trait used to dereference a pointer to a reactor if needed. */
   template<typename T, typename=void>
   struct dereference_reactor {

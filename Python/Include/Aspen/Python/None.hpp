@@ -1,9 +1,10 @@
 #ifndef ASPEN_PYTHON_NONE_HPP
 #define ASPEN_PYTHON_NONE_HPP
 #include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 #include "Aspen/None.hpp"
-#include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {
 
@@ -21,11 +22,8 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    pybind11::class_<None<T>>(module, name.c_str())
-      .def(pybind11::init<>())
-      .def("commit", &None<T>::commit)
-      .def("eval", &None<T>::eval);
-    implicitly_convertible_to_box<None<T>>();
+    export_reactor<None<T>>(module, name)
+      .def(pybind11::init<>());
     if constexpr(!std::is_same_v<T, pybind11::object>) {
       pybind11::implicitly_convertible<None<T>, None<pybind11::object>>();
     }

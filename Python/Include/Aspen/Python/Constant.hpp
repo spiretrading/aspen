@@ -1,9 +1,10 @@
 #ifndef ASPEN_PYTHON_CONSTANT_HPP
 #define ASPEN_PYTHON_CONSTANT_HPP
 #include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 #include "Aspen/Constant.hpp"
-#include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {
 
@@ -21,11 +22,8 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    pybind11::class_<Constant<T>>(module, name.c_str())
-      .def(pybind11::init<T>())
-      .def("commit", &Constant<T>::commit)
-      .def("eval", &Constant<T>::eval);
-    implicitly_convertible_to_box<Constant<T>>();
+    export_reactor<Constant<T>>(module, name)
+      .def(pybind11::init<T>());
     if constexpr(!std::is_same_v<T, pybind11::object>) {
       pybind11::implicitly_convertible<Constant<T>,
         Constant<pybind11::object>>();

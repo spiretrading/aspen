@@ -1,9 +1,10 @@
 #ifndef ASPEN_PYTHON_FOLD_HPP
 #define ASPEN_PYTHON_FOLD_HPP
 #include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 #include "Aspen/Fold.hpp"
-#include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {
 
@@ -22,12 +23,9 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    pybind11::class_<FoldArgument<T>, std::shared_ptr<FoldArgument<T>>>(module,
-        name.c_str())
-      .def(pybind11::init<>())
-      .def("commit", &FoldArgument<T>::commit)
-      .def("eval", &FoldArgument<T>::eval);
-    implicitly_convertible_to_box<FoldArgument<T>>();
+    export_reactor<FoldArgument<T>, std::shared_ptr<FoldArgument<T>>>(module,
+        name)
+      .def(pybind11::init<>());
     if constexpr(!std::is_same_v<T, pybind11::object>) {
       pybind11::implicitly_convertible<FoldArgument<T>,
         FoldArgument<pybind11::object>>();
@@ -50,12 +48,9 @@ namespace Aspen {
       return;
     }
     export_fold_argument<Type>(module, prefix);
-    pybind11::class_<Fold<E, S>>(module, name.c_str())
+    export_reactor<Fold<E, S>>(module, name)
       .def(pybind11::init<E, std::shared_ptr<FoldArgument<Type>>,
-        std::shared_ptr<FoldArgument<Type>>, S>())
-      .def("commit", &Fold<E, S>::commit)
-      .def("eval", &Fold<E, S>::eval);
-    implicitly_convertible_to_box<Fold<E, S>>();
+        std::shared_ptr<FoldArgument<Type>>, S>());
     if constexpr(!std::is_same_v<E, Box<pybind11::object>> ||
         !std::is_same_v<S, Box<pybind11::object>>) {
       pybind11::implicitly_convertible<Fold<E, S>,
