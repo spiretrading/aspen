@@ -17,22 +17,26 @@ namespace {
 
   struct ArgumentsReactor {
     using Type = args;
+    std::vector<Box<object>> m_arguments;
     CommitHandler m_handler;
-    std::vector<PythonBox<object>> m_arguments;
 
     explicit ArgumentsReactor(const args& arguments)
-      : m_handler(
+      : m_arguments(
           [&] {
-            auto children = std::vector<Box<void>>();
+            auto children = std::vector<Box<object>>();
             for(auto i = std::size_t(0); i != len(arguments); ++i) {
-              children.emplace_back(PythonBox<object>(arguments[i]));
+              children.emplace_back(to_python_reactor(arguments[i]));
             }
             return children;
-          }()) {
-      for(auto i = std::size_t(0); i != len(arguments); ++i) {
-        m_arguments.emplace_back(arguments[i]);
-      }
-    }
+          }()),
+        m_handler(
+          [&] {
+            auto children = std::vector<Box<void>>();
+            for(auto& argument : m_arguments) {
+              children.emplace_back(argument);
+            }
+            return children;
+          }()) {}
 
     State commit(int sequence) noexcept {
       return m_handler.commit(sequence);

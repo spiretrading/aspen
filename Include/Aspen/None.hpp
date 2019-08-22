@@ -2,6 +2,7 @@
 #define ASPEN_NONE_HPP
 #include <exception>
 #include "Aspen/State.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
 
@@ -21,7 +22,7 @@ namespace Aspen {
 
       constexpr State commit(int sequence) noexcept;
 
-      constexpr const Type& eval() const;
+      constexpr eval_result_t<Type> eval() const;
   };
 
   /**
@@ -38,7 +39,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  constexpr const typename None<T>::Type& None<T>::eval() const {
+  constexpr eval_result_t<typename None<T>::Type> None<T>::eval() const {
     throw std::runtime_error("No evaluation.");
   }
 }

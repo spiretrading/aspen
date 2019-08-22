@@ -24,20 +24,13 @@ namespace Aspen {
        * Constructs a Box.
        * @param reactor The reactor to wrap.
        */
-      template<typename R>
+      template<typename R, typename = std::enable_if_t<
+        !std::is_base_of_v<Box, std::decay_t<R>>>>
       explicit Box(R&& reactor);
-
-      Box(const Box& box) = default;
-
-      Box(Box&& box) = default;
 
       State commit(int sequence) noexcept;
 
       Result eval() const;
-
-      Box& operator =(const Box& box) = default;
-
-      Box& operator =(Box&& box) = default;
 
     private:
       struct BaseWrapper {
@@ -82,7 +75,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  template<typename R>
+  template<typename R, typename>
   Box<T>::Box(R&& reactor) {
     using Reactor = to_reactor_t<R>;
     if constexpr(std::is_reference_v<decltype(
