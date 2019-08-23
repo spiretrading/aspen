@@ -22,12 +22,20 @@ namespace Aspen {
   constexpr bool is_reactor_v = is_reactor<T>::value;
 
   /** Trait testing whether a type is a pointer reactor. */
-  template<typename T, typename=void>
+  template<typename T>
   struct is_reactor_pointer : std::false_type {};
 
   template<typename T>
-  struct is_reactor_pointer<T, std::enable_if_t<is_reactor_v<
-    decltype(*std::declval<T>())>>> : std::true_type {};
+  struct is_reactor_pointer<const T> : is_reactor_pointer<T> {};
+
+  template<typename T>
+  struct is_reactor_pointer<T*> : is_reactor<T> {};
+
+  template<typename T>
+  struct is_reactor_pointer<std::shared_ptr<T>> : is_reactor<T> {};
+
+  template<typename T>
+  struct is_reactor_pointer<std::unique_ptr<T>> : is_reactor<T> {};
 
   template<typename T>
   constexpr bool is_reactor_pointer_v = is_reactor_pointer<T>::value;
@@ -61,7 +69,7 @@ namespace Aspen {
 
   template<typename T>
   struct to_reactor<T, std::enable_if_t<
-      is_reactor_v<T> || is_reactor_pointer_v<T>>> {
+      is_reactor_or_pointer_v<std::decay_t<T>>>> {
     using type = std::decay_t<T>;
   };
 
@@ -71,7 +79,8 @@ namespace Aspen {
   /** Trait used to determine what type a reactor evaluates to. */
   template<typename T>
   struct reactor_result {
-    using type = typename dereference_reactor_t<to_reactor_t<T>>::Type;
+    using type =
+      typename dereference_reactor_t<to_reactor_t<std::decay_t<T>>>::Type;
   };
 
   template<typename T>
