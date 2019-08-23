@@ -48,13 +48,24 @@ namespace Aspen {
   Chain(A&&, B&&) -> Chain<to_reactor_t<A>, to_reactor_t<B>>;
 
   /**
-    * Chains two reactors together so that one runs after the other.
-    * @param initial The reactor to initially evaluate to.
-    * @param continuation The reactor to evaluate to thereafter.
-    */
+   * Chains two reactors together so that one runs after the other.
+   * @param initial The reactor to initially evaluate to.
+   * @param continuation The reactor to evaluate to thereafter.
+   */
   template<typename A, typename B>
-  auto chain(A&& a, B&& b) {
-    return Chain(std::forward<A>(a), std::forward<B>(b));
+  auto chain(A&& initial, B&& continuation) {
+    return Chain(std::forward<A>(initial), std::forward<B>(continuation));
+  }
+
+  /**
+   * Chains a series of reactors together.
+   * @param initial The reactor to initially evaluate to.
+   * @param continuation The reactor to evaluate to thereafter.
+   */
+  template<typename A, typename B, typename... C>
+  auto chain(A&& initial, B&& continuation, C&&... remainder) {
+    return Chain(std::forward<A>(initial),
+      chain(std::forward<B>(continuation), std::forward<C>(remainder)...));
   }
 
   template<typename A, typename B>
