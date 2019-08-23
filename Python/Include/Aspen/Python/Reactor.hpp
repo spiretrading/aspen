@@ -53,42 +53,42 @@ namespace Aspen {
       reactor.def("__add__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) +
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__sub__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) -
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__mul__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) *
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__truediv__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) /
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__mod__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) %
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__xor__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) ^
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__and__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) &
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__or__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) |
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__invert__",
         [] (const pybind11::object& self) {
@@ -97,32 +97,32 @@ namespace Aspen {
       reactor.def("__lshift__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) <<
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__rshift__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) >>
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__lt__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) <
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__le__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) <=
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__ge__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) >=
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__gt__",
         [] (const pybind11::object& self, const pybind11::object& object) {
           return Box(PythonBox<pybind11::object>(self) >
-            PythonBox<pybind11::object>(object));
+            to_python_reactor(object));
         });
       reactor.def("__neg__",
         [] (const pybind11::object& self) {
