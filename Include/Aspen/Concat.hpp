@@ -95,6 +95,7 @@ namespace Aspen {
       auto child_state = Aspen::commit(m_children.front(), sequence);
       if(has_evaluation(child_state) ||
           is_empty(m_child_state) && !is_empty(child_state)) {
+        m_state = reset(m_state, State::EMPTY);
         m_state = combine(m_state, State::EVALUATED);
       }
       if(has_continuation(child_state) ||

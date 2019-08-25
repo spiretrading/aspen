@@ -160,7 +160,7 @@ namespace Aspen {
       m_left(std::move(left)),
       m_right(std::move(right)),
       m_series(std::forward<SF>(series)),
-      m_state(State::NONE),
+      m_state(State::EMPTY),
       m_previous_sequence(-1) {}
 
   template<typename E, typename S>
@@ -169,17 +169,15 @@ namespace Aspen {
       return m_state;
     }
     auto series_state = m_series->commit(sequence);
-    if(series_state == State::NONE || series_state == State::CONTINUE ||
-        series_state == State::COMPLETE_EMPTY) {
-      m_state = series_state;
-    } else if(has_evaluation(series_state) ||
-        is_complete(series_state) && !is_empty(series_state)) {
+    if(has_evaluation(series_state) ||
+        !m_previous_value.has_value() && is_empty(m_state) &&
+        !is_empty(series_state)) {
       if(!m_previous_value.has_value()) {
         if(is_complete(series_state)) {
           m_state = State::COMPLETE_EMPTY;
         } else {
           m_previous_value = try_call([&] { return m_series->eval(); });
-          m_state = State::NONE;
+          m_state = State::EMPTY;
         }
       } else {
         m_left->update(std::move(*m_previous_value));
@@ -189,6 +187,12 @@ namespace Aspen {
           m_value = try_call([&] { return m_evaluator->eval(); });
           m_previous_value = m_value;
         }
+      }
+    } else {
+      if(is_empty(m_state)) {
+        m_state = State::EMPTY;
+      } else {
+        m_state = State::NONE;
       }
     }
     if(has_continuation(series_state)) {
