@@ -30,9 +30,9 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      T m_producer;
+      try_ptr_t<T> m_producer;
       State m_producer_state;
-      std::deque<reactor_result_t<T>> m_children;
+      std::deque<try_ptr_t<reactor_result_t<T>>> m_children;
       State m_child_state;
       State m_state;
       int m_previous_sequence;
@@ -70,11 +70,11 @@ namespace Aspen {
       m_state = State::NONE;
     }
     if(!is_complete(m_producer_state)) {
-      auto producer_state = Aspen::commit(m_producer, sequence);
+      auto producer_state = m_producer->commit(sequence);
       if(has_evaluation(producer_state) ||
           is_empty(m_producer_state) && !is_empty(producer_state)) {
         try {
-          m_children.emplace_back(Aspen::eval(m_producer));
+          m_children.emplace_back(m_producer->eval());
         } catch(const std::exception&) {}
       }
       m_producer_state = producer_state;
@@ -92,7 +92,7 @@ namespace Aspen {
       m_child_state = State::EMPTY;
     }
     if(!m_children.empty() && !is_complete(m_child_state)) {
-      auto child_state = Aspen::commit(m_children.front(), sequence);
+      auto child_state = m_children.front()->commit(sequence);
       if(has_evaluation(child_state) ||
           is_empty(m_child_state) && !is_empty(child_state)) {
         m_state = reset(m_state, State::EMPTY);
@@ -115,7 +115,7 @@ namespace Aspen {
   template<typename T>
   eval_result_t<typename Concat<T>::Type> Concat<T>::eval()
       const noexcept(is_noexcept) {
-    return Aspen::eval(m_children.front());
+    return m_children.front()->eval();
   }
 }
 
