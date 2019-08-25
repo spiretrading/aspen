@@ -70,12 +70,11 @@ namespace Aspen {
       return m_state;
     }
     if(!is_complete(m_condition_state)) {
-      m_condition_state = m_condition->commit(sequence);
-      if(has_evaluation(m_condition_state) ||
-          is_empty(m_state) && !is_empty(m_condition_state)) {
-        auto condition = try_eval(*m_condition);
+      auto condition_state = m_condition->commit(sequence);
+      if(has_evaluation(condition_state) ||
+          is_empty(m_condition_state) && !is_empty(condition_state)) {
         try {
-          if(*condition) {
+          if(m_condition->eval()) {
             m_series = std::nullopt;
             if(is_empty(m_state)) {
               m_state = State::COMPLETE_EMPTY;
@@ -89,6 +88,7 @@ namespace Aspen {
           }
         }
       }
+      m_condition_state = condition_state;
     }
     if(m_series.has_value()) {
       auto series_state = m_series->commit(sequence);

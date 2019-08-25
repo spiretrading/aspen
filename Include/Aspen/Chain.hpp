@@ -18,6 +18,9 @@ namespace Aspen {
     public:
       using Type = reactor_result_t<A>;
 
+      static constexpr auto is_noexcept = is_noexcept_reactor_v<A> &&
+        is_noexcept_reactor_v<B>;
+
       /**
        * Constructs a Chain.
        * @param initial The reactor to initially evaluate to.
@@ -28,7 +31,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      eval_result_t<Type> eval() const;
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
       enum class Status {
@@ -127,7 +130,8 @@ namespace Aspen {
   }
 
   template<typename A, typename B>
-  eval_result_t<typename Chain<A, B>::Type> Chain<A, B>::eval() const {
+  eval_result_t<typename Chain<A, B>::Type> Chain<A, B>::eval()
+      const noexcept(is_noexcept){
     if(m_status == Status::INITIAL ||
         m_status == Status::TRANSITIONING) {
       return m_initial->eval();

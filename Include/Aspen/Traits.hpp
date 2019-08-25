@@ -141,11 +141,30 @@ namespace Aspen {
   }
 
   template<typename R>
-  auto try_eval(const R& reactor) {
-    if constexpr(is_noexcept_reactor_v<R>) {
-      return LocalPtr(reactor.eval());
+  constexpr State commit(R& reactor, int sequence) noexcept {
+    if constexpr(is_reactor_pointer_v<R>) {
+      return reactor->commit(sequence);
     } else {
-      return try_call([&] { return reactor.eval(); });
+      return reactor.commit(sequence);
+    }
+  }
+
+  template<typename R>
+  constexpr decltype(auto) eval(const R& reactor)
+      noexcept(is_noexcept_reactor_v<R>) {
+    if constexpr(is_reactor_pointer_v<R>) {
+      return reactor->eval();
+    } else {
+      return reactor.eval();
+    }
+  }
+
+  template<typename R>
+  auto try_eval(const R& reactor) noexcept {
+    if constexpr(is_noexcept_reactor_v<R>) {
+      return LocalPtr(eval(reactor));
+    } else {
+      return try_call([&] { return eval(reactor); });
     }
   }
 }

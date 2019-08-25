@@ -8,6 +8,7 @@ PYBIND11_MODULE(aspen, module) {
   export_box(module);
   export_chain(module);
   export_commit_handler(module);
+  export_concat(module);
   export_constant(module);
   export_count(module);
   export_discard(module);

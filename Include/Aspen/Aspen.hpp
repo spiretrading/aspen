@@ -3,6 +3,7 @@
 #include "Aspen/Box.hpp"
 #include "Aspen/Chain.hpp"
 #include "Aspen/CommitHandler.hpp"
+#include "Aspen/Concat.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Count.hpp"
 #include "Aspen/Discard.hpp"
