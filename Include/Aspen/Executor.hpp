@@ -35,6 +35,8 @@ namespace Aspen {
       bool m_has_update;
 
       void on_update();
+      Executor(const Executor&) = delete;
+      Executor& operator =(const Executor&) = delete;
   };
 
   template<typename R>

@@ -266,7 +266,8 @@ namespace Details {
        * Constructs a function reactor.
        * @param function The function to apply.
        */
-      template<typename FF>
+      template<typename FF, typename = std::enable_if_t<
+        !std::is_base_of_v<Lift, std::decay_t<FF>>>>
       explicit Lift(FF&& function);
 
       Lift(const Lift& lift) = default;
@@ -294,7 +295,8 @@ namespace Details {
   Lift(F&&, AF&&, AR&&...) -> Lift<std::decay_t<F>, to_reactor_t<AF>,
     to_reactor_t<AR>...>;
 
-  template<typename F>
+  template<typename F, typename = std::enable_if_t<
+    !std::is_base_of_v<Lift<std::decay_t<F>>, std::decay_t<F>>>>
   Lift(F&&) -> Lift<std::decay_t<F>>;
 
   /**
@@ -576,7 +578,7 @@ namespace Details {
   }
 
   template<typename F>
-  template<typename FF>
+  template<typename FF, typename>
   Lift<F>::Lift(FF&& function)
     : m_function(std::forward<FF>(function)),
       m_state(State::EMPTY),

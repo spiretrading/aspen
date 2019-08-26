@@ -4,7 +4,6 @@
 #include <type_traits>
 #include <pybind11/pybind11.h>
 #include "Aspen/Concat.hpp"
-#include "Aspen/Python/PythonBox.hpp"
 #include "Aspen/Python/Reactor.hpp"
 
 namespace Aspen {

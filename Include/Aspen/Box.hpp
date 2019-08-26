@@ -63,8 +63,9 @@ namespace Aspen {
   };
 
   template<typename R, typename = std::enable_if_t<
-    !std::is_base_of_v<Box<reactor_result_t<R>>, std::decay_t<R>>>>
-  Box(R&& reactor) -> Box<reactor_result_t<R>>;
+    !std::is_base_of_v<Box<reactor_result_t<to_reactor_t<R>>>,
+    std::decay_t<R>>>>
+  Box(R&& reactor) -> Box<reactor_result_t<to_reactor_t<R>>>;
 
   /**
    * Boxes a reactor into a generic interface.

@@ -20,7 +20,8 @@ namespace Aspen {
        * Constructs a StateReactor.
        * @param reactor The reactor to monitor.
        */
-      template<typename RF>
+      template<typename RF, typename = std::enable_if_t<
+        !std::is_base_of_v<StateReactor, std::decay_t<RF>>>>
       explicit StateReactor(RF&& reactor);
 
       State commit(int sequence) noexcept;
@@ -33,11 +34,12 @@ namespace Aspen {
       State m_state;
   };
 
-  template<typename R>
+  template<typename R, typename = std::enable_if_t<
+    !std::is_base_of_v<StateReactor<to_reactor_t<R>>, std::decay_t<R>>>>
   StateReactor(R&&) -> StateReactor<to_reactor_t<R>>;
 
   template<typename R>
-  template<typename RF>
+  template<typename RF, typename>
   StateReactor<R>::StateReactor(RF&& reactor)
     : m_reactor(std::forward<RF>(reactor)),
       m_value(State::EVALUATED),

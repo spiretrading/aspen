@@ -10,6 +10,7 @@
 #include "Aspen/Executor.hpp"
 #include "Aspen/First.hpp"
 #include "Aspen/Fold.hpp"
+#include "Aspen/Group.hpp"
 #include "Aspen/Last.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/LocalPtr.hpp"

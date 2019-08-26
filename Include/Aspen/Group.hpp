@@ -1,7 +1,6 @@
-#ifndef ASPEN_CONCAT_HPP
-#define ASPEN_CONCAT_HPP
-#include <deque>
-#include <type_traits>
+#ifndef ASPEN_GROUP_HPP
+#define ASPEN_GROUP_HPP
+#include <list>
 #include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -14,7 +13,7 @@ namespace Aspen {
    * @param <T> The type of reactor producing the reactors to evaluate to.
    */
   template<typename T>
-  class Concat {
+  class Group {
     public:
       using Type = reactor_result_t<reactor_result_t<T>>;
 
@@ -22,50 +21,63 @@ namespace Aspen {
         is_noexcept_reactor_v<reactor_result_t<T>>;
 
       /**
-       * Constructs a Concat.
+       * Constructs a Group.
        * @param producer The reactor producing the reactors to evaluate to.
        */
       template<typename TF, typename = std::enable_if_t<
-        !std::is_base_of_v<Concat, std::decay_t<TF>>>>
-      explicit Concat(TF&& producer);
+        !std::is_base_of_v<Group, std::decay_t<TF>>>>
+      Group(TF&& producer);
 
       State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
+      struct Child {
+        try_ptr_t<reactor_result_t<T>> m_reactor;
+        State m_state;
+
+        template<typename U>
+        Child(U&& reactor);
+      };
       try_ptr_t<T> m_producer;
       State m_producer_state;
-      std::deque<try_ptr_t<reactor_result_t<T>>> m_children;
-      State m_child_state;
+      std::list<Child> m_children;
+      typename std::list<Child>::iterator m_position;
       State m_state;
       int m_previous_sequence;
   };
 
   template<typename T, typename = std::enable_if_t<
-    !std::is_base_of_v<Concat<to_reactor_t<T>>, std::decay_t<T>>>>
-  Concat(T&&) -> Concat<to_reactor_t<T>>;
+    !std::is_base_of_v<Group<to_reactor_t<T>>, std::decay_t<T>>>>
+  Group(T&&) -> Group<to_reactor_t<T>>;
 
   /**
-   * Concats the reactors produced by its child.
+   * Groups the reactors produced by its child.
    * @param producer The reactor producing the reactors to evaluate to.
    */
   template<typename T>
-  auto concat(T&& producer) {
-    return Concat(std::forward<T>(producer));
+  auto group(T&& producer) {
+    return Group(std::forward<T>(producer));
   }
 
   template<typename T>
+  template<typename U>
+  Group<T>::Child::Child(U&& reactor)
+    : m_reactor(std::forward<U>(reactor)),
+      m_state(State::EMPTY) {}
+
+  template<typename T>
   template<typename TF, typename>
-  Concat<T>::Concat(TF&& producer)
+  Group<T>::Group(TF&& producer)
     : m_producer(std::forward<TF>(producer)),
       m_producer_state(State::EMPTY),
-      m_child_state(State::EMPTY),
+      m_position(m_children.end()),
       m_state(State::EMPTY),
       m_previous_sequence(-1) {}
 
   template<typename T>
-  State Concat<T>::commit(int sequence) noexcept {
+  State Group<T>::commit(int sequence) noexcept {
     if(sequence == m_previous_sequence || is_complete(m_state)) {
       return m_state;
     }
@@ -87,21 +99,27 @@ namespace Aspen {
         m_state = combine(m_state, State::CONTINUE);
       } else if(is_complete(producer_state)) {
         if(m_children.empty() ||
-            m_children.size() == 1 && is_complete(m_child_state)) {
+            m_children.size() == 1 &&
+            is_complete(m_children.front().m_state)) {
           m_state = combine(m_state, State::COMPLETE);
         }
       }
     }
-    if(is_complete(m_child_state) && m_children.size() > 1) {
-      m_children.pop_front();
-      m_child_state = State::EMPTY;
-    }
-    if(!m_children.empty() && !is_complete(m_child_state)) {
-      auto child_state = m_children.front()->commit(sequence);
+    auto i = [&] {
+      if(m_position == m_children.end() ||
+          std::next(m_position) == m_children.end()) {
+        return m_children.begin();
+      }
+      return std::next(m_position);
+    }();
+    while(i != m_position) {
+      auto& child = *i;
+      auto child_state = child.m_reactor->commit(sequence);
       if(has_evaluation(child_state) ||
-          is_empty(m_child_state) && !is_empty(child_state)) {
+          is_empty(child.m_state) && !is_empty(child_state)) {
         m_state = reset(m_state, State::EMPTY);
         m_state = combine(m_state, State::EVALUATED);
+        m_state = combine(m_state, State::CONTINUE);
       }
       if(has_continuation(child_state) ||
           is_complete(child_state) && m_children.size() > 1) {
@@ -111,16 +129,28 @@ namespace Aspen {
           m_state = combine(m_state, State::COMPLETE);
         }
       }
-      m_child_state = child_state;
+      child.m_state = child_state;
+      if(has_evaluation(m_state)) {
+        if(m_position != m_children.end() && is_complete(m_position->m_state)) {
+          m_children.erase(m_position);
+        }
+        m_position = i;
+        break;
+      } else {
+        ++i;
+        if(i == m_children.end()) {
+          i = m_children.begin();
+        }
+      }
     }
     m_previous_sequence = sequence;
     return m_state;
   }
 
   template<typename T>
-  eval_result_t<typename Concat<T>::Type> Concat<T>::eval()
+  eval_result_t<typename Group<T>::Type> Group<T>::eval()
       const noexcept(is_noexcept) {
-    return m_children.front()->eval();
+    return m_position->m_reactor->eval();
   }
 }
 

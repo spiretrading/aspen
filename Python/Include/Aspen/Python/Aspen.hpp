@@ -11,6 +11,7 @@
 #include "Aspen/Python/First.hpp"
 #include "Aspen/Python/Fold.hpp"
 #include "Aspen/Python/GilAcquireReactor.hpp"
+#include "Aspen/Python/Group.hpp"
 #include "Aspen/Python/Last.hpp"
 #include "Aspen/Python/Lift.hpp"
 #include "Aspen/Python/None.hpp"
