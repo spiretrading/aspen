@@ -5,10 +5,8 @@ using namespace Aspen;
 
 TEST_CASE("test_empty_maybe", "[Maybe]") {
   auto maybe = Maybe<int>();
-  REQUIRE(maybe.has_value());
-  REQUIRE(!maybe.has_exception());
-  REQUIRE(maybe.get() == int());
-  REQUIRE(maybe == int());
+  REQUIRE(maybe.has_exception());
+  REQUIRE(!maybe.has_value());
 }
 
 TEST_CASE("test_value_maybe", "[Maybe]") {

@@ -21,6 +21,8 @@ namespace Aspen {
     } else {
       if constexpr(std::is_same_v<T, void>) {
         return Box<void>(value);
+      } else if constexpr(std::is_same_v<T, Box<pybind11::object>>) {
+        return Box(PythonBox<T>(std::move(value)));
       } else {
         return Box(value.cast<T>());
       }

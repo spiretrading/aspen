@@ -62,7 +62,8 @@ namespace Aspen {
       std::shared_ptr<BaseWrapper> m_reactor;
   };
 
-  template<typename R>
+  template<typename R, typename = std::enable_if_t<
+    !std::is_base_of_v<Box<reactor_result_t<R>>, std::decay_t<R>>>>
   Box(R&& reactor) -> Box<reactor_result_t<R>>;
 
   /**

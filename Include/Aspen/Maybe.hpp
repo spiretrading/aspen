@@ -107,7 +107,7 @@ namespace Aspen {
 
     private:
       template<typename> friend class Maybe;
-      std::variant<Type, std::exception_ptr> m_value;
+      std::variant<std::exception_ptr, Type> m_value;
   };
 
   template<>
@@ -194,7 +194,7 @@ namespace Aspen {
   template<typename U>
   Maybe<T>::Maybe(const Maybe<U>& maybe) noexcept(
     std::is_nothrow_constructible_v<Type, const U&>)
-    : m_value([&] () -> std::variant<Type, std::exception_ptr> {
+    : m_value([&] () -> std::variant<std::exception_ptr, Type> {
         if(maybe.has_value()) {
           return static_cast<const U&>(maybe);
         } else {
@@ -206,7 +206,7 @@ namespace Aspen {
   template<typename U>
   Maybe<T>::Maybe(Maybe<U>&& maybe) noexcept(
     std::is_nothrow_constructible_v<Type, U&&>)
-    : m_value([&] () -> std::variant<Type, std::exception_ptr> {
+    : m_value([&] () -> std::variant<std::exception_ptr, Type> {
         if(maybe.has_value()) {
           return std::move(static_cast<U&>(maybe));
         } else {
@@ -226,12 +226,12 @@ namespace Aspen {
 
   template<typename T>
   bool Maybe<T>::has_value() const noexcept {
-    return m_value.index() == 0;
+    return m_value.index() == 1;
   }
 
   template<typename T>
   bool Maybe<T>::has_exception() const noexcept {
-    return m_value.index() == 1;
+    return m_value.index() == 0;
   }
 
   template<typename T>
@@ -239,8 +239,11 @@ namespace Aspen {
     if(has_value()) {
       return std::get<Type>(m_value);
     }
-    std::rethrow_exception(std::get<std::exception_ptr>(m_value));
-    throw std::exception();
+    auto& e = std::get<std::exception_ptr>(m_value);
+    if(e != nullptr) {
+      std::rethrow_exception(e);
+    }
+    throw std::runtime_error("Uninitialized.");
   }
 
   template<typename T>
@@ -248,8 +251,11 @@ namespace Aspen {
     if(has_value()) {
       return std::get<Type>(m_value);
     }
-    std::rethrow_exception(std::get<std::exception_ptr>(m_value));
-    throw std::exception();
+    auto& e = std::get<std::exception_ptr>(m_value);
+    if(e != nullptr) {
+      std::rethrow_exception(e);
+    }
+    throw std::runtime_error("Uninitialized.");
   }
 
   template<typename T>
