@@ -112,17 +112,25 @@ namespace Aspen {
       }
       return std::next(m_position);
     }();
-    while(i != m_position) {
+    auto end = [&] {
+      if(m_children.size() < 2) {
+        return m_children.end();
+      } else {
+        return m_position;
+      }
+    }();
+    while(i != end) {
       auto& child = *i;
       auto child_state = child.m_reactor->commit(sequence);
       if(has_evaluation(child_state) ||
           is_empty(child.m_state) && !is_empty(child_state)) {
         m_state = reset(m_state, State::EMPTY);
         m_state = combine(m_state, State::EVALUATED);
-        m_state = combine(m_state, State::CONTINUE);
+        if(m_children.size() > 1) {
+          m_state = combine(m_state, State::CONTINUE);
+        }
       }
-      if(has_continuation(child_state) ||
-          is_complete(child_state) && m_children.size() > 1) {
+      if(has_continuation(child_state)) {
         m_state = combine(m_state, State::CONTINUE);
       } else if(is_complete(child_state)) {
         if(m_children.size() == 1 && is_complete(m_producer_state)) {
@@ -131,7 +139,8 @@ namespace Aspen {
       }
       child.m_state = child_state;
       if(has_evaluation(m_state)) {
-        if(m_position != m_children.end() && is_complete(m_position->m_state)) {
+        if(m_position != m_children.end() && m_position != i &&
+            is_complete(m_position->m_state)) {
           m_children.erase(m_position);
         }
         m_position = i;
