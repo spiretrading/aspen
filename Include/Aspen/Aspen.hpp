@@ -29,5 +29,6 @@
 #include "Aspen/Traits.hpp"
 #include "Aspen/Trigger.hpp"
 #include "Aspen/Until.hpp"
+#include "Aspen/When.hpp"
 
 #endif
