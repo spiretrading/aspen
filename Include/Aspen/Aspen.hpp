@@ -18,6 +18,7 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Operators.hpp"
 #include "Aspen/Perpetual.hpp"
+#include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Range.hpp"
 #include "Aspen/State.hpp"

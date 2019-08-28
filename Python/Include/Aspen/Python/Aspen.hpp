@@ -17,6 +17,7 @@
 #include "Aspen/Python/None.hpp"
 #include "Aspen/Python/Object.hpp"
 #include "Aspen/Python/Perpetual.hpp"
+#include "Aspen/Python/Proxy.hpp"
 #include "Aspen/Python/Queue.hpp"
 #include "Aspen/Python/Range.hpp"
 #include "Aspen/Python/Reactor.hpp"
