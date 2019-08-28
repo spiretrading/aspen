@@ -102,21 +102,15 @@ namespace Aspen {
         m_state = combine(m_state, State::COMPLETE);
       }
     }
-    auto i = [&] {
+    auto start = [&] {
       if(m_position == m_children.end() ||
           std::next(m_position) == m_children.end()) {
         return m_children.begin();
       }
       return std::next(m_position);
     }();
-    auto end = [&] {
-      if(m_children.size() < 2) {
-        return m_children.end();
-      } else {
-        return m_position;
-      }
-    }();
-    while(i != end) {
+    auto looped = false;
+    for(auto i = start; !looped || i != start;) {
       auto& child = *i;
       if(is_complete(child.m_state)) {
         i = m_children.erase(i);
@@ -145,6 +139,7 @@ namespace Aspen {
         ++i;
       }
       if(i == m_children.end()) {
+        looped = true;
         i = m_children.begin();
       }
     }
