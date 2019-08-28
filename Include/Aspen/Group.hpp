@@ -97,12 +97,9 @@ namespace Aspen {
       m_producer_state = producer_state;
       if(has_continuation(producer_state)) {
         m_state = combine(m_state, State::CONTINUE);
-      } else if(is_complete(producer_state)) {
-        if(m_children.empty() ||
-            m_children.size() == 1 &&
-            is_complete(m_children.front().m_state)) {
-          m_state = combine(m_state, State::COMPLETE);
-        }
+      } else if(is_complete(producer_state) && (m_children.empty() ||
+          m_children.size() == 1 && is_complete(m_children.front().m_state))) {
+        m_state = combine(m_state, State::COMPLETE);
       }
     }
     auto i = [&] {
@@ -121,35 +118,34 @@ namespace Aspen {
     }();
     while(i != end) {
       auto& child = *i;
-      auto child_state = child.m_reactor->commit(sequence);
-      if(has_evaluation(child_state) ||
-          is_empty(child.m_state) && !is_empty(child_state)) {
-        m_state = reset(m_state, State::EMPTY);
-        m_state = combine(m_state, State::EVALUATED);
-        if(m_children.size() > 1) {
-          m_state = combine(m_state, State::CONTINUE);
-        }
-      }
-      if(has_continuation(child_state)) {
-        m_state = combine(m_state, State::CONTINUE);
-      } else if(is_complete(child_state)) {
-        if(m_children.size() == 1 && is_complete(m_producer_state)) {
-          m_state = combine(m_state, State::COMPLETE);
-        }
-      }
-      child.m_state = child_state;
-      if(has_evaluation(m_state)) {
-        if(m_position != m_children.end() && m_position != i &&
-            is_complete(m_position->m_state)) {
-          m_children.erase(m_position);
-        }
-        m_position = i;
-        break;
+      if(is_complete(child.m_state)) {
+        i = m_children.erase(i);
       } else {
-        ++i;
-        if(i == m_children.end()) {
-          i = m_children.begin();
+        auto child_state = child.m_reactor->commit(sequence);
+        if(has_evaluation(child_state) ||
+            is_empty(child.m_state) && !is_empty(child_state)) {
+          m_state = reset(m_state, State::EMPTY);
+          m_state = combine(m_state, State::EVALUATED);
+          if(m_children.size() > 1) {
+            m_state = combine(m_state, State::CONTINUE);
+          }
         }
+        child.m_state = child_state;
+        if(has_continuation(child_state)) {
+          m_state = combine(m_state, State::CONTINUE);
+        } else if(is_complete(child_state)) {
+          if(m_children.size() == 1 && is_complete(m_producer_state)) {
+            m_state = combine(m_state, State::COMPLETE);
+          }
+        }
+        if(has_evaluation(m_state)) {
+          m_position = i;
+          break;
+        }
+        ++i;
+      }
+      if(i == m_children.end()) {
+        i = m_children.begin();
       }
     }
     m_previous_sequence = sequence;
