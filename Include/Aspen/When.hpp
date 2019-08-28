@@ -19,7 +19,7 @@ namespace Aspen {
         is_noexcept_reactor_v<T>;
 
       /**
-       * Constructs a When.
+       * Constructs a When reactor.
        * @param condition The condition to evaluate.
        * @param series The series to evaluate when the condition evaluates to
        *        <code>true</i>.
@@ -29,7 +29,15 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const noexcept(is_noexcept);
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
+
+    private:
+      try_ptr_t<C> m_condition;
+      try_ptr_t<T> m_series;
+      State m_condition_state;
+      bool m_is_triggered;
+      State m_state;
+      int m_previous_sequence;
   };
 
   template<typename C, typename T>
@@ -49,17 +57,61 @@ namespace Aspen {
 
   template<typename C, typename T>
   template<typename CF, typename TF>
-  When<C, T>::When(CF&& condition, TF&& series) {}
+  When<C, T>::When(CF&& condition, TF&& series)
+    : m_condition(std::forward<CF>(condition)),
+      m_series(std::forward<TF>(series)),
+      m_condition_state(State::EMPTY),
+      m_is_triggered(false),
+      m_state(State::EMPTY),
+      m_previous_sequence(-1) {}
 
   template<typename C, typename T>
   State When<C, T>::commit(int sequence) noexcept {
-    return {};
+    if(sequence == m_previous_sequence || is_complete(m_state)) {
+      return m_state;
+    }
+    if(is_empty(m_state)) {
+      m_state = State::EMPTY;
+    } else {
+      m_state = State::NONE;
+    }
+    if(!m_is_triggered) {
+      auto condition_state = m_condition->commit(sequence);
+      if(has_evaluation(condition_state) ||
+          is_empty(m_condition_state) && !is_empty(condition_state)) {
+        try {
+          m_is_triggered = m_condition->eval();
+        } catch(const std::exception&) {}
+      }
+      if(!m_is_triggered) {
+        if(is_complete(condition_state)) {
+          m_state = combine(m_state, State::COMPLETE);
+        } else if(has_continuation(condition_state)) {
+          m_state = combine(m_state, State::CONTINUE);
+        }
+      }
+      m_condition_state = condition_state;
+    }
+    if(m_is_triggered) {
+      auto series_state = m_series->commit(sequence);
+      if(has_evaluation(series_state) ||
+          is_empty(m_state) && !is_empty(series_state)) {
+        m_state = combine(m_state, State::EVALUATED);
+      }
+      if(is_complete(series_state)) {
+        m_state = combine(m_state, State::COMPLETE);
+      } else if(has_continuation(series_state)) {
+        m_state = combine(m_state, State::CONTINUE);
+      }
+    }
+    m_previous_sequence = sequence;
+    return m_state;
   }
 
   template<typename C, typename T>
-  const typename When<C, T>::Type& When<C, T>::eval() const noexcept(
+  eval_result_t<typename When<C, T>::Type> When<C, T>::eval() const noexcept(
       is_noexcept) {
-    throw std::runtime_error("Not implemented.");
+    return m_series->eval();
   }
 }
 

@@ -17,7 +17,6 @@ namespace Aspen {
   class Concat {
     public:
       using Type = reactor_result_t<reactor_result_t<T>>;
-
       static constexpr auto is_noexcept =
         is_noexcept_reactor_v<reactor_result_t<T>>;
 

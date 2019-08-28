@@ -1,8 +1,10 @@
 #ifndef ASPEN_THROW_HPP
 #define ASPEN_THROW_HPP
 #include <exception>
+#include <type_traits>
 #include <utility>
 #include "Aspen/State.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
 
@@ -30,7 +32,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const;
+      eval_result_t<Type> eval() const;
 
     private:
       std::exception_ptr m_exception;
@@ -69,9 +71,11 @@ namespace Aspen {
   }
 
   template<typename T>
-  const typename Throw<T>::Type& Throw<T>::eval() const {
+  eval_result_t<typename Throw<T>::Type> Throw<T>::eval() const {
     std::rethrow_exception(m_exception);
-    return *static_cast<const T*>(nullptr);
+    if constexpr(!std::is_same_v<Type, void>) {
+      return *static_cast<const Type*>(nullptr);
+    }
   }
 }
 

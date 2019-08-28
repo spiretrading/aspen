@@ -20,7 +20,6 @@ namespace Aspen {
   class Switch {
     public:
       using Type = reactor_result_t<S>;
-
       static constexpr auto is_noexcept = is_noexcept_reactor_v<T> &&
         is_noexcept_reactor_v<S>;
 
@@ -36,7 +35,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const noexcept(is_noexcept);
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
       try_ptr_t<T> m_toggle;
@@ -127,7 +126,7 @@ namespace Aspen {
   }
 
   template<typename T, typename S>
-  const typename Switch<T, S>::Type& Switch<T, S>::eval()
+  eval_result_t<typename Switch<T, S>::Type> Switch<T, S>::eval()
       const noexcept(is_noexcept) {
     return *m_value;
   }

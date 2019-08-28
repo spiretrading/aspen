@@ -30,7 +30,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const noexcept(is_noexcept);
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
       try_ptr_t<C> m_condition;
@@ -113,7 +113,7 @@ namespace Aspen {
   }
 
   template<typename C, typename T>
-  const typename Until<C, T>::Type& Until<C, T>::eval() const noexcept(
+  eval_result_t<typename Until<C, T>::Type> Until<C, T>::eval() const noexcept(
       is_noexcept) {
     return *m_value;
   }

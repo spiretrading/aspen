@@ -17,7 +17,6 @@ namespace Aspen {
   class Box {
     public:
       using Type = T;
-
       using Result = eval_result_t<T>;
 
       /**

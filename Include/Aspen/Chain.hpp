@@ -17,7 +17,6 @@ namespace Aspen {
   class Chain {
     public:
       using Type = reactor_result_t<A>;
-
       static constexpr auto is_noexcept = is_noexcept_reactor_v<A> &&
         is_noexcept_reactor_v<B>;
 

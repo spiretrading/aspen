@@ -14,7 +14,6 @@ namespace Aspen {
   class Proxy {
     public:
       using Type = reactor_result_t<T>;
-
       static constexpr auto is_noexcept = is_noexcept_reactor_v<T>;
 
       /** Constructs an empty Proxy. */

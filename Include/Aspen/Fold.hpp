@@ -25,7 +25,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const;
+      eval_result_t<Type> eval() const;
 
     private:
       template<typename, typename> friend class Fold;
@@ -63,7 +63,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const;
+      eval_result_t<Type> eval() const;
 
     private:
       try_ptr_t<E> m_evaluator;
@@ -143,7 +143,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  const typename FoldArgument<T>::Type& FoldArgument<T>::eval() const {
+  eval_result_t<typename FoldArgument<T>::Type> FoldArgument<T>::eval() const {
     return m_value;
   }
 
@@ -205,7 +205,7 @@ namespace Aspen {
   }
 
   template<typename E, typename S>
-  const typename Fold<E, S>::Type& Fold<E, S>::eval() const {
+  eval_result_t<typename Fold<E, S>::Type> Fold<E, S>::eval() const {
     return m_value;
   }
 }

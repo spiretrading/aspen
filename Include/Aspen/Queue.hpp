@@ -5,6 +5,7 @@
 #include <mutex>
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
+#include "Aspen/Traits.hpp"
 #include "Aspen/Trigger.hpp"
 
 namespace Aspen {
@@ -51,7 +52,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      const Type& eval() const;
+      eval_result_t<Type> eval() const;
 
     private:
       std::mutex m_mutex;
@@ -149,7 +150,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  const typename Queue<T>::Type& Queue<T>::eval() const {
+  eval_result_t<typename Queue<T>::Type> Queue<T>::eval() const {
     return m_value;
   }
 }
