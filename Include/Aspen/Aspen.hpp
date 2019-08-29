@@ -28,6 +28,7 @@
 #include "Aspen/Throw.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Trigger.hpp"
+#include "Aspen/Unconsecutive.hpp"
 #include "Aspen/Until.hpp"
 #include "Aspen/When.hpp"
 
