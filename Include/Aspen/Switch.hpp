@@ -38,13 +38,12 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      try_ptr_t<T> m_toggle;
-      try_ptr_t<S> m_series;
-      State m_toggle_state;
+      T m_toggle;
+      S m_series;
+      bool m_is_toggle_complete;
+      bool m_has_evaluation;
       bool m_is_on;
       std::conditional_t<is_noexcept, std::optional<Type>, Maybe<Type>> m_value;
-      State m_state;
-      int m_previous_sequence;
   };
 
   template<typename T, typename S>
@@ -60,69 +59,43 @@ namespace Aspen {
   Switch<T, S>::Switch(TF&& toggle, SF&& series)
     : m_toggle(std::forward<TF>(toggle)),
       m_series(std::forward<SF>(series)),
-      m_toggle_state(State::EMPTY),
-      m_is_on(false),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+      m_is_toggle_complete(false),
+      m_has_evaluation(false),
+      m_is_on(false) {}
 
   template<typename T, typename S>
   State Switch<T, S>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
+    if(m_is_toggle_complete && m_is_on) {
+      return m_series.commit(sequence);
     }
-    if(is_complete(m_toggle_state)) {
-      m_state = m_series->commit(sequence);
-    } else {
-      auto toggle_state = m_toggle->commit(sequence);
-      auto flipped = !m_is_on;
-      if(has_evaluation(toggle_state) ||
-          is_empty(m_toggle_state) && !is_empty(toggle_state)) {
-        try {
-          m_is_on = m_toggle->eval();
-        } catch(const std::exception&) {
-          m_is_on = false;
-          if constexpr(!is_noexcept) {
-            m_value = std::current_exception();
-          }
+    auto toggle_state = m_toggle.commit(sequence);
+    auto flipped = !m_is_on;
+    if(has_evaluation(toggle_state)) {
+      try {
+        m_is_on = m_toggle.eval();
+      } catch(const std::exception&) {
+        m_is_on = false;
+        if constexpr(!is_noexcept) {
+          m_value = std::current_exception();
         }
       }
-      m_toggle_state = toggle_state;
-      if(m_is_on) {
-        auto series_state = m_series->commit(sequence);
-        if(has_evaluation(series_state) ||
-            (is_empty(m_state) || flipped) && !is_empty(series_state)) {
-          m_value = try_eval(*m_series);
-          m_state = combine(series_state, State::EVALUATED);
-        } else if(!is_empty(m_state)) {
-          m_state = series_state;
-        } else if(has_continuation(series_state)) {
-          m_state = State::CONTINUE_EMPTY;
-        } else {
-          m_state = State::EMPTY;
-        }
-        if(is_complete(series_state)) {
-          m_state = combine(m_state, State::COMPLETE);
-        }
-      } else if(is_complete(m_toggle_state)) {
-        if(is_empty(m_state)) {
-          m_state = State::COMPLETE_EMPTY;
-        } else {
-          m_state = State::COMPLETE;
-        }
-      } else if(has_continuation(m_toggle_state)) {
-        if(is_empty(m_state)) {
-          m_state = State::CONTINUE_EMPTY;
-        } else {
-          m_state = State::CONTINUE;
-        }
-      } else if(!is_empty(m_state)) {
-        m_state = State::NONE;
-      } else {
-        m_state = State::EMPTY;
-      }
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    m_is_toggle_complete = is_complete(toggle_state);
+    auto state = State::NONE;
+    if(m_is_on) {
+      state = m_series.commit(sequence);
+      if(has_evaluation(state) || m_has_evaluation && flipped) {
+        m_value = try_eval(m_series);
+        state = combine(state, State::EVALUATED);
+        m_has_evaluation = true;
+      }
+    } else if(m_is_toggle_complete) {
+      state = combine(state, State::COMPLETE);
+    }
+    if(has_continuation(toggle_state)) {
+      state = combine(state, State::CONTINUE);
+    }
+    return state;
   }
 
   template<typename T, typename S>

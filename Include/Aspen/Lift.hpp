@@ -572,20 +572,17 @@ namespace Details {
 
   template<typename F>
   State Lift<F>::commit(int sequence) noexcept {
-    auto state = State::NONE;
     auto invocation = invoke();
     if(has_evaluation(invocation)) {
       if(has_continuation(invocation)) {
-        state = State::CONTINUE_EVALUATED;
+        return State::CONTINUE_EVALUATED;
       } else {
-        state = State::COMPLETE_EVALUATED;
+        return State::COMPLETE_EVALUATED;
       }
-    } else if(m_state == State::EMPTY) {
-      m_state = State::COMPLETE_EMPTY;
-    } else {
-      state = State::COMPLETE;
+    } else if(has_continuation(invocation)) {
+      return State::CONTINUE;
     }
-    return state;
+    return State::COMPLETE;
   }
 
   template<typename F>

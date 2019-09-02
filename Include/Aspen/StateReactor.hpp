@@ -1,7 +1,6 @@
 #ifndef ASPEN_STATE_REACTOR_HPP
 #define ASPEN_STATE_REACTOR_HPP
 #include <utility>
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -29,9 +28,8 @@ namespace Aspen {
       Type eval() const noexcept;
 
     private:
-      try_ptr_t<R> m_reactor;
+      R m_reactor;
       State m_value;
-      State m_state;
   };
 
   template<typename R, typename = std::enable_if_t<
@@ -42,28 +40,25 @@ namespace Aspen {
   template<typename RF, typename>
   StateReactor<R>::StateReactor(RF&& reactor)
     : m_reactor(std::forward<RF>(reactor)),
-      m_value(State::EVALUATED),
-      m_state(State::EMPTY) {}
+      m_value(State::EVALUATED) {}
 
   template<typename R>
   State StateReactor<R>::commit(int sequence) noexcept {
-    if(is_complete(m_state)) {
-      return m_state;
-    }
-    auto value = m_reactor->commit(sequence);
-    if(is_complete(value)) {
-      m_state = State::COMPLETE_EVALUATED;
-    } else if(value == State::NONE && m_value == State::NONE ||
-        value == State::EMPTY && m_value == State::EMPTY) {
-      m_state = State::NONE;
-    } else {
-      m_state = State::EVALUATED;
-    }
+    auto value = m_reactor.commit(sequence);
+    auto state = [&] {
+      if(is_complete(value)) {
+        return State::COMPLETE_EVALUATED;
+      } else if(value == State::NONE && m_value == State::NONE) {
+        return State::NONE;
+      } else {
+        return State::EVALUATED;
+      }
+    }();
     m_value = value;
     if(has_continuation(m_value)) {
-      m_state = combine(m_state, State::CONTINUE);
+      state = combine(state, State::CONTINUE);
     }
-    return m_state;
+    return state;
   }
 
   template<typename R>
