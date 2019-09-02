@@ -16,6 +16,7 @@
 #include "Aspen/Python/Lift.hpp"
 #include "Aspen/Python/None.hpp"
 #include "Aspen/Python/Object.hpp"
+#include "Aspen/Python/Override.hpp"
 #include "Aspen/Python/Perpetual.hpp"
 #include "Aspen/Python/Proxy.hpp"
 #include "Aspen/Python/Queue.hpp"

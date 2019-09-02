@@ -17,6 +17,7 @@
 #include "Aspen/Maybe.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Operators.hpp"
+#include "Aspen/Override.hpp"
 #include "Aspen/Perpetual.hpp"
 #include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
