@@ -7,6 +7,7 @@
 #include "Aspen/Lift.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
+#include "Aspen/Shared.hpp"
 
 using namespace Aspen;
 
@@ -32,20 +33,20 @@ TEST_CASE("test_run_until_none_constant", "[Executor]") {
 }
 
 TEST_CASE("test_run_until_complete", "[Executor]") {
-  auto queue = Queue<int>();
+  auto queue = Shared(Queue<int>());
   auto results = std::vector<int>();
   auto executor = Executor(
     lift([&] (const auto& value) {
       results.push_back(value);
-    }, &queue));
+    }, queue));
   auto executor_thread = std::thread([&] {
     executor.run_until_complete();
   });
-  queue.push(10);
-  queue.push(20);
-  queue.push(30);
-  queue.push(40);
-  queue.set_complete(100);
+  queue->push(10);
+  queue->push(20);
+  queue->push(30);
+  queue->push(40);
+  queue->set_complete(100);
   executor_thread.join();
   REQUIRE(results.size() == 5);
   REQUIRE(results == std::vector{10, 20, 30, 40, 100});

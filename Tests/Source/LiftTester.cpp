@@ -2,6 +2,7 @@
 #include "Aspen/Constant.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Queue.hpp"
+#include "Aspen/Shared.hpp"
 
 using namespace Aspen;
 
@@ -38,30 +39,30 @@ TEST_CASE("test_lift_constant_argument", "[Lift]") {
 }
 
 TEST_CASE("test_lift_one_argument_updates", "[Lift]") {
-  auto queue = Queue<int>();
-  auto reactor = Lift(square, &queue);
+  auto queue = Shared(Queue<int>());
+  auto reactor = Lift(square, queue);
   REQUIRE(reactor.commit(0) == State::EMPTY);
-  queue.push(10);
+  queue->push(10);
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 100);
   REQUIRE(reactor.commit(2) == State::NONE);
   REQUIRE(reactor.eval() == 100);
-  queue.push(5);
+  queue->push(5);
   REQUIRE(reactor.commit(3) == State::EVALUATED);
   REQUIRE(reactor.eval() == 25);
   REQUIRE(reactor.commit(4) == State::NONE);
   REQUIRE(reactor.eval() == 25);
-  queue.set_complete(4);
+  queue->set_complete(4);
   REQUIRE(reactor.commit(5) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 16);
 }
 
 TEST_CASE("test_complete_arguments", "[Lift]") {
-  auto queue = Queue<int>();
-  queue.push(10);
+  auto queue = Shared(Queue<int>());
+  queue->push(10);
   queue.commit(0);
-  queue.set_complete();
-  auto reactor = Lift(square, &queue);
+  queue->set_complete();
+  auto reactor = Lift(square, queue);
   REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
   REQUIRE(reactor.eval() == 100);
 }

@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 #include "Aspen/Lift.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -16,7 +17,7 @@ namespace Aspen {
   template<typename Reactor>
   auto last(Reactor&& source) {
     using Type = reactor_result_t<Reactor>;
-    auto source_reactor = make_ptr(std::forward<Reactor>(source));
+    auto source_reactor = Shared(std::forward<Reactor>(source));
     return Lift(
       [] (auto&& value, State state) noexcept -> FunctionEvaluation<Type> {
         if(is_complete(state)) {
@@ -24,7 +25,7 @@ namespace Aspen {
             State::COMPLETE_EVALUATED);
         }
         return State::NONE;
-      }, std::move(source_reactor), StateReactor(&*source_reactor));
+      }, source_reactor, StateReactor(source_reactor));
   }
 }
 

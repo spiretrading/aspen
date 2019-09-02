@@ -127,23 +127,14 @@ namespace Details {
   using function_reactor_result_t = typename function_reactor_result<T>::type;
 
   template<typename T>
-  decltype(auto) deref(T& value) noexcept {
-    if constexpr(is_reactor_pointer_v<T>) {
-      return *value;
-    } else {
-      return value;
-    }
-  }
-
-  template<typename T>
   struct FunctionEvaluator {
     template<typename V, typename F, typename P>
     State operator ()(V& value, F& function, const P& pack) const {
       auto evaluation = std::apply(
         [&] (const auto&... arguments) {
           return FunctionEvaluation<T>(function(
-            try_call([&] () noexcept(noexcept(deref(arguments).eval())) {
-              return deref(arguments).eval();
+            try_call([&] () noexcept(noexcept(arguments.eval())) {
+              return arguments.eval();
             })...));
         }, pack);
       if(evaluation.m_value.has_value()) {
@@ -165,8 +156,8 @@ namespace Details {
         [&] (const auto&... arguments) {
           return FunctionEvaluation<void>(try_call([&] {
             return function(
-              try_call([&] () noexcept(noexcept(deref(arguments).eval())) {
-                return deref(arguments).eval();
+              try_call([&] () noexcept(noexcept(arguments.eval())) {
+                return arguments.eval();
               })...);
           }));
         }, pack);
@@ -240,8 +231,7 @@ namespace Details {
     private:
       Function m_function;
       Arguments m_arguments;
-      StaticCommitHandler<decltype(&Details::deref(std::declval<A&>()))...>
-        m_handler;
+      StaticCommitHandler<decltype(&std::declval<A&>())...> m_handler;
       try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
       State m_state;
       int m_previous_sequence;
@@ -438,7 +428,7 @@ namespace Details {
     : m_function(std::forward<FF>(function)),
       m_arguments(std::forward<AF>(argument), std::forward<AR>(arguments)...),
       m_handler(std::apply([] (auto&&... arguments) {
-        return std::make_tuple(&Details::deref(arguments)...);
+        return std::make_tuple(&arguments...);
       }, m_arguments)),
       m_state(State::EMPTY),
       m_previous_sequence(-1),
@@ -449,7 +439,7 @@ namespace Details {
       : m_function(lift.m_function),
         m_arguments(lift.m_arguments),
         m_handler(std::apply([] (auto&&... arguments) {
-          return std::make_tuple(&Details::deref(arguments)...);
+          return std::make_tuple(&arguments...);
         }, m_arguments)),
         m_value(lift.m_value),
         m_state(lift.m_state),
@@ -463,7 +453,7 @@ namespace Details {
       : m_function(std::move(lift.m_function)),
         m_arguments(std::move(lift.m_arguments)),
         m_handler(std::apply([] (auto&&... arguments) {
-          return std::make_tuple(&Details::deref(arguments)...);
+          return std::make_tuple(&arguments...);
         }, m_arguments)),
         m_value(std::move(lift.m_value)),
         m_state(std::move(lift.m_state)),
@@ -538,7 +528,7 @@ namespace Details {
     m_arguments = lift.m_arguments;
     m_handler = StaticCommitHandler(std::apply(
       [] (auto&&... arguments) {
-        return std::make_tuple(&Details::deref(arguments)...);
+        return std::make_tuple(&arguments...);
       }, m_arguments));
     m_handler.transfer(lift.m_handler);
     m_value = lift.m_value;
@@ -554,7 +544,7 @@ namespace Details {
     m_arguments = std::move(lift.m_arguments);
     m_handler = StaticCommitHandler(std::apply(
       [] (auto&&... arguments) {
-        return std::make_tuple(&Details::deref(arguments)...);
+        return std::make_tuple(&arguments...);
       }, m_arguments));
     m_handler.transfer(lift.m_handler);
     m_value = std::move(lift.m_value);
