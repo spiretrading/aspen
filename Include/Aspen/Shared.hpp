@@ -16,6 +16,7 @@ namespace Aspen {
     public:
       using Reactor = R;
       using Type = reactor_result_t<Reactor>;
+      using Result = decltype(std::declval<Reactor>().eval());
       static constexpr auto is_noexcept = is_noexcept_reactor_v<Reactor>;
 
       /**
@@ -55,7 +56,7 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      eval_result_t<Type> eval() const noexcept(is_noexcept);
+      Result eval() const noexcept(is_noexcept);
 
     private:
       struct Entry {
@@ -150,8 +151,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  eval_result_t<typename Shared<R>::Type> Shared<R>::eval()
-      const noexcept(is_noexcept) {
+  typename Shared<R>::Result Shared<R>::eval() const noexcept(is_noexcept) {
     return m_entry->m_reactor.eval();
   }
 }

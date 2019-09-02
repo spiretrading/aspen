@@ -23,8 +23,7 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<FoldArgument<T>, std::shared_ptr<FoldArgument<T>>>(module,
-        name)
+    export_reactor<FoldArgument<T>>(module, name)
       .def(pybind11::init<>());
     if constexpr(!std::is_same_v<T, pybind11::object>) {
       pybind11::implicitly_convertible<FoldArgument<T>,
@@ -49,8 +48,8 @@ namespace Aspen {
     }
     export_fold_argument<Type>(module, prefix);
     export_reactor<Fold<E, S>>(module, name)
-      .def(pybind11::init<E, std::shared_ptr<FoldArgument<Type>>,
-        std::shared_ptr<FoldArgument<Type>>, S>());
+      .def(pybind11::init<E, Shared<FoldArgument<Type>>,
+        Shared<FoldArgument<Type>>, S>());
     if constexpr(!std::is_same_v<E, Box<pybind11::object>> ||
         !std::is_same_v<S, Box<pybind11::object>>) {
       pybind11::implicitly_convertible<Fold<E, S>,

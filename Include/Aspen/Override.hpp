@@ -5,6 +5,7 @@
 #include "Aspen/Count.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Operators.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Until.hpp"
 
@@ -12,11 +13,11 @@ namespace Aspen {
   template<typename T>
   auto override(T&& producer) {
     using Reactor = reactor_result_t<T>;
-    auto producer_handle = make_ptr(std::forward<T>(producer));
-    auto counter = make_ptr(count(&*producer_handle));
+    auto producer_handle = Shared(std::forward<T>(producer));
+    auto counter = Shared(count(producer_handle));
     return concat(lift(
-      [counter = &*counter] (const Reactor& reactor, int c) mutable {
-        return std::shared_ptr(make_until(counter != constant(c), reactor));
+      [=] (const Reactor& reactor, int count) mutable {
+        return Shared(until(counter != constant(count), reactor));
       }, std::move(producer_handle), std::move(counter)));
   }
 }
