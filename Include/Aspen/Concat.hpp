@@ -117,17 +117,24 @@ namespace Aspen {
       if(is_complete(child_state) && m_children.size() > 1) {
         m_state = combine(m_state, State::CONTINUE);
       }
-    } else if(is_complete(child_state) && m_children.size() > 1) {
-      auto next_child_state =
-        (*std::next(m_children.begin()))->commit(sequence);
-      if(!is_empty(next_child_state)) {
-        m_children.pop_front();
-        m_state = reset(m_state, State::EMPTY);
-        m_state = combine(m_state, State::EVALUATED);
-        if(is_complete(child_state) && m_children.size() > 1) {
-          m_state = combine(m_state, State::CONTINUE);
+    } else if(is_complete(child_state)) {
+      while(m_children.size() > 1) {
+        auto next_child_state =
+          (*std::next(m_children.begin()))->commit(sequence);
+        if(!is_empty(next_child_state)) {
+          m_children.pop_front();
+          m_state = reset(m_state, State::EMPTY);
+          m_state = combine(m_state, State::EVALUATED);
+          if(is_complete(next_child_state) && m_children.size() > 1) {
+            m_state = combine(m_state, State::CONTINUE);
+          }
+          child_state = next_child_state;
+          break;
+        } else if(is_complete(next_child_state)) {
+          m_children.erase(std::next(m_children.begin()));
+        } else {
+          break;
         }
-        child_state = next_child_state;
       }
     }
     if(has_continuation(child_state)) {
