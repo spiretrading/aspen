@@ -1,7 +1,7 @@
 #ifndef ASPEN_CHAIN_HPP
 #define ASPEN_CHAIN_HPP
+#include <cstdint>
 #include <utility>
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -33,17 +33,16 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      enum class Status {
+      enum class Status : char {
+        START,
         INITIAL,
         TRANSITIONING,
-        CONTINUATION,
-        PROXY_CONTINUATION
+        CONTINUATION
       };
-      try_ptr_t<A> m_initial;
-      try_ptr_t<B> m_continuation;
+      A m_initial;
+      B m_continuation;
       Status m_status;
-      State m_state;
-      int m_previous_sequence;
+      std::uint8_t m_which;
   };
 
   template<typename A, typename B>
@@ -75,67 +74,55 @@ namespace Aspen {
   Chain<A, B>::Chain(AF&& initial, BF&& continuation)
     : m_initial(std::forward<AF>(initial)),
       m_continuation(std::forward<BF>(continuation)),
-      m_status(Status::INITIAL),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+      m_status(Status::START),
+      m_which(0) {}
 
   template<typename A, typename B>
   State Chain<A, B>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
-    if(m_status == Status::INITIAL) {
-      auto update = m_initial->commit(sequence);
-      if(is_complete(update)) {
-        if(is_empty(update)) {
-          m_status = Status::PROXY_CONTINUATION;
-        } else if(has_evaluation(update) || is_empty(m_state)) {
+    if(m_status == Status::START) {
+      auto state = m_initial.commit(sequence);
+      if(has_evaluation(state)) {
+        if(is_complete(state)) {
           m_status = Status::TRANSITIONING;
-          m_state = State::CONTINUE_EVALUATED;
-        } else {
-          m_status = Status::CONTINUATION;
+          return State::CONTINUE_EVALUATED;
         }
-      } else if(!is_empty(update) && is_empty(m_state)) {
-        m_state = set(update, State::EVALUATED);
-      } else {
-        m_state = update;
-      }
-    } else if(m_status == Status::TRANSITIONING) {
-      m_status = Status::CONTINUATION;
-    }
-    if(m_status == Status::PROXY_CONTINUATION) {
-      m_state = m_continuation->commit(sequence);
-    } else if(m_status == Status::CONTINUATION) {
-      auto update = m_continuation->commit(sequence);
-      if(update == State::COMPLETE_EMPTY) {
         m_status = Status::INITIAL;
-        if(is_empty(m_state)) {
-          m_state = State::COMPLETE_EMPTY;
-        } else {
-          m_state = State::COMPLETE;
-        }
-      } else if(is_empty(update)) {
-        if(has_continuation(update)) {
-          m_state = State::CONTINUE;
-        } else {
-          m_state = State::NONE;
+        return state;
+      } else if(is_complete(state)) {
+        m_status = Status::CONTINUATION;
+        m_which = 1;
+        return m_continuation.commit(sequence);
+      } else {
+        return state;
+      }
+    } else if(m_status == Status::INITIAL) {
+      auto state = m_initial.commit(sequence);
+      if(is_complete(state)) {
+        m_status = Status::TRANSITIONING;
+        if(has_evaluation(state)) {
+          return State::CONTINUE_EVALUATED;
         }
       } else {
-        m_state = update;
+        return state;
       }
+    } else if(m_status == Status::CONTINUATION) {
+      return m_continuation.commit(sequence);
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    auto state = m_continuation.commit(sequence);
+    if(has_evaluation(state)) {
+      m_status = Status::CONTINUATION;
+      m_which = 1;
+    }
+    return state;
   }
 
   template<typename A, typename B>
   eval_result_t<typename Chain<A, B>::Type> Chain<A, B>::eval()
       const noexcept(is_noexcept){
-    if(m_status == Status::INITIAL ||
-        m_status == Status::TRANSITIONING) {
-      return m_initial->eval();
+    if(m_which == 0) {
+      return m_initial.eval();
     } else {
-      return m_continuation->eval();
+      return m_continuation.eval();
     }
   }
 }

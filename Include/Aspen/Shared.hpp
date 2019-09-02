@@ -25,6 +25,8 @@ namespace Aspen {
       template<typename... A>
       explicit Shared(A&&... args);
 
+      Shared(Shared&) = default;
+
       //! Returns a reference to the reactor.
       const Reactor& operator *() const noexcept;
 
