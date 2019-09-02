@@ -37,13 +37,13 @@ TEST_CASE("test_chain_immediate_transition", "[Chain]") {
 TEST_CASE("test_empty_chain", "[Chain]") {
   auto reactor = Chain(None<int>(), None<int>());
   auto state = reactor.commit(0);
-  REQUIRE(state == State::COMPLETE_EMPTY);
+  REQUIRE(state == State::COMPLETE);
 }
 
 TEST_CASE("test_chain_initial_complete_none", "[Chain]") {
   auto queue = Shared<Queue<int>>();
   queue->push(5);
-  queue->commit(0);
+  queue.commit(0);
   auto reactor = Chain(queue, None<int>());
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 5);
@@ -72,7 +72,7 @@ TEST_CASE("test_chain_immediate_continue", "[Chain]") {
 TEST_CASE("test_chain_initial_complete", "[Chain]") {
   auto queue = Shared<Queue<int>>();
   queue->push(5);
-  queue->commit(0);
+  queue.commit(0);
   auto reactor = Chain(queue, Constant(123));
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 5);

@@ -5,6 +5,6 @@ using namespace Aspen;
 
 TEST_CASE("test_none_int", "[None]") {
   auto none = None<int>();
-  REQUIRE(none.commit(0) == State::COMPLETE_EMPTY);
+  REQUIRE(none.commit(0) == State::COMPLETE);
   REQUIRE_THROWS_AS(none.eval(), std::runtime_error);
 }
