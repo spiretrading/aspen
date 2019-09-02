@@ -22,6 +22,7 @@
 #include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Range.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/StaticCommitHandler.hpp"
