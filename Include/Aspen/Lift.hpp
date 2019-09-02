@@ -275,8 +275,6 @@ namespace Details {
     private:
       Function m_function;
       try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
-      State m_state;
-      int m_previous_sequence;
 
       State invoke();
   };
@@ -570,29 +568,24 @@ namespace Details {
   template<typename F>
   template<typename FF, typename>
   Lift<F>::Lift(FF&& function)
-    : m_function(std::forward<FF>(function)),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+    : m_function(std::forward<FF>(function)) {}
 
   template<typename F>
   State Lift<F>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
+    auto state = State::NONE;
     auto invocation = invoke();
     if(has_evaluation(invocation)) {
       if(has_continuation(invocation)) {
-        m_state = State::CONTINUE_EVALUATED;
+        state = State::CONTINUE_EVALUATED;
       } else {
-        m_state = State::COMPLETE_EVALUATED;
+        state = State::COMPLETE_EVALUATED;
       }
     } else if(m_state == State::EMPTY) {
       m_state = State::COMPLETE_EMPTY;
     } else {
-      m_state = State::COMPLETE;
+      state = State::COMPLETE;
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    return state;
   }
 
   template<typename F>
