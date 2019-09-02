@@ -21,52 +21,6 @@ namespace Aspen {
   template<typename T>
   constexpr bool is_reactor_v = is_reactor<T>::value;
 
-  /** Trait testing whether a type is a pointer reactor. */
-  template<typename T>
-  struct is_reactor_pointer : std::false_type {};
-
-  template<typename T>
-  struct is_reactor_pointer<const T> : is_reactor_pointer<T> {};
-
-  template<typename T>
-  struct is_reactor_pointer<T&> : is_reactor_pointer<T> {};
-
-  template<typename T>
-  struct is_reactor_pointer<T&&> : is_reactor_pointer<T> {};
-
-  template<typename T>
-  struct is_reactor_pointer<T*> : is_reactor<T> {};
-
-  template<typename T>
-  struct is_reactor_pointer<std::shared_ptr<T>> : is_reactor<T> {};
-
-  template<typename T>
-  struct is_reactor_pointer<std::unique_ptr<T>> : is_reactor<T> {};
-
-  template<typename T>
-  constexpr bool is_reactor_pointer_v = is_reactor_pointer<T>::value;
-
-  /** Trait to test whether a type is a reactor or a pointer to a reactor. */
-  template<typename T>
-  struct is_reactor_or_pointer :
-    std::disjunction<is_reactor<T>, is_reactor_pointer<T>> {};
-
-  template<typename T>
-  constexpr bool is_reactor_or_pointer_v = is_reactor_or_pointer<T>::value;
-
-  /** Trait used to dereference a pointer to a reactor if needed. */
-  template<typename T, typename=void>
-  struct dereference_reactor {
-    using type = std::decay_t<T>;
-  };
-
-  template<typename T>
-  struct dereference_reactor<T, std::enable_if_t<is_reactor_pointer_v<T>>> :
-    dereference_reactor<decltype(*std::declval<T>())> {};
-
-  template<typename T>
-  using dereference_reactor_t = typename dereference_reactor<T>::type;
-
   /** Trait used to wrap a type into a reactor. */
   template<typename T, typename=void>
   struct to_reactor {
@@ -74,8 +28,7 @@ namespace Aspen {
   };
 
   template<typename T>
-  struct to_reactor<T, std::enable_if_t<
-      is_reactor_or_pointer_v<std::decay_t<T>>>> {
+  struct to_reactor<T, std::enable_if_t<is_reactor_v<std::decay_t<T>>>> {
     using type = std::decay_t<T>;
   };
 
@@ -85,8 +38,7 @@ namespace Aspen {
   /** Trait used to determine what type a reactor evaluates to. */
   template<typename T>
   struct reactor_result {
-    using type =
-      typename dereference_reactor_t<to_reactor_t<std::decay_t<T>>>::Type;
+    using type = typename to_reactor_t<std::decay_t<T>>::Type;
   };
 
   template<typename T>
@@ -116,19 +68,10 @@ namespace Aspen {
   /** Tests if a reactor's eval method is noexcept. */
   template<typename R>
   struct is_noexcept_reactor : std::bool_constant<
-    noexcept(std::declval<dereference_reactor_t<R>>().eval())> {};
+    noexcept(std::declval<R>().eval())> {};
 
   template<typename R>
   constexpr auto is_noexcept_reactor_v = is_noexcept_reactor<R>::value;
-
-  template<typename T>
-  auto make_ptr(T&& value) {
-    if constexpr(is_reactor_pointer_v<std::decay_t<T>>) {
-      return std::forward<T>(value);
-    } else {
-      return std::make_unique<to_reactor_t<T>>(std::forward<T>(value));
-    }
-  }
 
   template<std::size_t I = 0, typename... T, typename F>
   void for_each(std::tuple<T...>& t, F&& f) {

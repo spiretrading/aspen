@@ -35,9 +35,10 @@ namespace Aspen {
 
     private:
       Reactor m_producer;
+      bool m_is_producer_complete;
       State m_producer_state;
       std::list<reactor_result_t<Reactor>> m_children;
-      State m_child_state;
+      bool m_is_child_complete;
       State m_state;
       int m_previous_sequence;
   };
@@ -59,76 +60,70 @@ namespace Aspen {
   template<typename RF, typename>
   Concat<R>::Concat(RF&& producer)
     : m_producer(std::forward<RF>(producer)),
-      m_producer_state(State::NONE),
-      m_child_state(State::NONE) {}
+      m_is_producer_complete(false),
+      m_is_child_complete(false) {}
 
   template<typename R>
   State Concat<R>::commit(int sequence) noexcept {
-    auto state = State::NONE;
-    if(!is_complete(m_producer_state)) {
-      m_producer_state = m_producer.commit(sequence);
-      if(has_evaluation(m_producer_state)) {
-        try {
-          m_children.emplace_back(m_producer.eval());
-        } catch(const std::exception&) {}
-      }
-      if(has_continuation(m_producer_state)) {
-        state = combine(state, State::CONTINUE);
-      } else if(is_complete(m_producer_state) &&
-          (m_children.empty() ||
-          m_children.size() == 1 && is_complete(m_child_state))) {
-        state = combine(state, State::COMPLETE);
-      }
-    }
-    auto child_state = [&] {
-      if(is_complete(m_child_state)) {
-        while(m_children.size() > 1) {
-          auto child_state = std::next(m_children.begin())->commit(sequence);
-          if(has_evaluation(child_state)) {
-            m_children.pop_front();
-            return child_state;
-          } else if(is_complete(child_state)) {
-            m_children.erase(std::next(m_children.begin()));
-          } else {
-            break;
-          }
+    auto state = [&] {
+      if(!m_is_producer_complete) {
+        auto producer_state = m_producer.commit(sequence);
+        if(has_evaluation(producer_state)) {
+          try {
+            m_children.emplace_back(m_producer.eval());
+          } catch(const std::exception&) {}
+        }
+        if(has_continuation(producer_state)) {
+          return State::CONTINUE;
+        }
+        m_is_producer_complete = is_complete(producer_state);
+        if(m_is_producer_complete && (m_children.empty() ||
+            m_children.size() == 1 && m_is_child_complete)) {
+          return State::COMPLETE;
         }
       }
-      if(!m_children.empty() && !is_complete(m_child_state)) {
-        return m_children.front().commit(sequence);
+      return State::NONE;
+    }();
+    auto child_state = [&] {
+      while(true) {
+        if(m_is_child_complete) {
+          while(m_children.size() > 1) {
+            auto next_child = std::next(m_children.begin());
+            auto child_state = next_child->commit(sequence);
+            if(has_evaluation(child_state)) {
+              m_is_child_complete = is_complete(child_state);
+              m_children.pop_front();
+              return child_state;
+            } else if(is_complete(child_state)) {
+              m_children.erase(next_child);
+            } else {
+              break;
+            }
+          }
+          return State::NONE;
+        } else if(!m_children.empty()) {
+          auto child_state = m_children.front().commit(sequence);
+          m_is_child_complete = is_complete(child_state);
+          if(!m_is_child_complete || has_evaluation(child_state)) {
+            return child_state;
+          }
+        } else {
+          return State::NONE;
+        }
       }
-      return State::COMPLETE;
     }();
     if(has_evaluation(child_state)) {
       state = combine(state, State::EVALUATED);
-      if(is_complete(child_state) && m_children.size() > 1) {
+      if(m_is_child_complete && m_children.size() > 1) {
         state = combine(state, State::CONTINUE);
-      }
-    } else if(is_complete(child_state)) {
-      while(m_children.size() > 1) {
-        auto next_child_state = std::next(m_children.begin())->commit(sequence);
-        if(!is_empty(next_child_state)) {
-          m_children.pop_front();
-          state = combine(state, State::EVALUATED);
-          if(is_complete(next_child_state) && m_children.size() > 1) {
-            state = combine(state, State::CONTINUE);
-          }
-          child_state = next_child_state;
-          break;
-        } else if(is_complete(next_child_state)) {
-          m_children.erase(std::next(m_children.begin()));
-        } else {
-          break;
-        }
       }
     }
     if(has_continuation(child_state)) {
       state = combine(state, State::CONTINUE);
-    } else if(is_complete(child_state) &&
-        m_children.size() == 1 && is_complete(m_producer_state)) {
+    } else if(m_is_child_complete && m_children.size() == 1 &&
+        m_is_producer_complete) {
       state = combine(state, State::COMPLETE);
     }
-    m_child_state = child_state;
     return state;
   }
 
