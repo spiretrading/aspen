@@ -14,7 +14,7 @@ namespace Aspen {
    * @return A reactor that adds its two operands together.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator +(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -31,7 +31,7 @@ namespace Aspen {
    * @return A reactor that subtracts its two operands from each other.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator -(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -48,7 +48,7 @@ namespace Aspen {
    * @return A reactor that multiplies its two operands together.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator *(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -65,7 +65,7 @@ namespace Aspen {
    * @return A reactor that divides its two operands by each other.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator /(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -82,7 +82,7 @@ namespace Aspen {
    * @return A reactor that takes the modulus of its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator %(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -99,7 +99,7 @@ namespace Aspen {
    * @return A reactor that takes the binary XOR of its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator ^(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -116,7 +116,7 @@ namespace Aspen {
    * @return A reactor that takes the binary AND of its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator &(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -133,7 +133,7 @@ namespace Aspen {
    * @return A reactor that takes the binary OR of its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator |(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -148,7 +148,7 @@ namespace Aspen {
    * @param series The series to negate.
    * @return A reactor that takes the binary negation of its operand.
    */
-  template<typename T, typename = std::enable_if_t<is_reactor_or_pointer_v<T>>>
+  template<typename T, typename = std::enable_if_t<is_reactor_v<T>>>
   auto operator ~(T&& series) {
     using Type = reactor_result_t<T>;
     return lift([] (const Type& value) noexcept(noexcept(~value)) {
@@ -161,7 +161,7 @@ namespace Aspen {
    * @param series The series to negate.
    * @return A reactor that takes the logical negation of its operand.
    */
-  template<typename T, typename = std::enable_if_t<is_reactor_or_pointer_v<T>>>
+  template<typename T, typename = std::enable_if_t<is_reactor_v<T>>>
   auto operator !(T&& series) {
     using Type = reactor_result_t<T>;
     return lift([] (const Type& value) noexcept(noexcept(!value)) {
@@ -176,7 +176,7 @@ namespace Aspen {
    * @return A reactor that applies the left-shift operator to its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator <<(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -193,7 +193,7 @@ namespace Aspen {
    * @return A reactor that applies the right-shift operator to its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator >>(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -211,7 +211,7 @@ namespace Aspen {
    *         operand.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator <(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -229,7 +229,7 @@ namespace Aspen {
    *         its right operand.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator <=(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -246,8 +246,7 @@ namespace Aspen {
    * @return A reactor that tests if its operands are equal.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_v<L> && is_reactor_or_pointer_v<R> ||
-    is_reactor_or_pointer_v<L> && is_reactor_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator ==(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -264,8 +263,7 @@ namespace Aspen {
    * @return A reactor that tests if its operands are not equal.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_v<L> && is_reactor_or_pointer_v<R> ||
-    is_reactor_or_pointer_v<L> && is_reactor_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator !=(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -283,7 +281,7 @@ namespace Aspen {
    *         to its right operand.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator >=(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -301,7 +299,7 @@ namespace Aspen {
    *         operand.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator >(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -316,7 +314,7 @@ namespace Aspen {
    * @param series The series to negate.
    * @return A reactor that negates its operand.
    */
-  template<typename T, typename = std::enable_if_t<is_reactor_or_pointer_v<T>>>
+  template<typename T, typename = std::enable_if_t<is_reactor_v<T>>>
   auto operator -(T&& series) {
     using Type = reactor_result_t<T>;
     return lift([] (const Type& value) noexcept(noexcept(-value)) {
@@ -329,7 +327,7 @@ namespace Aspen {
    * @param series The series to plus.
    * @return A reactor that plusses its operand.
    */
-  template<typename T, typename = std::enable_if_t<is_reactor_or_pointer_v<T>>>
+  template<typename T, typename = std::enable_if_t<is_reactor_v<T>>>
   auto operator +(T&& series) {
     using Type = reactor_result_t<T>;
     return lift([] (const Type& value) noexcept(noexcept(+value)) {
@@ -344,7 +342,7 @@ namespace Aspen {
    * @return A reactor that takes the logical AND of its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator &&(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
@@ -361,7 +359,7 @@ namespace Aspen {
    * @return A reactor that takes the logical AND of its operands.
    */
   template<typename L, typename R, typename =
-    std::enable_if_t<is_reactor_or_pointer_v<L> && is_reactor_or_pointer_v<R>>>
+    std::enable_if_t<is_reactor_v<L> && is_reactor_v<R>>>
   auto operator ||(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
