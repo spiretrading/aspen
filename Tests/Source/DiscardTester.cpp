@@ -13,7 +13,7 @@ TEST_CASE("test_flipping_discard", "[Discard]") {
   series->push(3);
   series->push(4);
   auto reactor = discard(toggle, series);
-  REQUIRE(reactor.commit(0) == State::CONTINUE_EMPTY);
+  REQUIRE(reactor.commit(0) == State::CONTINUE);
   toggle->push(true);
   REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
   REQUIRE(reactor.eval() == 2);

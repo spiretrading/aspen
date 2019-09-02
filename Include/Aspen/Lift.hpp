@@ -231,10 +231,8 @@ namespace Details {
     private:
       Function m_function;
       Arguments m_arguments;
-      StaticCommitHandler<decltype(&std::declval<A&>())...> m_handler;
+      StaticCommitHandler<A*...> m_handler;
       try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
-      State m_state;
-      int m_previous_sequence;
       bool m_has_continuation;
 
       State invoke();
@@ -428,8 +426,6 @@ namespace Details {
       m_handler(std::apply([] (auto&&... arguments) {
         return std::make_tuple(&arguments...);
       }, m_arguments)),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1),
       m_has_continuation(false) {}
 
   template<typename F, typename... A>
@@ -440,8 +436,6 @@ namespace Details {
           return std::make_tuple(&arguments...);
         }, m_arguments)),
         m_value(lift.m_value),
-        m_state(lift.m_state),
-        m_previous_sequence(lift.m_previous_sequence),
         m_has_continuation(lift.m_has_continuation) {
     m_handler.transfer(lift.m_handler);
   }
@@ -454,64 +448,42 @@ namespace Details {
           return std::make_tuple(&arguments...);
         }, m_arguments)),
         m_value(std::move(lift.m_value)),
-        m_state(std::move(lift.m_state)),
-        m_previous_sequence(std::move(lift.m_previous_sequence)),
         m_has_continuation(std::move(lift.m_has_continuation)) {
     m_handler.transfer(lift.m_handler);
   }
 
   template<typename F, typename... A>
   State Lift<F, A...>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
-    auto state = m_handler.commit(sequence);
-    if(has_evaluation(state) || m_has_continuation ||
-        is_complete(state) && !is_empty(state) && is_empty(m_state)) {
+    auto state = State::NONE;
+    auto children_state = m_handler.commit(sequence);
+    if(has_evaluation(children_state) || m_has_continuation) {
       m_has_continuation = false;
       auto invocation = invoke();
       if(invocation == State::NONE) {
-        if(is_complete(state)) {
-          if(is_empty(m_state)) {
-            m_state = State::COMPLETE_EMPTY;
-          } else {
-            m_state = State::COMPLETE;
-          }
-        } else if(has_continuation(state)) {
-          if(is_empty(m_state)) {
-            m_state = State::CONTINUE_EMPTY;
-          } else {
-            m_state = State::CONTINUE;
-          }
-        } else {
-          if(is_empty(m_state)) {
-            m_state = State::EMPTY;
-          } else {
-            m_state = State::NONE;
-          }
+        if(is_complete(children_state)) {
+          state = State::COMPLETE;
+        } else if(has_continuation(children_state)) {
+          state = State::CONTINUE;
         }
       } else if(is_complete(invocation)) {
         if(has_evaluation(invocation)) {
-          m_state = State::COMPLETE_EVALUATED;
-        } else if(is_empty(m_state)) {
-          m_state = State::COMPLETE_EMPTY;
+          state = State::COMPLETE_EVALUATED;
         } else {
-          m_state = State::COMPLETE;
+          state = State::COMPLETE;
         }
       } else {
-        m_state = invocation;
+        state = invocation;
         m_has_continuation = has_continuation(invocation);
-        if(has_continuation(state)) {
-          m_state = combine(m_state, State::CONTINUE);
-        } else if(is_complete(state) && !m_has_continuation) {
-          m_state = combine(m_state, State::COMPLETE);
+        if(has_continuation(children_state)) {
+          state = combine(state, State::CONTINUE);
+        } else if(is_complete(children_state) && !m_has_continuation) {
+          state = combine(state, State::COMPLETE);
         }
       }
     } else {
-      m_state = state;
+      state = children_state;
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    return state;
   }
 
   template<typename F, typename... A>

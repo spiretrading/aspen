@@ -41,7 +41,7 @@ TEST_CASE("test_lift_constant_argument", "[Lift]") {
 TEST_CASE("test_lift_one_argument_updates", "[Lift]") {
   auto queue = Shared(Queue<int>());
   auto reactor = Lift(square, queue);
-  REQUIRE(reactor.commit(0) == State::EMPTY);
+  REQUIRE(reactor.commit(0) == State::NONE);
   queue->push(10);
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 100);

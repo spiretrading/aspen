@@ -7,12 +7,12 @@ using namespace Aspen;
 
 TEST_CASE("test_backward_range", "[Range]") {
   auto reactor = range(constant(10), constant(9));
-  REQUIRE(reactor.commit(0) == State::COMPLETE_EMPTY);
+  REQUIRE(reactor.commit(0) == State::COMPLETE);
 }
 
 TEST_CASE("test_empty_range", "[Range]") {
   auto reactor = range(constant(1), constant(1));
-  REQUIRE(reactor.commit(0) == State::COMPLETE_EMPTY);
+  REQUIRE(reactor.commit(0) == State::COMPLETE);
 }
 
 TEST_CASE("test_single_range", "[Range]") {
