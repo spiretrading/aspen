@@ -12,8 +12,7 @@ TEST_CASE("test_constant_box", "[Box]") {
 }
 
 TEST_CASE("test_pointer_box", "[Box]") {
-  auto constant = Constant(123);
-  auto box = Box(&constant);
+  auto box = Box(Constant(123));
   REQUIRE(box.commit(0) == State::COMPLETE_EVALUATED);
   REQUIRE(box.eval() == 123);
 }

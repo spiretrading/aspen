@@ -41,7 +41,7 @@ TEST_CASE("test_empty_chain", "[Chain]") {
 }
 
 TEST_CASE("test_chain_initial_complete_none", "[Chain]") {
-  auto queue = Shared<Queue<int>>();
+  auto queue = Shared(Queue<int>());
   queue->push(5);
   queue.commit(0);
   auto reactor = Chain(queue, None<int>());
@@ -53,16 +53,16 @@ TEST_CASE("test_chain_initial_complete_none", "[Chain]") {
 }
 
 TEST_CASE("test_chain_immediate_complete", "[Chain]") {
-  auto queue = Shared<Queue<int>>();
+  auto queue = Shared(Queue<int>());
   auto reactor = Chain(None<int>(), queue);
-  REQUIRE(reactor.commit(0) == State::EMPTY);
+  REQUIRE(reactor.commit(0) == State::NONE);
   queue->push(21);
   REQUIRE(reactor.commit(1) == State::EVALUATED);
   REQUIRE(reactor.eval() == 21);
 }
 
 TEST_CASE("test_chain_immediate_continue", "[Chain]") {
-  auto queue = Shared<Queue<int>>();
+  auto queue = Shared(Queue<int>());
   queue->push(21);
   auto reactor = Chain(None<int>(), queue);
   REQUIRE(reactor.commit(0) == State::EVALUATED);
@@ -70,7 +70,7 @@ TEST_CASE("test_chain_immediate_continue", "[Chain]") {
 }
 
 TEST_CASE("test_chain_initial_complete", "[Chain]") {
-  auto queue = Shared<Queue<int>>();
+  auto queue = Shared(Queue<int>());
   queue->push(5);
   queue.commit(0);
   auto reactor = Chain(queue, Constant(123));
