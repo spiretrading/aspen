@@ -3,7 +3,6 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -51,20 +50,15 @@ namespace Aspen {
     private:
       template<typename C>
       struct Child {
-        try_ptr_t<C> m_reactor;
+        C m_reactor;
         State m_state;
+        bool m_has_evaluation;
 
         template<typename CF>
         Child(CF&& reactor);
       };
-      enum class Status {
-        INITIALIZING,
-        EVALUATING,
-        FINAL
-      };
       std::tuple<Child<R>...> m_children;
-      Status m_status;
-      State m_state;
+      bool m_is_initializing;
 
       template<typename CF>
       static auto make_child(CF&& reactor);
@@ -73,32 +67,32 @@ namespace Aspen {
   };
 
   template<typename... A>
-  StaticCommitHandler(A&&...) -> StaticCommitHandler<to_reactor_t<A>...>;
+  StaticCommitHandler(A&&...) -> StaticCommitHandler<std::decay_t<A>...>;
 
   template<typename A>
-  StaticCommitHandler(A&&) -> StaticCommitHandler<to_reactor_t<A>>;
+  StaticCommitHandler(A&&) -> StaticCommitHandler<std::decay_t<A>>;
 
   template<typename A1, typename A2>
-  StaticCommitHandler(A1&&, A2&&) -> StaticCommitHandler<to_reactor_t<A1>,
-    to_reactor_t<A2>>;
+  StaticCommitHandler(A1&&, A2&&) -> StaticCommitHandler<std::decay_t<A1>,
+    std::decay_t<A2>>;
 
   template<typename... A>
   StaticCommitHandler(std::tuple<A...>) ->
-    StaticCommitHandler<to_reactor_t<A>...>;
+    StaticCommitHandler<std::decay_t<A>...>;
 
   template<typename... R>
   template<typename C>
   template<typename CF>
   StaticCommitHandler<R...>::Child<C>::Child(CF&& reactor)
     : m_reactor(std::forward<CF>(reactor)),
-      m_state(State::EMPTY) {}
+      m_state(State::NONE),
+      m_has_evaluation(false) {}
 
   template<typename... R>
   template<typename... A>
   StaticCommitHandler<R...>::StaticCommitHandler(A&&... children)
     : m_children(std::forward<A>(children)...),
-      m_status(Status::INITIALIZING),
-      m_state(State::EMPTY) {}
+      m_is_initializing(true) {}
 
   template<typename... R>
   template<typename... A>
@@ -106,8 +100,7 @@ namespace Aspen {
     : m_children(std::apply([] (auto&&... arguments) {
         return std::make_tuple(make_child(std::move(arguments))...);
       }, std::move(children))),
-      m_status(Status::INITIALIZING),
-      m_state(State::EMPTY) {}
+      m_is_initializing(true) {}
 
   template<typename... R>
   void StaticCommitHandler<R...>::transfer(
@@ -115,100 +108,64 @@ namespace Aspen {
     for_each<std::size_t{0}, sizeof...(R)>([&] (auto index) noexcept {
       std::get<decltype(index)::value>(m_children).m_state =
         std::get<decltype(index)::value>(handler.m_children).m_state;
+      std::get<decltype(index)::value>(m_children).m_has_evaluation =
+        std::get<decltype(index)::value>(handler.m_children).m_has_evaluation;
     });
+    m_is_initializing = handler.m_is_initializing;
   }
 
   template<typename... R>
   State StaticCommitHandler<R...>::commit(int sequence) noexcept {
-    if(m_status == Status::INITIALIZING) {
-      auto initialization_count = std::size_t(0);
-      auto completion_count = std::size_t(0);
-      auto has_continue = false;
-      for_each(m_children, [&] (auto& child) noexcept {
-        if(m_state == State::COMPLETE_EMPTY) {
-          return;
-        }
-        if(is_complete(child.m_state)) {
-          ++completion_count;
-        } else if(!has_evaluation(child.m_state)) {
-          child.m_state = child.m_reactor->commit(sequence);
-          if(is_complete(child.m_state)) {
-            if(is_empty(child.m_state)) {
-              m_status = Status::FINAL;
-              m_state = State::COMPLETE_EMPTY;
-              return;
-            }
-            ++completion_count;
-          } else {
-            has_continue |= has_continuation(child.m_state);
-          }
-          if(has_evaluation(child.m_state)) {
-            ++initialization_count;
-          }
-        } else {
-          auto state = child.m_reactor->commit(sequence);
-          if(is_complete(state)) {
-            ++completion_count;
-            child.m_state = state;
-          } else {
-            has_continue |= has_continuation(state);
-          }
-          if(has_evaluation(child.m_state)) {
-            ++initialization_count;
-          }
-        }
-      });
-      if(m_state != State::COMPLETE_EMPTY) {
-        if(sizeof...(R) == 0) {
-          m_state = State::COMPLETE_EMPTY;
-          m_status = Status::FINAL;
-        } else {
-          if(completion_count == sizeof...(R)) {
-            m_state = State::COMPLETE;
-            if(initialization_count != 0) {
-              m_state = combine(m_state, State::EVALUATED);
-            }
-            m_status = Status::FINAL;
-          } else if(initialization_count == sizeof...(R)) {
-            m_state = State::EVALUATED;
-            if(has_continue) {
-              m_state = combine(m_state, State::CONTINUE);
-            }
-            m_status = Status::EVALUATING;
-          } else {
-            m_state = State::EMPTY;
-            if(has_continue) {
-              m_state = combine(m_state, State::CONTINUE);
-            }
-          }
-        }
-      }
-    } else if(m_status == Status::EVALUATING) {
-      m_state = State::NONE;
-      auto completion_count = std::size_t(0);
-      auto has_continue = false;
-      for_each(m_children, [&] (auto& child) noexcept {
-        if(is_complete(child.m_state)) {
-          ++completion_count;
-        } else {
-          child.m_state = child.m_reactor->commit(sequence);
-          has_continue |= has_continuation(child.m_state);
-          if(has_evaluation(child.m_state)) {
-            m_state = State::EVALUATED;
-          }
-          if(is_complete(child.m_state)) {
-            ++completion_count;
-          }
-        }
-      });
-      if(completion_count == sizeof...(R)) {
-        m_status = Status::FINAL;
-        m_state = combine(m_state, State::COMPLETE);
-      } else if(has_continue) {
-        m_state = combine(m_state, State::CONTINUE);
-      }
+    if(sizeof...(R) == 0) {
+      return State::COMPLETE;
     }
-    return m_state;
+    auto state = State::NONE;
+    auto evaluation_count = std::size_t(0);
+    auto completion_count = std::size_t(0);
+    auto has_continue = false;
+    for_each(m_children, [&] (auto& child) noexcept {
+      if(state == State::COMPLETE) {
+        return;
+      }
+      if(is_complete(child.m_state)) {
+        ++completion_count;
+      } else {
+        child.m_state = child.m_reactor->commit(sequence);
+        if(m_is_initializing) {
+          child.m_has_evaluation |= has_evaluation(child.m_state);
+          if(child.m_has_evaluation) {
+            ++evaluation_count;
+          }
+        } else if(has_evaluation(child.m_state)) {
+          ++evaluation_count;
+        }
+        if(is_complete(child.m_state)) {
+          ++completion_count;
+          if(!child.m_has_evaluation) {
+            state = State::COMPLETE;
+          }
+        } else {
+          has_continue |= has_continuation(child.m_state);
+        }
+      }
+    });
+    if(state == State::COMPLETE) {
+      return State::COMPLETE;
+    }
+    if(m_is_initializing) {
+      if(evaluation_count == sizeof...(R)) {
+        m_is_initializing = false;
+        state = combine(state, State::EVALUATED);
+      }
+    } else if(evaluation_count != 0) {
+      state = combine(state, State::EVALUATED);
+    }
+    if(completion_count == sizeof...(R)) {
+      state = combine(state, State::COMPLETE);
+    } else if(has_continue) {
+      state = combine(state, State::CONTINUE);
+    }
+    return state;
   }
 
   template<typename... R>
