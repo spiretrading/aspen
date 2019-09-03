@@ -83,71 +83,71 @@ namespace Aspen {
       reactor.def("__add__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self + to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__sub__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self - to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__mul__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self * to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__truediv__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self / to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__mod__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self % to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__xor__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self ^ to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__and__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self & to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__or__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self | to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__invert__",
         [] (ReactorPtr<T>& self) {
           return Box(~self);
-        });
+        }, pybind11::is_operator());
       reactor.def("__lshift__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self << to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__rshift__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self >> to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__lt__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self < to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__le__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self <= to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__ge__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self >= to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__gt__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
           return Box(self > to_python_reactor(object));
-        });
+        }, pybind11::is_operator());
       reactor.def("__neg__",
         [] (ReactorPtr<T>& self) {
           return Box(-self);
-        });
+        }, pybind11::is_operator());
       reactor.def("__pos__",
         [] (ReactorPtr<T>& self) {
           return Box(+self);
-        });
+        }, pybind11::is_operator());
     }
     if constexpr(!std::is_same_v<T, Box<Type>>) {
       implicitly_convertible_to_box<T>();
