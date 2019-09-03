@@ -6,6 +6,7 @@
 #include "Aspen/Constant.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Maybe.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/Traits.hpp"
@@ -22,12 +23,12 @@ namespace Aspen {
   template<typename S, typename E, typename T>
   auto range(S&& start, E&& stop, T&& step) {
     using Type = reactor_result_t<S>;
-    auto start_reactor = make_ptr(std::forward<S>(start));
-    auto start_updates = StateReactor(&*start_reactor);
-    auto stop_reactor = make_ptr(std::forward<E>(stop));
-    auto stop_updates = StateReactor(&*stop_reactor);
-    auto step_reactor = make_ptr(std::forward<T>(step));
-    auto step_updates = StateReactor(&*step_reactor);
+    auto start_reactor = Shared(std::forward<S>(start));
+    auto start_updates = StateReactor(start_reactor);
+    auto stop_reactor = Shared(std::forward<E>(stop));
+    auto stop_updates = StateReactor(stop_reactor);
+    auto step_reactor = Shared(std::forward<T>(step));
+    auto step_updates = StateReactor(step_reactor);
     return lift(
       [value = std::optional<Type>()](const reactor_result_t<S>& start,
           State start_state, const reactor_result_t<E>& end, State end_state,

@@ -11,9 +11,9 @@ namespace Details {
     template<typename T>
     std::optional<Type> operator ()(bool toggle, T&& series) const noexcept {
       if(toggle) {
-        return std::forward<T>(series);
+        return std::nullopt;
       }
-      return std::nullopt;
+      return std::forward<T>(series);
     }
   };
 }

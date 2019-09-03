@@ -1,9 +1,10 @@
 #ifndef ASPEN_BOX_HPP
 #define ASPEN_BOX_HPP
 #include <memory>
+#include <optional>
 #include <type_traits>
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -27,38 +28,51 @@ namespace Aspen {
         !std::is_base_of_v<Box, std::decay_t<R>>>>
       explicit Box(R&& reactor);
 
+      Box(const Box& box);
+
+      Box(Box&& box) = default;
+
       State commit(int sequence) noexcept;
 
       Result eval() const;
 
+      Box& operator =(const Box& box);
+
+      Box& operator =(Box&& box) = default;
+
     private:
       struct BaseWrapper {
         virtual ~BaseWrapper() = default;
+        virtual std::unique_ptr<BaseWrapper> clone() = 0;
         virtual State commit(int sequence) noexcept = 0;
         virtual Result eval() const = 0;
       };
       template<typename R>
       struct ByReferenceWrapper final : BaseWrapper {
-        try_ptr_t<R> m_reactor;
+        Shared<R> m_reactor;
 
-        template<typename Q>
+        template<typename Q, typename = std::enable_if_t<
+          !std::is_base_of_v<ByReferenceWrapper, std::decay_t<Q>>>>
         ByReferenceWrapper(Q&& reactor);
+        std::unique_ptr<BaseWrapper> clone() override;
         State commit(int sequence) noexcept override;
         Result eval() const override;
       };
       template<typename R>
       struct ByValueWrapper final : BaseWrapper {
-        try_ptr_t<R> m_reactor;
-        Maybe<Type> m_value;
-        State m_state;
-        int m_previous_sequence;
+        static constexpr auto is_noexcept = is_noexcept_reactor_v<R>;
+        Shared<R> m_reactor;
+        std::conditional_t<is_noexcept, std::optional<Type>, Maybe<Type>>
+          m_value;
 
-        template<typename Q>
+        template<typename Q, typename = std::enable_if_t<
+          !std::is_base_of_v<ByValueWrapper, std::decay_t<Q>>>>
         ByValueWrapper(Q&& reactor);
+        std::unique_ptr<BaseWrapper> clone() override;
         State commit(int sequence) noexcept override;
         Result eval() const override;
       };
-      std::shared_ptr<BaseWrapper> m_reactor;
+      std::unique_ptr<BaseWrapper> m_reactor;
   };
 
   template<typename R, typename = std::enable_if_t<
@@ -80,14 +94,18 @@ namespace Aspen {
   Box<T>::Box(R&& reactor) {
     using Reactor = to_reactor_t<R>;
     if constexpr(std::is_same_v<Type, void> || std::is_reference_v<
-        decltype(std::declval<try_ptr_t<Reactor>>()->eval())>) {
-      m_reactor = std::make_shared<ByReferenceWrapper<Reactor>>(
+        decltype(std::declval<Reactor>().eval())>) {
+      m_reactor = std::make_unique<ByReferenceWrapper<Reactor>>(
         std::forward<R>(reactor));
     } else {
-      m_reactor = std::make_shared<ByValueWrapper<Reactor>>(
+      m_reactor = std::make_unique<ByValueWrapper<Reactor>>(
         std::forward<R>(reactor));
     }
   }
+
+  template<typename T>
+  Box<T>::Box(const Box& box)
+    : m_reactor(box.m_reactor->clone()) {}
 
   template<typename T>
   State Box<T>::commit(int sequence) noexcept {
@@ -100,47 +118,62 @@ namespace Aspen {
   }
 
   template<typename T>
+  Box<T>& Box<T>::operator =(const Box& box) {
+    m_reactor = box.m_reactor->clone();
+    return *this;
+  }
+
+  template<typename T>
   template<typename R>
-  template<typename Q>
+  template<typename Q, typename>
   Box<T>::ByReferenceWrapper<R>::ByReferenceWrapper(Q&& reactor)
     : m_reactor(std::forward<Q>(reactor)) {}
 
   template<typename T>
   template<typename R>
+  std::unique_ptr<typename Box<T>::BaseWrapper>
+      Box<T>::ByReferenceWrapper<R>::clone() {
+    return std::make_unique<ByReferenceWrapper>(*this);
+  }
+
+  template<typename T>
+  template<typename R>
   State Box<T>::ByReferenceWrapper<R>::commit(int sequence) noexcept {
-    return m_reactor->commit(sequence);
+    return m_reactor.commit(sequence);
   }
 
   template<typename T>
   template<typename R>
   typename Box<T>::Result Box<T>::ByReferenceWrapper<R>::eval() const {
     if constexpr(std::is_same_v<Result, void>) {
-      m_reactor->eval();
+      m_reactor.eval();
     } else {
-      return m_reactor->eval();
+      return m_reactor.eval();
     }
   }
 
   template<typename T>
   template<typename R>
-  template<typename Q>
+  template<typename Q, typename>
   Box<T>::ByValueWrapper<R>::ByValueWrapper(Q&& reactor)
-    : m_reactor(std::forward<Q>(reactor)),
-      m_state(State::NONE),
-      m_previous_sequence(-1) {}
+    : m_reactor(std::forward<Q>(reactor)) {}
+
+  template<typename T>
+  template<typename R>
+  std::unique_ptr<typename Box<T>::BaseWrapper>
+      Box<T>::ByValueWrapper<R>::clone() {
+    return std::make_unique<ByValueWrapper>(*this);
+  }
 
   template<typename T>
   template<typename R>
   State Box<T>::ByValueWrapper<R>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
+    auto state = m_reactor.commit(sequence);
+    if(has_evaluation(state)) {
+      m_value = try_call(
+        [&] () noexcept(is_noexcept) { return m_reactor.eval(); });
     }
-    m_state = m_reactor->commit(sequence);
-    if(has_evaluation(m_state)) {
-      m_value = try_call([&] { return m_reactor->eval(); });
-    }
-    m_previous_sequence = sequence;
-    return m_state;
+    return state;
   }
 
   template<typename T>

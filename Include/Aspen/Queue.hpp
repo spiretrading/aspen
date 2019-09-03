@@ -22,6 +22,8 @@ namespace Aspen {
       /** Constructs an empty Queue. */
       Queue();
 
+      Queue(Queue&& queue);
+
       /**
        * Pushes a value to the queue.
        * @param value The value to push.
@@ -54,23 +56,32 @@ namespace Aspen {
 
       eval_result_t<Type> eval() const;
 
+      Queue& operator =(Queue&& queue);
+
     private:
       std::mutex m_mutex;
       bool m_is_complete;
+      bool m_has_commit;
       std::deque<Type> m_entries;
       std::exception_ptr m_exception;
-      Maybe<Type> m_value;
       Trigger* m_trigger;
-      State m_state;
-      int m_previous_sequence;
   };
 
   template<typename T>
   Queue<T>::Queue()
     : m_is_complete(false),
-      m_trigger(nullptr),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+      m_has_commit(false),
+      m_trigger(nullptr) {}
+
+  template<typename T>
+  Queue<T>::Queue(Queue&& queue) {
+    auto lock = std::lock_guard(queue.m_mutex);
+    m_is_complete = std::move(queue.m_is_complete);
+    m_has_commit = std::move(queue.m_has_commit);
+    m_entries = std::move(queue.m_entries);
+    m_exception = std::move(queue.m_exception);
+    m_trigger = std::move(queue.m_trigger);
+  }
 
   template<typename T>
   void Queue<T>::push(Type value) {
@@ -117,41 +128,55 @@ namespace Aspen {
 
   template<typename T>
   State Queue<T>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
     auto lock = std::lock_guard(m_mutex);
-    if(m_previous_sequence == -1) {
+    if(m_trigger == nullptr) {
       m_trigger = Trigger::get_trigger();
     }
-    if(!m_entries.empty()) {
-      m_value = std::move(m_entries.front());
-      m_entries.pop_front();
-      m_state = State::EVALUATED;
-      if(!m_entries.empty() || m_exception != nullptr) {
-        m_state = combine(m_state, State::CONTINUE);
+    auto state = [&] {
+      if(m_entries.size() > 1 || m_entries.size() == 1 && !m_has_commit) {
+        if(m_has_commit) {
+          m_entries.pop_front();
+        } else {
+          m_has_commit = true;
+        }
+        if(m_entries.size() > 1 || m_exception != nullptr) {
+          return State::CONTINUE_EVALUATED;
+        } else if(m_is_complete) {
+          return State::COMPLETE_EVALUATED;
+        } else {
+          return State::EVALUATED;
+        }
+      } else if(m_exception != nullptr) {
+        m_entries.clear();
+        return State::COMPLETE_EVALUATED;
       } else if(m_is_complete) {
-        m_state = combine(m_state, State::COMPLETE);
-      }
-    } else if(m_exception != nullptr) {
-      m_value = std::move(m_exception);
-      m_state = State::COMPLETE_EVALUATED;
-    } else if(m_is_complete) {
-      if(is_empty(m_state)) {
-        m_state = State::COMPLETE_EMPTY;
+        return State::COMPLETE;
       } else {
-        m_state = State::COMPLETE;
+        return State::NONE;
       }
-    } else if(!is_empty(m_state)) {
-      m_state = State::NONE;
-    }
-    m_previous_sequence = sequence;
-    return m_state;
+    }();
+    return state;
   }
 
   template<typename T>
   eval_result_t<typename Queue<T>::Type> Queue<T>::eval() const {
-    return m_value;
+    if(m_entries.empty()) {
+      std::rethrow_exception(m_exception);
+    }
+    return m_entries.front();
+  }
+
+  template<typename T>
+  Queue<T>& Queue<T>::operator =(Queue&& queue) {
+    {
+      auto lock = std::lock_guard(queue.m_mutex);
+      m_is_complete = std::move(queue.m_is_complete);
+      m_has_commit = std::move(queue.m_has_commit);
+      m_entries = std::move(queue.m_entries);
+      m_exception = std::move(queue.m_exception);
+      m_trigger = std::move(queue.m_trigger);
+    }
+    return *this;
   }
 }
 

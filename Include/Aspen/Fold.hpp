@@ -6,6 +6,7 @@
 #include "Aspen/Lift.hpp"
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -21,7 +22,7 @@ namespace Aspen {
       using Type = T;
 
       /** Constructs a FoldArgument. */
-      FoldArgument() noexcept;
+      FoldArgument() = default;
 
       State commit(int sequence) noexcept;
 
@@ -29,10 +30,8 @@ namespace Aspen {
 
     private:
       template<typename, typename> friend class Fold;
-      State m_state;
       Maybe<Type> m_value;
       std::optional<Maybe<Type>> m_next_value;
-      int m_previous_sequence;
 
       void update(Maybe<Type> value);
   };
@@ -58,33 +57,31 @@ namespace Aspen {
        * @param series The reactor producing the series.
        */
       template<typename EF, typename SF>
-      Fold(EF&& evaluator, std::shared_ptr<FoldArgument<Type>> left,
-        std::shared_ptr<FoldArgument<Type>> right, SF&& series);
+      Fold(EF&& evaluator, Shared<FoldArgument<Type>> left,
+        Shared<FoldArgument<Type>> right, SF&& series);
 
       State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
     private:
-      try_ptr_t<E> m_evaluator;
-      std::shared_ptr<FoldArgument<Type>> m_left;
-      std::shared_ptr<FoldArgument<Type>> m_right;
-      try_ptr_t<S> m_series;
+      E m_evaluator;
+      Shared<FoldArgument<Type>> m_left;
+      Shared<FoldArgument<Type>> m_right;
+      S m_series;
       Maybe<Type> m_value;
       std::optional<Maybe<Type>> m_previous_value;
-      State m_state;
-      int m_previous_sequence;
   };
 
   template<typename E, typename S>
-  Fold(E&&, std::shared_ptr<FoldArgument<reactor_result_t<E>>>,
-    std::shared_ptr<FoldArgument<reactor_result_t<E>>>, S&&) ->
+  Fold(E&&, Shared<FoldArgument<reactor_result_t<E>>>,
+    Shared<FoldArgument<reactor_result_t<E>>>, S&&) ->
     Fold<to_reactor_t<E>, to_reactor_t<S>>;
 
   /** Returns a new FoldArgument. */
   template<typename T>
   auto make_fold_argument() {
-    return std::make_shared<FoldArgument<T>>();
+    return Shared<FoldArgument<T>>();
   }
 
   /**
@@ -98,9 +95,8 @@ namespace Aspen {
    * @param series The reactor producing the series.
    */
   template<typename E, typename S>
-  auto fold(E&& evaluator,
-      std::shared_ptr<FoldArgument<reactor_result_t<E>>> left,
-      std::shared_ptr<FoldArgument<reactor_result_t<E>>> right, S&& series) {
+  auto fold(E&& evaluator, Shared<FoldArgument<reactor_result_t<E>>> left,
+      Shared<FoldArgument<reactor_result_t<E>>> right, S&& series) {
     return Fold(std::forward<E>(evaluator), std::move(left), std::move(right),
       std::forward<S>(series));
   }
@@ -123,23 +119,13 @@ namespace Aspen {
   }
 
   template<typename T>
-  FoldArgument<T>::FoldArgument() noexcept
-    : m_state(State::NONE),
-      m_previous_sequence(-1) {}
-
-  template<typename T>
   State FoldArgument<T>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence) {
-      return m_state;
-    } else if(m_next_value.has_value()) {
+    if(m_next_value.has_value()) {
       m_value = std::move(*m_next_value);
       m_next_value = std::nullopt;
-      m_state = State::EVALUATED;
-    } else {
-      m_state = State::NONE;
+      return State::EVALUATED;
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    return State::NONE;
   }
 
   template<typename T>
@@ -154,54 +140,38 @@ namespace Aspen {
 
   template<typename E, typename S>
   template<typename EF, typename SF>
-  Fold<E, S>::Fold(EF&& evaluator, std::shared_ptr<FoldArgument<Type>> left,
-      std::shared_ptr<FoldArgument<Type>> right, SF&& series)
+  Fold<E, S>::Fold(EF&& evaluator, Shared<FoldArgument<Type>> left,
+      Shared<FoldArgument<Type>> right, SF&& series)
     : m_evaluator(std::forward<EF>(evaluator)),
       m_left(std::move(left)),
       m_right(std::move(right)),
-      m_series(std::forward<SF>(series)),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+      m_series(std::forward<SF>(series)) {}
 
   template<typename E, typename S>
   State Fold<E, S>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
-    auto series_state = m_series->commit(sequence);
-    if(has_evaluation(series_state) ||
-        !m_previous_value.has_value() && is_empty(m_state) &&
-        !is_empty(series_state)) {
+    auto state = State::NONE;
+    auto series_state = m_series.commit(sequence);
+    if(has_evaluation(series_state)) {
       if(!m_previous_value.has_value()) {
-        if(is_complete(series_state)) {
-          m_state = State::COMPLETE_EMPTY;
-        } else {
-          m_previous_value = try_call([&] { return m_series->eval(); });
-          m_state = State::EMPTY;
+        if(!is_complete(series_state)) {
+          m_previous_value = try_call([&] { return m_series.eval(); });
         }
       } else {
         m_left->update(std::move(*m_previous_value));
-        m_right->update(try_call([&] { return m_series->eval(); }));
-        m_state = m_evaluator->commit(sequence);
-        if(has_evaluation(m_state)) {
-          m_value = try_call([&] { return m_evaluator->eval(); });
+        m_right->update(try_call([&] { return m_series.eval(); }));
+        state = m_evaluator.commit(sequence);
+        if(has_evaluation(state)) {
+          m_value = try_call([&] { return m_evaluator.eval(); });
           m_previous_value = m_value;
         }
       }
-    } else {
-      if(is_empty(m_state)) {
-        m_state = State::EMPTY;
-      } else {
-        m_state = State::NONE;
-      }
     }
     if(has_continuation(series_state)) {
-      m_state = combine(m_state, State::CONTINUE);
+      state = combine(state, State::CONTINUE);
     } else if(is_complete(series_state)) {
-      m_state = combine(m_state, State::COMPLETE);
+      state = combine(state, State::COMPLETE);
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    return state;
   }
 
   template<typename E, typename S>

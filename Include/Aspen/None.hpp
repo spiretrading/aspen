@@ -35,7 +35,7 @@ namespace Aspen {
 
   template<typename T>
   constexpr State None<T>::commit(int sequence) noexcept {
-    return State::COMPLETE_EMPTY;
+    return State::COMPLETE;
   }
 
   template<typename T>
