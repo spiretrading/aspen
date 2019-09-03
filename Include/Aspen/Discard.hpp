@@ -2,7 +2,6 @@
 #define ASPEN_DISCARD_HPP
 #include <utility>
 #include "Aspen/Lift.hpp"
-#include "Aspen/Switch.hpp"
 
 namespace Aspen {
 namespace Details {

@@ -1,6 +1,5 @@
 #ifndef ASPEN_LAST_HPP
 #define ASPEN_LAST_HPP
-#include <optional>
 #include <utility>
 #include "Aspen/Lift.hpp"
 #include "Aspen/Shared.hpp"

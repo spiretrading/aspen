@@ -39,8 +39,6 @@ namespace Aspen {
       State m_producer_state;
       std::list<reactor_result_t<Reactor>> m_children;
       bool m_is_child_complete;
-      State m_state;
-      int m_previous_sequence;
   };
 
   template<typename R, typename = std::enable_if_t<

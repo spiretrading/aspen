@@ -33,18 +33,16 @@ namespace Aspen {
 
     private:
       struct Child {
-        try_ptr_t<reactor_result_t<T>> m_reactor;
-        State m_state;
+        reactor_result_t<T> m_reactor;
+        bool m_is_complete;
 
         template<typename U>
         Child(U&& reactor);
       };
-      try_ptr_t<T> m_producer;
-      State m_producer_state;
+      T m_producer;
+      bool m_is_producer_complete;
       std::list<Child> m_children;
       typename std::list<Child>::iterator m_position;
-      State m_state;
-      int m_previous_sequence;
   };
 
   template<typename T, typename = std::enable_if_t<
@@ -64,43 +62,36 @@ namespace Aspen {
   template<typename U>
   Group<T>::Child::Child(U&& reactor)
     : m_reactor(std::forward<U>(reactor)),
-      m_state(State::EMPTY) {}
+      m_is_complete(false) {}
 
   template<typename T>
   template<typename TF, typename>
   Group<T>::Group(TF&& producer)
     : m_producer(std::forward<TF>(producer)),
-      m_producer_state(State::EMPTY),
-      m_position(m_children.end()),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+      m_is_producer_complete(false),
+      m_position(m_children.end()) {}
 
   template<typename T>
   State Group<T>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
-    if(is_empty(m_state)) {
-      m_state = State::EMPTY;
-    } else {
-      m_state = State::NONE;
-    }
-    if(!is_complete(m_producer_state)) {
-      auto producer_state = m_producer->commit(sequence);
-      if(has_evaluation(producer_state) ||
-          is_empty(m_producer_state) && !is_empty(producer_state)) {
-        try {
-          m_children.emplace_back(m_producer->eval());
-        } catch(const std::exception&) {}
+    auto state = [&] {
+      if(!m_is_producer_complete) {
+        auto producer_state = m_producer.commit(sequence);
+        if(has_evaluation(producer_state)) {
+          try {
+            m_children.emplace_back(m_producer.eval());
+          } catch(const std::exception&) {}
+        }
+        if(has_continuation(producer_state)) {
+          return State::CONTINUE;
+        }
+        m_is_producer_complete = is_complete(producer_state);
+        if(m_is_producer_complete && (m_children.empty() ||
+            m_children.size() == 1 && m_children.front().m_is_complete)) {
+          return State::COMPLETE;
+        }
       }
-      m_producer_state = producer_state;
-      if(has_continuation(producer_state)) {
-        m_state = combine(m_state, State::CONTINUE);
-      } else if(is_complete(producer_state) && (m_children.empty() ||
-          m_children.size() == 1 && is_complete(m_children.front().m_state))) {
-        m_state = combine(m_state, State::COMPLETE);
-      }
-    }
+      return State::NONE;
+    }();
     auto start = [&] {
       if(m_position == m_children.end() ||
           std::next(m_position) == m_children.end()) {
@@ -111,45 +102,41 @@ namespace Aspen {
     auto looped = false;
     for(auto i = start; !looped || i != start;) {
       auto& child = *i;
-      if(is_complete(child.m_state)) {
+      if(child.m_is_complete) {
         i = m_children.erase(i);
       } else {
-        auto child_state = child.m_reactor->commit(sequence);
-        if(has_evaluation(child_state) ||
-            is_empty(child.m_state) && !is_empty(child_state)) {
-          m_state = reset(m_state, State::EMPTY);
-          m_state = combine(m_state, State::EVALUATED);
-          if(m_children.size() > 1) {
-            m_state = combine(m_state, State::CONTINUE);
-          }
-        }
-        child.m_state = child_state;
+        auto child_state = child.m_reactor.commit(sequence);
         if(has_continuation(child_state)) {
-          m_state = combine(m_state, State::CONTINUE);
+          state = combine(state, State::CONTINUE);
         } else if(is_complete(child_state)) {
-          if(m_children.size() == 1 && is_complete(m_producer_state)) {
-            m_state = combine(m_state, State::COMPLETE);
+          child.m_is_complete = true;
+          if(m_children.size() == 1 && m_is_producer_complete) {
+            state = combine(state, State::COMPLETE);
           }
         }
-        if(has_evaluation(m_state)) {
+        if(has_evaluation(child_state)) {
+          state = combine(state, State::EVALUATED);
+          if(m_children.size() > 1) {
+            state = combine(state, State::CONTINUE);
+          }
           m_position = i;
           break;
+        } else {
+          ++i;
         }
-        ++i;
       }
       if(i == m_children.end()) {
         looped = true;
         i = m_children.begin();
       }
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    return state;
   }
 
   template<typename T>
   eval_result_t<typename Group<T>::Type> Group<T>::eval()
       const noexcept(is_noexcept) {
-    return m_position->m_reactor->eval();
+    return m_position->m_reactor.eval();
   }
 }
 

@@ -10,6 +10,11 @@
 #include "Aspen/Until.hpp"
 
 namespace Aspen {
+
+  /**
+   * Implements a reactor that evaluates to the reactors produced by its child,
+   * where each successively produced reactor overrides the previous.
+   */
   template<typename T>
   auto override(T&& producer) {
     using Reactor = reactor_result_t<T>;

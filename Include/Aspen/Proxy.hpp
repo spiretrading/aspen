@@ -44,7 +44,7 @@ namespace Aspen {
   template<typename T>
   Proxy<T>::Proxy() noexcept
     : m_has_cycle(false),
-      m_state(State::EMPTY) {}
+      m_state(State::NONE) {}
 
   template<typename T>
   template<typename U>
@@ -62,7 +62,7 @@ namespace Aspen {
     m_has_cycle = false;
     if(is_complete(state)) {
       m_state = state;
-    } else if(is_empty(m_state) && !is_empty(state)) {
+    } else {
       m_state = State::NONE;
     }
     return state;

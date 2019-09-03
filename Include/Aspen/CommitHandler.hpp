@@ -40,7 +40,7 @@ namespace Aspen {
 
   inline CommitHandler::Child::Child(Box<void> reactor)
     : m_reactor(std::move(reactor)),
-      m_state(State::EMPTY),
+      m_state(State::NONE),
       m_has_evaluation(false) {}
 
   inline CommitHandler::CommitHandler(std::vector<Box<void>> children)

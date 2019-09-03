@@ -4,7 +4,6 @@
 #include <optional>
 #include <utility>
 #include "Aspen/Lift.hpp"
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"

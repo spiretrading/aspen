@@ -33,12 +33,10 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      try_ptr_t<C> m_condition;
+      C m_condition;
       std::optional<T> m_series;
       try_maybe_t<Type, !is_noexcept> m_value;
-      State m_condition_state;
-      State m_state;
-      int m_previous_sequence;
+      bool m_is_condition_complete;
   };
 
   template<typename C, typename T>
@@ -60,27 +58,19 @@ namespace Aspen {
   Until<C, T>::Until(CF&& condition, TF&& series)
     : m_condition(std::forward<CF>(condition)),
       m_series(std::forward<TF>(series)),
-      m_condition_state(State::EMPTY),
-      m_state(State::EMPTY),
-      m_previous_sequence(-1) {}
+      m_is_condition_complete(false) {}
 
   template<typename C, typename T>
   State Until<C, T>::commit(int sequence) noexcept {
-    if(sequence == m_previous_sequence || is_complete(m_state)) {
-      return m_state;
-    }
-    if(!is_complete(m_condition_state)) {
-      auto condition_state = m_condition->commit(sequence);
-      if(has_evaluation(condition_state) ||
-          is_empty(m_condition_state) && !is_empty(condition_state)) {
+    auto state = State::NONE;
+    auto has_condition_continuation = false;
+    if(!m_is_condition_complete) {
+      auto condition_state = m_condition.commit(sequence);
+      if(has_evaluation(condition_state)) {
         try {
-          if(m_condition->eval()) {
+          if(m_condition.eval()) {
             m_series = std::nullopt;
-            if(is_empty(m_state)) {
-              m_state = State::COMPLETE_EMPTY;
-            } else {
-              m_state = State::COMPLETE;
-            }
+            state = State::COMPLETE;
           }
         } catch(const std::exception&) {
           if constexpr(!is_noexcept) {
@@ -88,28 +78,21 @@ namespace Aspen {
           }
         }
       }
-      m_condition_state = condition_state;
+      has_condition_continuation = has_continuation(condition_state);
     }
     if(m_series.has_value()) {
       auto series_state = m_series->commit(sequence);
-      if(has_evaluation(series_state) ||
-          is_empty(m_state) && !is_empty(series_state)) {
+      if(has_evaluation(series_state)) {
         m_value = try_eval(*m_series);
-        m_state = State::EVALUATED;
-      } else if(is_empty(m_state)) {
-        m_state = State::EMPTY;
-      } else {
-        m_state = State::NONE;
+        state = State::EVALUATED;
       }
       if(is_complete(series_state)) {
-        m_state = combine(m_state, State::COMPLETE);
-      } else if(has_continuation(m_condition_state) ||
-          has_continuation(series_state)) {
-        m_state = combine(m_state, State::CONTINUE);
+        state = combine(state, State::COMPLETE);
+      } else if(has_condition_continuation || has_continuation(series_state)) {
+        state = combine(state, State::CONTINUE);
       }
     }
-    m_previous_sequence = sequence;
-    return m_state;
+    return state;
   }
 
   template<typename C, typename T>
