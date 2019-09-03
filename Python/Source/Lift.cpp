@@ -18,13 +18,13 @@ namespace {
 
   struct ArgumentsReactor {
     using Type = args;
-    std::vector<Box<object>> m_arguments;
+    std::vector<Shared<Box<object>>> m_arguments;
     CommitHandler m_handler;
 
     explicit ArgumentsReactor(const args& arguments)
       : m_arguments(
           [&] {
-            auto children = std::vector<Box<object>>();
+            auto children = std::vector<Shared<Box<object>>>();
             for(auto i = std::size_t(0); i != len(arguments); ++i) {
               children.emplace_back(to_python_reactor(arguments[i]));
             }

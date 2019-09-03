@@ -93,7 +93,7 @@ namespace Aspen {
   template<typename R, typename>
   Box<T>::Box(R&& reactor) {
     using Reactor = to_reactor_t<R>;
-    if constexpr(std::is_reference_v<
+    if constexpr(std::is_same_v<Type, void> || std::is_reference_v<
         decltype(std::declval<Reactor>().eval())>) {
       m_reactor = std::make_unique<ByReferenceWrapper<Reactor>>(
         std::forward<R>(reactor));
