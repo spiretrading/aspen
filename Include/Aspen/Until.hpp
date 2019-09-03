@@ -56,6 +56,14 @@ namespace Aspen {
   }
 
   template<typename C, typename T>
+  auto make_until(C&& condition, T&& series) {
+    using Type = decltype(
+      until(std::forward<C>(condition), std::forward<T>(series)));
+    return std::make_unique<Type>(std::forward<C>(condition),
+      std::forward<T>(series));
+  }
+
+  template<typename C, typename T>
   template<typename CF, typename TF>
   Until<C, T>::Until(CF&& condition, TF&& series)
     : m_condition(std::forward<CF>(condition)),

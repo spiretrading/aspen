@@ -1,6 +1,6 @@
 #ifndef ASPEN_CONCAT_HPP
 #define ASPEN_CONCAT_HPP
-#include <deque>
+#include <list>
 #include <type_traits>
 #include <utility>
 #include "Aspen/State.hpp"
@@ -35,7 +35,7 @@ namespace Aspen {
     private:
       try_ptr_t<T> m_producer;
       State m_producer_state;
-      std::deque<try_ptr_t<reactor_result_t<T>>> m_children;
+      std::list<try_ptr_t<reactor_result_t<T>>> m_children;
       State m_child_state;
       State m_state;
       int m_previous_sequence;
@@ -91,27 +91,59 @@ namespace Aspen {
         }
       }
     }
-    if(is_complete(m_child_state) && m_children.size() > 1) {
-      m_children.pop_front();
-      m_child_state = State::EMPTY;
-    }
-    if(!m_children.empty() && !is_complete(m_child_state)) {
-      auto child_state = m_children.front()->commit(sequence);
-      if(has_evaluation(child_state) ||
-          is_empty(m_child_state) && !is_empty(child_state)) {
-        m_state = reset(m_state, State::EMPTY);
-        m_state = combine(m_state, State::EVALUATED);
-      }
-      if(has_continuation(child_state) ||
-          is_complete(child_state) && m_children.size() > 1) {
-        m_state = combine(m_state, State::CONTINUE);
-      } else if(is_complete(child_state)) {
-        if(m_children.size() == 1 && is_complete(m_producer_state)) {
-          m_state = combine(m_state, State::COMPLETE);
+    auto child_state = [&] {
+      if(is_complete(m_child_state)) {
+        while(m_children.size() > 1) {
+          auto child_state = (*std::next(m_children.begin()))->commit(sequence);
+          if(!is_empty(child_state)) {
+            m_children.pop_front();
+            return child_state;
+          } else if(is_complete(child_state)) {
+            m_children.erase(std::next(m_children.begin()));
+          } else {
+            break;
+          }
         }
       }
-      m_child_state = child_state;
+      if(!m_children.empty() && !is_complete(m_child_state)) {
+        return m_children.front()->commit(sequence);
+      }
+      return State::COMPLETE;
+    }();
+    if(has_evaluation(child_state) ||
+        is_empty(m_child_state) && !is_empty(child_state)) {
+      m_state = reset(m_state, State::EMPTY);
+      m_state = combine(m_state, State::EVALUATED);
+      if(is_complete(child_state) && m_children.size() > 1) {
+        m_state = combine(m_state, State::CONTINUE);
+      }
+    } else if(is_complete(child_state)) {
+      while(m_children.size() > 1) {
+        auto next_child_state =
+          (*std::next(m_children.begin()))->commit(sequence);
+        if(!is_empty(next_child_state)) {
+          m_children.pop_front();
+          m_state = reset(m_state, State::EMPTY);
+          m_state = combine(m_state, State::EVALUATED);
+          if(is_complete(next_child_state) && m_children.size() > 1) {
+            m_state = combine(m_state, State::CONTINUE);
+          }
+          child_state = next_child_state;
+          break;
+        } else if(is_complete(next_child_state)) {
+          m_children.erase(std::next(m_children.begin()));
+        } else {
+          break;
+        }
+      }
     }
+    if(has_continuation(child_state)) {
+      m_state = combine(m_state, State::CONTINUE);
+    } else if(is_complete(child_state) &&
+        m_children.size() == 1 && is_complete(m_producer_state)) {
+      m_state = combine(m_state, State::COMPLETE);
+    }
+    m_child_state = child_state;
     m_previous_sequence = sequence;
     return m_state;
   }

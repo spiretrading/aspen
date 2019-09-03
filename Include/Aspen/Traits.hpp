@@ -29,6 +29,12 @@ namespace Aspen {
   struct is_reactor_pointer<const T> : is_reactor_pointer<T> {};
 
   template<typename T>
+  struct is_reactor_pointer<T&> : is_reactor_pointer<T> {};
+
+  template<typename T>
+  struct is_reactor_pointer<T&&> : is_reactor_pointer<T> {};
+
+  template<typename T>
   struct is_reactor_pointer<T*> : is_reactor<T> {};
 
   template<typename T>
