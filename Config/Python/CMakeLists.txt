@@ -1,9 +1,7 @@
-include_directories(${ASPEN_INCLUDE_PATH}/../Python/Include)
 include_directories(SYSTEM ${PYBIND11_INCLUDE_PATH})
 include_directories(SYSTEM ${PYTHON_INCLUDE_PATH})
-file(GLOB header_files
-  ${ASPEN_INCLUDE_PATH}/../Python/Include/Aspen/Python/*.hpp)
-file(GLOB source_files ${ASPEN_INCLUDE_PATH}/../Python/Source/*.cpp)
+file(GLOB header_files ${ASPEN_INCLUDE_PATH}/Aspen/Python/*.hpp)
+file(GLOB source_files ${ASPEN_SOURCE_PATH}/Python/*.cpp)
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()

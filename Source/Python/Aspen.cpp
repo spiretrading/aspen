@@ -1,5 +1,5 @@
-#include <pybind11/pybind11.h>
 #include "Aspen/Python/Aspen.hpp"
+#include <pybind11/pybind11.h>
 
 using namespace Aspen;
 using namespace pybind11;
