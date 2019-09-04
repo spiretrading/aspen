@@ -6,6 +6,7 @@
 #include "Aspen/Operators.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Unique.hpp"
+#include "Aspen/Python/DllExports.hpp"
 #include "Aspen/Python/Object.hpp"
 #include "Aspen/Python/PythonBox.hpp"
 
@@ -30,7 +31,7 @@ namespace Aspen {
   using ReactorPtr = Shared<Unique<T>>;
 
   /** Tests if a Python object represents a reactor. */
-  bool is_python_reactor(const pybind11::object& value);
+  ASPEN_EXPORT_DLL bool is_python_reactor(const pybind11::object& value);
 
   /** Wraps a Python object into an appropriate reactor. */
   template<typename T = pybind11::object>
