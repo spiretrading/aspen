@@ -2,8 +2,38 @@
 #define ASPEN_TRIGGER_HPP
 #include <functional>
 #include <utility>
+#include "Aspen/Python/DllExports.hpp"
 
 namespace Aspen {
+  class Trigger;
+namespace Details {
+#if !defined(ASPEN_BUILD_DLL) && !defined(ASPEN_USE_DLL)
+  template<typename T>
+  struct StaticTrigger {
+    static thread_local Trigger* m_value;
+
+    static Trigger*& get() {
+      return m_value;
+    }
+  };
+
+  template<typename T>
+  thread_local Trigger* StaticTrigger<T>::m_value;
+#elif defined(ASPEN_BUILD_DLL)
+ template<typename T>
+  struct StaticTrigger {
+    ASPEN_EXPORT_DLL static Trigger*& get() {
+      static thread_local Trigger* value;
+      return value;
+    }
+  };
+#elif defined(ASPEN_USE_DLL)
+  template<typename T>
+  struct StaticTrigger {
+    ASPEN_EXPORT_DLL static Trigger*& get();
+  };
+#endif
+}
 
   /** Used to indicate an asynchronous update available in a reactor. */
   class Trigger {
@@ -40,7 +70,6 @@ namespace Aspen {
       void signal();
 
    private:
-      static inline thread_local Trigger* m_trigger = nullptr;
       Slot m_slot;
 
       Trigger(const Trigger&) = delete;
@@ -48,11 +77,11 @@ namespace Aspen {
   };
 
   inline Trigger* Trigger::get_trigger() {
-    return m_trigger;
+    return Details::StaticTrigger<void>::get();
   }
 
   inline void Trigger::set_trigger(Trigger* trigger) {
-    m_trigger = trigger;
+    Details::StaticTrigger<void>::get() = trigger;
   }
 
   inline void Trigger::set_trigger(Trigger& trigger) {
@@ -60,10 +89,10 @@ namespace Aspen {
   }
 
   inline Trigger::Trigger()
-      : Trigger([] {}) {}
+    : Trigger([] {}) {}
 
   inline Trigger::Trigger(Slot slot)
-      : m_slot(std::move(slot)) {}
+    : m_slot(std::move(slot)) {}
 
   inline void Trigger::signal() {
     m_slot();

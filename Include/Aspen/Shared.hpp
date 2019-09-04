@@ -42,6 +42,8 @@ namespace Aspen {
 
       Shared(const Shared& shared);
 
+      Shared(Shared&& shared) = default;
+
       //! Returns a reference to the reactor.
       const Reactor& operator *() const noexcept;
 
@@ -57,6 +59,10 @@ namespace Aspen {
       State commit(int sequence) noexcept;
 
       Result eval() const noexcept(is_noexcept);
+
+      Shared& operator =(const Shared& shared);
+
+      Shared& operator =(Shared&& shared) = default;
 
     private:
       struct Entry {
@@ -153,6 +159,13 @@ namespace Aspen {
   template<typename R>
   typename Shared<R>::Result Shared<R>::eval() const noexcept(is_noexcept) {
     return m_entry->m_reactor.eval();
+  }
+
+  template<typename R>
+  Shared<R>& Shared<R>::operator =(const Shared& shared) {
+    m_entry = shared.m_entry;
+    m_is_empty = true;
+    return *this;
   }
 }
 
