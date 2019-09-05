@@ -146,7 +146,8 @@ namespace Aspen {
    */
   template<typename T, bool C>
   struct try_maybe {
-    using type = std::conditional_t<C, Maybe<T>, LocalPtr<T>>;
+    using type = std::conditional_t<C, Maybe<T>,
+      std::conditional_t<std::is_same_v<T, void>, Maybe<void>, LocalPtr<T>>>;
   };
 
   template<typename T, bool C>
@@ -159,10 +160,15 @@ namespace Aspen {
    */
   template<typename F>
   decltype(auto) try_call(F&& f) noexcept(noexcept(f())) {
+    using Type = std::decay_t<std::invoke_result_t<F>>;
     if constexpr(noexcept(f())) {
-      return f();
+      if constexpr(std::is_same_v<Type, void>) {
+        f();
+        return Maybe<void>();
+      } else {
+        return f();
+      }
     } else {
-      using Type = std::decay_t<std::invoke_result_t<F>>;
       try {
         if constexpr(std::is_same_v<Type, void>) {
           f();

@@ -10,8 +10,28 @@
 #include "Aspen/Python/Object.hpp"
 #include "Aspen/Python/PythonBox.hpp"
 #include "Aspen/Python/ReactorPtr.hpp"
+#include "Aspen/Python/Registry.hpp"
 
 namespace Aspen {
+
+  /** Casts a C++ reactor to an Python object. */
+  template<typename R>
+  decltype(auto) to_object(R&& reactor) {
+    if constexpr(std::is_same_v<reactor_result_t<R>, pybind11::object>) {
+      return Box(std::forward<R>(reactor));
+    } else if constexpr(std::is_same_v<reactor_result_t<R>, void>) {
+      return Box(lift(
+        [] (const Maybe<void>& result) {
+          result.get();
+          return pybind11::object(pybind11::none());
+        }, std::forward<R>(reactor)));
+    } else {
+      return Box(ConversionReactor(std::forward<R>(reactor),
+        [] (auto&& value) {
+          return pybind11::cast(std::forward<decltype(value)>(value));
+        }));
+    }
+  }
 
   /** Tests if a Python object represents a reactor. */
   ASPEN_EXPORT_DLL bool is_python_reactor(const pybind11::object& value);
@@ -19,6 +39,18 @@ namespace Aspen {
   /** Wraps a Python object into an appropriate reactor. */
   template<typename T = pybind11::object>
   Box<T> to_python_reactor(pybind11::object value) {
+    auto& boxers = find_boxers(value);
+    if(boxers.m_boxer != nullptr) {
+      if constexpr(std::is_same_v<T, pybind11::object>) {
+        return boxers.m_object_boxer(value);
+      } else if constexpr(std::is_same_v<T, void>) {
+        return boxers.m_void_boxer(value);
+      } else {
+        auto reactor = std::optional<Box<T>>();
+        boxers.m_boxer(value, &reactor);
+        return std::move(*reactor);
+      }
+    }
     if(is_python_reactor(value)) {
       return Box(PythonBox<T>(std::move(value)));
     } else {
@@ -44,15 +76,6 @@ namespace Aspen {
     }
   }
 
-  /** Casts a C++ reactor to an Python object. */
-  template<typename R>
-  auto to_object(R&& reactor) {
-    return Box(ConversionReactor(std::forward<R>(reactor),
-      [] (auto&& value) {
-        return pybind11::cast(std::forward<decltype(value)>(value));
-      }));
-  }
-
   /**
    * Exports a reactor type to Python.
    * @param module The module to export the reactor to.
@@ -72,6 +95,7 @@ namespace Aspen {
         [] (ReactorPtr<T>& self) {
           return self.eval();
         });
+    register_reactor<T>(reactor);
     if constexpr(std::is_same_v<Type, pybind11::object>) {
       reactor.def("__add__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
