@@ -49,7 +49,7 @@ namespace Aspen {
       };
       template<typename R>
       struct ByReferenceWrapper final : BaseWrapper {
-        Shared<R> m_reactor;
+        collapse_shared_t<R> m_reactor;
 
         template<typename Q, typename = std::enable_if_t<
           !std::is_base_of_v<ByReferenceWrapper, std::decay_t<Q>>>>
@@ -61,7 +61,7 @@ namespace Aspen {
       template<typename R>
       struct ByValueWrapper final : BaseWrapper {
         static constexpr auto is_noexcept = is_noexcept_reactor_v<R>;
-        Shared<R> m_reactor;
+        collapse_shared_t<R> m_reactor;
         std::conditional_t<is_noexcept, std::optional<Type>, Maybe<Type>>
           m_value;
 

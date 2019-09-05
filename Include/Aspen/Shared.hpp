@@ -78,6 +78,23 @@ namespace Aspen {
       bool m_is_empty;
   };
 
+  /**
+   * A type trait that provides the type Shared<T> if T is not already wrapped
+   * in a Shared, otherwise provides the type T.
+   */
+  template<typename T>
+  struct collapse_shared {
+    using type = Shared<T>;
+  };
+
+  template<typename T>
+  struct collapse_shared<Shared<T>> {
+    using type = typename collapse_shared<T>::type;
+  };
+
+  template<typename T>
+  using collapse_shared_t = typename collapse_shared<T>::type;
+
   template<typename A, typename = std::enable_if_t<
     !std::is_base_of_v<Shared<to_reactor_t<A>>, std::decay_t<A>>>>
   Shared(A&&) -> Shared<to_reactor_t<A>>;
