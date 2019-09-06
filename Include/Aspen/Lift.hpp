@@ -502,8 +502,6 @@ namespace Details {
       }, m_arguments));
     m_handler.transfer(lift.m_handler);
     m_value = lift.m_value;
-    m_state = lift.m_state;
-    m_previous_sequence = lift.m_previous_sequence;
     m_has_continuation = lift.m_has_continuation;
     return *this;
   }
@@ -518,8 +516,6 @@ namespace Details {
       }, m_arguments));
     m_handler.transfer(lift.m_handler);
     m_value = std::move(lift.m_value);
-    m_state = std::move(lift.m_state);
-    m_previous_sequence = std::move(lift.m_previous_sequence);
     m_has_continuation = std::move(lift.m_has_continuation);
     return *this;
   }
