@@ -10,8 +10,13 @@
     #define ASPEN_EXTERN extern
   #endif
 #else
-  #define ASPEN_EXPORT_DLL
-  #define ASPEN_EXTERN
+  #ifdef ASPEN_BUILD_DLL
+    #define ASPEN_EXPORT_DLL __attribute__((visibility ("default")))
+    #define ASPEN_EXTERN
+  #else
+    #define ASPEN_EXPORT_DLL
+    #define ASPEN_EXTERN
+  #endif
 #endif
 
 #endif
