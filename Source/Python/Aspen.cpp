@@ -4,6 +4,8 @@
 using namespace Aspen;
 using namespace pybind11;
 
+template struct Aspen::Details::StaticTrigger<void>;
+
 PYBIND11_MODULE(aspen, module) {
   export_box(module);
   export_chain(module);

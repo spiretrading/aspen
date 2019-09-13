@@ -19,19 +19,15 @@ namespace Details {
 
   template<typename T>
   thread_local Trigger* StaticTrigger<T>::m_value;
-#elif defined(ASPEN_BUILD_DLL)
- template<typename T>
-  struct StaticTrigger {
-    ASPEN_EXPORT_DLL static Trigger*& get() {
+#else
+  template<typename T>
+  struct ASPEN_EXPORT_DLL StaticTrigger {
+    static Trigger*& get() {
       static thread_local Trigger* value;
       return value;
     }
   };
-#elif defined(ASPEN_USE_DLL)
-  template<typename T>
-  struct StaticTrigger {
-    ASPEN_EXPORT_DLL static Trigger*& get();
-  };
+  extern template struct ASPEN_EXPORT_DLL StaticTrigger<void>;
 #endif
 }
 
