@@ -1,5 +1,6 @@
 #ifndef ASPEN_STATE_HPP
 #define ASPEN_STATE_HPP
+#include <ostream>
 
 namespace Aspen {
 
@@ -59,6 +60,30 @@ namespace Aspen {
   constexpr State reset(State state, State update) {
     return static_cast<State>(static_cast<unsigned char>(state) &
       ~static_cast<unsigned char>(update));
+  }
+
+  inline std::ostream& operator <<(std::ostream& sink, State state) {
+    switch(state) {
+      case State::NONE:
+        sink << "NONE";
+        break;
+      case State::EVALUATED:
+        sink << "EVALUATED";
+        break;
+      case State::CONTINUE:
+        sink << "CONTINUE";
+        break;
+      case State::COMPLETE:
+        sink << "COMPLETE";
+        break;
+      case State::CONTINUE_EVALUATED:
+        sink << "CONTINUE_EVALUATED";
+        break;
+      case State::COMPLETE_EVALUATED:
+        sink << "COMPLETE_EVALUATED";
+        break;
+    }
+    return sink;
   }
 }
 
