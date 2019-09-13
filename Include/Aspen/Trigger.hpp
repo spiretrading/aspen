@@ -27,7 +27,7 @@ namespace Details {
       return value;
     }
   };
-  extern template struct ASPEN_EXPORT_DLL StaticTrigger<void>;
+  ASPEN_EXTERN template struct ASPEN_EXPORT_DLL StaticTrigger<void>;
 #endif
 }
 
