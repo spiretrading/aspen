@@ -4,6 +4,7 @@
 #include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
+#include "Aspen/Unique.hpp"
 
 namespace Aspen {
 
@@ -23,6 +24,12 @@ namespace Aspen {
        * Constructs a Shared reactor.
        */
       Shared();
+
+      /**
+       * Constructs a Shared reactor from a Unique reactor.
+       * @param reactor The reactor to transfer ownership from.
+       */
+      Shared(Unique<Reactor> reactor);
 
       /**
        * Constructs a Shared reactor.
@@ -110,6 +117,11 @@ namespace Aspen {
   template<typename R>
   Shared<R>::Shared()
     : m_entry(std::make_shared<Entry>()),
+      m_is_empty(true) {}
+
+  template<typename R>
+  Shared<R>::Shared(Unique<Reactor> reactor)
+    : m_entry(std::make_shared<Entry>(*reactor.m_reactor)),
       m_is_empty(true) {}
 
   template<typename R>

@@ -17,3 +17,10 @@ TEST_CASE("test_shared_chain", "[Shared]") {
   REQUIRE(s2.commit(1) == State::COMPLETE_EVALUATED);
   REQUIRE(s2.eval() == 9);
 }
+
+TEST_CASE("test_shared_from_unique", "[Shared]") {
+  auto c = Unique(std::make_unique<Constant<int>>(5));
+  auto s = Shared(std::move(c));
+  REQUIRE(s.commit(0) == State::COMPLETE_EVALUATED);
+  REQUIRE(s.eval() == 5);
+}

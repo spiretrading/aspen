@@ -51,6 +51,7 @@ namespace Aspen {
       Result eval() const noexcept(is_noexcept);
 
     private:
+      template<typename> friend class Shared;
       std::unique_ptr<Reactor> m_reactor;
   };
 
