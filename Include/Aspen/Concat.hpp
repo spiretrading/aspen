@@ -94,6 +94,8 @@ namespace Aspen {
               return child_state;
             } else if(is_complete(child_state)) {
               m_children.erase(next_child);
+            } else if(has_continuation(child_state)) {
+              return State::CONTINUE;
             } else {
               break;
             }
