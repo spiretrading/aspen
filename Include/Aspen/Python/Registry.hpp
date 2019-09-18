@@ -1,6 +1,7 @@
 #ifndef ASPEN_PYTHON_REGISTRY_HPP
 #define ASPEN_PYTHON_REGISTRY_HPP
 #include <optional>
+#include <typeinfo>
 #include <pybind11/pybind11.h>
 #include "Aspen/Box.hpp"
 #include "Aspen/Python/DllExports.hpp"
@@ -15,7 +16,7 @@ namespace Aspen {
   struct Boxers {
 
     /** Converts a Python object to a Box of its native type. */
-    void (*m_boxer)(const pybind11::object&, void*);
+    void (*m_boxer)(const pybind11::object&, void*, const std::type_info&);
 
     /** Converts a Python object to a Box<object>. */
     Box<pybind11::object> (*m_object_boxer)(const pybind11::object&);
@@ -25,7 +26,7 @@ namespace Aspen {
   };
 
   ASPEN_EXPORT_DLL void register_reactor(const pybind11::object& type,
-    void (*boxer)(const pybind11::object&, void*),
+    void (*boxer)(const pybind11::object&, void*, const std::type_info&),
     Box<pybind11::object> (*objext_boxer)(const pybind11::object&),
     Box<void> (*void_boxer)(const pybind11::object&));
 
@@ -38,10 +39,13 @@ namespace Aspen {
   template<typename T>
   void register_reactor(const pybind11::object& type) {
     register_reactor(type,
-      [] (const pybind11::object& value, void* destination) {
-        auto pointer = value.cast<ReactorPtr<T>>();
-        reinterpret_cast<std::optional<Box<reactor_result_t<T>>>*>(
-          destination)->emplace(*pointer);
+      [] (const pybind11::object& value, void* destination,
+          const std::type_info& type) {
+        if(type == typeid(Box<reactor_result_t<T>>)) {
+          auto pointer = value.cast<ReactorPtr<T>>();
+          reinterpret_cast<std::optional<Box<reactor_result_t<T>>>*>(
+            destination)->emplace(*pointer);
+        }
       },
       [] (const pybind11::object& value) {
         auto pointer = value.cast<ReactorPtr<T>>();

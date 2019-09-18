@@ -47,8 +47,10 @@ namespace Aspen {
         return boxers.m_void_boxer(value);
       } else {
         auto reactor = std::optional<Box<T>>();
-        boxers.m_boxer(value, &reactor);
-        return std::move(*reactor);
+        boxers.m_boxer(value, &reactor, typeid(Box<T>));
+        if(reactor.has_value()) {
+          return std::move(*reactor);
+        }
       }
     }
     if(is_python_reactor(value)) {
