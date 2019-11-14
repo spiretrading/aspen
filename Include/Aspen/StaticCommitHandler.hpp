@@ -7,6 +7,17 @@
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
+namespace Details {
+  template<typename F, typename H, std::size_t... I>
+  decltype(auto) apply_impl(F&& f, const H& handler, std::index_sequence<I...>) {
+    return std::invoke(std::forward<F>(f), handler.get<I>()...);
+  }
+
+  template<typename F, typename H, std::size_t... I>
+  decltype(auto) apply_impl(F&& f, H& handler, std::index_sequence<I...>) {
+    return std::invoke(std::forward<F>(f), handler.get<I>()...);
+  }
+}
 
   /**
    * Helper class used to commit a list of reactors and evaluate to their
@@ -17,8 +28,11 @@ namespace Aspen {
   class StaticCommitHandler {
     public:
 
-      /** The types of each reactor to manage. */
-      using Reactors = std::tuple<R...>;
+      /**
+       * Constructs a StaticCommitHandler.
+       * @param children The reactors whose commits are to be managed.
+       */
+      explicit StaticCommitHandler(const R&... children);
 
       /**
        * Constructs a StaticCommitHandler.
@@ -27,18 +41,11 @@ namespace Aspen {
       template<typename... A>
       explicit StaticCommitHandler(A&&... children);
 
-      /**
-       * Constructs a StaticCommitHandler.
-       * @param children The reactors whose commits are to be managed.
-       */
-      template<typename... A>
-      explicit StaticCommitHandler(std::tuple<A...> children);
+      /** Copies a StaticCommitHandler. */
+      StaticCommitHandler(const StaticCommitHandler&) = default;
 
-      /**
-       * Transfers the state of a StaticCommitHandler.
-       * @param handler The handler whose state is to be transferred.
-       */
-      void transfer(const StaticCommitHandler& handler) noexcept;
+      /** Moves a StaticCommitHandler. */
+      StaticCommitHandler(StaticCommitHandler&&) = default;
 
       /**
        * Commits all children and returns their aggregate State.
@@ -46,6 +53,20 @@ namespace Aspen {
        * @return The aggregate State of all children.
        */
       State commit(int sequence) noexcept;
+
+      /** Returns the reactor at the specified index. */
+      template<std::size_t I>
+      std::tuple_element_t<I, std::tuple<R...>>& get();
+
+      /** Returns the reactor at the specified index. */
+      template<std::size_t I>
+      const std::tuple_element_t<I, std::tuple<R...>>& get() const;
+
+      /** Copies a StaticCommitHandler. */
+      StaticCommitHandler& operator =(const StaticCommitHandler&) = default;
+
+      /** Moves a StaticCommitHandler. */
+      StaticCommitHandler& operator =(StaticCommitHandler&&) = default;
 
     private:
       template<typename C>
@@ -62,9 +83,29 @@ namespace Aspen {
 
       template<typename CF>
       static auto make_child(CF&& reactor);
-      StaticCommitHandler(const StaticCommitHandler&) = delete;
-      StaticCommitHandler& operator =(const StaticCommitHandler&) = delete;
   };
+
+  /** Applies a callable on every reactor represented by a
+      StaticCommitHandler.
+      @param f The callable to apply.
+      @param handler The handler to apply the callable to.
+   */
+  template<typename F, typename... A>
+  decltype(auto) apply(F&& f, const StaticCommitHandler<A...>& handler) {
+    return Details::apply_impl(std::forward<F>(f), handler,
+      std::make_index_sequence<sizeof...(A)>{});
+  }
+
+  /** Applies a callable on every reactor represented by a
+      StaticCommitHandler.
+      @param f The callable to apply.
+      @param handler The handler to apply the callable to.
+   */
+  template<typename F, typename... A>
+  decltype(auto) apply(F&& f, StaticCommitHandler<A...>& handler) {
+    return Details::apply_impl(std::forward<F>(f), handler,
+      std::make_index_sequence<sizeof...(A)>{});
+  }
 
   template<typename... A>
   StaticCommitHandler(A&&...) -> StaticCommitHandler<std::decay_t<A>...>;
@@ -76,10 +117,6 @@ namespace Aspen {
   StaticCommitHandler(A1&&, A2&&) -> StaticCommitHandler<std::decay_t<A1>,
     std::decay_t<A2>>;
 
-  template<typename... A>
-  StaticCommitHandler(std::tuple<A...>) ->
-    StaticCommitHandler<std::decay_t<A>...>;
-
   template<typename... R>
   template<typename C>
   template<typename CF>
@@ -89,30 +126,15 @@ namespace Aspen {
       m_has_evaluation(false) {}
 
   template<typename... R>
+  StaticCommitHandler<R...>::StaticCommitHandler(const R&... children)
+    : m_children(children...),
+      m_is_initializing(true) {}
+
+  template<typename... R>
   template<typename... A>
   StaticCommitHandler<R...>::StaticCommitHandler(A&&... children)
     : m_children(std::forward<A>(children)...),
       m_is_initializing(true) {}
-
-  template<typename... R>
-  template<typename... A>
-  StaticCommitHandler<R...>::StaticCommitHandler(std::tuple<A...> children)
-    : m_children(std::apply([] (auto&&... arguments) {
-        return std::make_tuple(make_child(std::move(arguments))...);
-      }, std::move(children))),
-      m_is_initializing(true) {}
-
-  template<typename... R>
-  void StaticCommitHandler<R...>::transfer(
-      const StaticCommitHandler& handler) noexcept {
-    for_each<std::size_t{0}, sizeof...(R)>([&] (auto index) noexcept {
-      std::get<decltype(index)::value>(m_children).m_state =
-        std::get<decltype(index)::value>(handler.m_children).m_state;
-      std::get<decltype(index)::value>(m_children).m_has_evaluation =
-        std::get<decltype(index)::value>(handler.m_children).m_has_evaluation;
-    });
-    m_is_initializing = handler.m_is_initializing;
-  }
 
   template<typename... R>
   State StaticCommitHandler<R...>::commit(int sequence) noexcept {
@@ -130,7 +152,7 @@ namespace Aspen {
       if(is_complete(child.m_state)) {
         ++completion_count;
       } else {
-        child.m_state = child.m_reactor->commit(sequence);
+        child.m_state = child.m_reactor.commit(sequence);
         if(m_is_initializing) {
           child.m_has_evaluation |= has_evaluation(child.m_state);
           if(child.m_has_evaluation) {
@@ -166,6 +188,19 @@ namespace Aspen {
       state = combine(state, State::CONTINUE);
     }
     return state;
+  }
+
+  template<typename... R>
+  template<std::size_t I>
+  std::tuple_element_t<I, std::tuple<R...>>& StaticCommitHandler<R...>::get() {
+    return std::get<I>(m_children).m_reactor;
+  }
+
+  template<typename... R>
+  template<std::size_t I>
+  const std::tuple_element_t<I, std::tuple<R...>>&
+      StaticCommitHandler<R...>::get() const {
+    return std::get<I>(m_children).m_reactor;
   }
 
   template<typename... R>

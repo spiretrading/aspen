@@ -130,7 +130,7 @@ namespace Details {
   struct FunctionEvaluator {
     template<typename V, typename F, typename P>
     State operator ()(V& value, F& function, const P& pack) const {
-      auto evaluation = std::apply(
+      auto evaluation = apply(
         [&] (const auto&... arguments) {
           return FunctionEvaluation<T>(function(
             try_call([&] () noexcept(noexcept(arguments.eval())) {
@@ -152,7 +152,7 @@ namespace Details {
   struct FunctionEvaluator<void> {
     template<typename V, typename F, typename P>
     State operator ()(V& value, F& function, const P& pack) const {
-      std::apply(
+      apply(
         [&] (const auto&... arguments) {
           return FunctionEvaluation<void>(try_call([&] {
             return function(
@@ -202,9 +202,6 @@ namespace Details {
       /** The type of function to apply. */
       using Function = F;
 
-      /** A tuple containing the list of arguments to apply to the function. */
-      using Arguments = std::tuple<A...>;
-
       /** Whether this reactor's eval is noexcept. */
       static constexpr auto is_noexcept = Details::is_lift_noexcept_v<F, A...>;
 
@@ -216,22 +213,13 @@ namespace Details {
       template<typename FF, typename AF, typename... AR>
       Lift(FF&& function, AF&& argument, AR&&... arguments);
 
-      Lift(const Lift& lift);
-
-      Lift(Lift&& lift);
-
       State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
-      Lift& operator =(const Lift& lift);
-
-      Lift& operator =(Lift&& lift);
-
     private:
       Function m_function;
-      Arguments m_arguments;
-      StaticCommitHandler<A*...> m_handler;
+      StaticCommitHandler<A...> m_handler;
       try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
       bool m_has_continuation;
 
@@ -247,7 +235,6 @@ namespace Details {
     public:
       using Type = Details::function_reactor_result_t<std::invoke_result_t<F>>;
       using Function = F;
-      using Arguments = std::tuple<>;
       static constexpr auto is_noexcept = is_noexcept_function_v<F>;
 
       /**
@@ -258,17 +245,9 @@ namespace Details {
         !std::is_base_of_v<Lift, std::decay_t<FF>>>>
       explicit Lift(FF&& function);
 
-      Lift(const Lift& lift) = default;
-
-      Lift(Lift&& lift) = default;
-
       State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const;
-
-      Lift& operator =(const Lift& lift) = default;
-
-      Lift& operator =(Lift&& lift) = default;
 
     private:
       Function m_function;
@@ -422,35 +401,8 @@ namespace Details {
   template<typename FF, typename AF, typename... AR>
   Lift<F, A...>::Lift(FF&& function, AF&& argument, AR&&... arguments)
     : m_function(std::forward<FF>(function)),
-      m_arguments(std::forward<AF>(argument), std::forward<AR>(arguments)...),
-      m_handler(std::apply([] (auto&&... arguments) {
-        return std::make_tuple(&arguments...);
-      }, m_arguments)),
+      m_handler(std::forward<AF>(argument), std::forward<AR>(arguments)...),
       m_has_continuation(false) {}
-
-  template<typename F, typename... A>
-  Lift<F, A...>::Lift(const Lift& lift)
-      : m_function(lift.m_function),
-        m_arguments(lift.m_arguments),
-        m_handler(std::apply([] (auto&&... arguments) {
-          return std::make_tuple(&arguments...);
-        }, m_arguments)),
-        m_value(lift.m_value),
-        m_has_continuation(lift.m_has_continuation) {
-    m_handler.transfer(lift.m_handler);
-  }
-
-  template<typename F, typename... A>
-  Lift<F, A...>::Lift(Lift&& lift)
-      : m_function(std::move(lift.m_function)),
-        m_arguments(std::move(lift.m_arguments)),
-        m_handler(std::apply([] (auto&&... arguments) {
-          return std::make_tuple(&arguments...);
-        }, m_arguments)),
-        m_value(std::move(lift.m_value)),
-        m_has_continuation(std::move(lift.m_has_continuation)) {
-    m_handler.transfer(lift.m_handler);
-  }
 
   template<typename F, typename... A>
   State Lift<F, A...>::commit(int sequence) noexcept {
@@ -493,38 +445,9 @@ namespace Details {
   }
 
   template<typename F, typename... A>
-  Lift<F, A...>& Lift<F, A...>::operator =(const Lift& lift) {
-    m_function = lift.m_function;
-    m_arguments = lift.m_arguments;
-    m_handler = StaticCommitHandler(std::apply(
-      [] (auto&&... arguments) {
-        return std::make_tuple(&arguments...);
-      }, m_arguments));
-    m_handler.transfer(lift.m_handler);
-    m_value = lift.m_value;
-    m_has_continuation = lift.m_has_continuation;
-    return *this;
-  }
-
-  template<typename F, typename... A>
-  Lift<F, A...>& Lift<F, A...>::operator =(Lift&& lift) {
-    m_function = std::move(lift.m_function);
-    m_arguments = std::move(lift.m_arguments);
-    m_handler = StaticCommitHandler(std::apply(
-      [] (auto&&... arguments) {
-        return std::make_tuple(&arguments...);
-      }, m_arguments));
-    m_handler.transfer(lift.m_handler);
-    m_value = std::move(lift.m_value);
-    m_has_continuation = std::move(lift.m_has_continuation);
-    return *this;
-  }
-
-  template<typename F, typename... A>
   State Lift<F, A...>::invoke() {
     try {
-      return Details::FunctionEvaluator<Type>()(m_value, m_function,
-        m_arguments);
+      return Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
     } catch(const std::exception&) {
       if constexpr(!is_noexcept) {
         m_value = std::current_exception();

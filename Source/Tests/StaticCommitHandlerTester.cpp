@@ -11,31 +11,27 @@ TEST_CASE("test_empty_static_commit", "[StaticCommitHandler]") {
 }
 
 TEST_CASE("test_static_immediate_complete", "[StaticCommitHandler]") {
-  auto queue = Queue<int>();
-  auto reactor = StaticCommitHandler(&queue);
-  queue.push(1);
-  queue.commit(0);
-  queue.set_complete();
+  auto reactor = StaticCommitHandler(Queue<int>());
+  reactor.get<0>().push(1);
+  reactor.get<0>().commit(0);
+  reactor.get<0>().set_complete();
   REQUIRE(reactor.commit(1) == State::COMPLETE);
 }
 
 TEST_CASE("test_static_complete", "[StaticCommitHandler]") {
-  auto queueA = Shared(Queue<int>());
-  auto queueB = queueA;
-  auto reactor = StaticCommitHandler(&queueA, &queueB);
-  queueA->push(1);
+  auto queue = Shared(Queue<int>());
+  auto reactor = StaticCommitHandler(queue, queue);
+  reactor.get<0>()->push(1);
   REQUIRE(reactor.commit(0) == State::EVALUATED);
-  queueA->set_complete();
+  reactor.get<1>()->set_complete();
   REQUIRE(reactor.commit(1) == State::COMPLETE);
 }
 
 TEST_CASE("test_static_empty_and_evaluated", "[CommitHandler]") {
-  auto queue_a = Queue<int>();
-  auto queue_b = Queue<int>();
-  auto reactor = StaticCommitHandler(&queue_a, &queue_b);
+  auto reactor = StaticCommitHandler(Queue<int>(), Queue<int>());
   REQUIRE(reactor.commit(0) == State::NONE);
-  queue_a.push(123);
+  reactor.get<0>().push(123);
   REQUIRE(reactor.commit(1) == State::NONE);
-  queue_b.push(321);
+  reactor.get<1>().push(321);
   REQUIRE(reactor.commit(2) == State::EVALUATED);
 }
