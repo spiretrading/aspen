@@ -1,5 +1,6 @@
 #ifndef ASPEN_STATIC_COMMIT_HANDLER_HPP
 #define ASPEN_STATIC_COMMIT_HANDLER_HPP
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -72,7 +73,7 @@ namespace Details {
     private:
       template<typename C>
       struct Child {
-        C m_reactor;
+        std::optional<C> m_reactor;
         State m_state;
         bool m_has_evaluation;
 
@@ -153,7 +154,7 @@ namespace Details {
       if(is_complete(child.m_state)) {
         ++completion_count;
       } else {
-        child.m_state = child.m_reactor.commit(sequence);
+        child.m_state = child.m_reactor->commit(sequence);
         if(m_is_initializing) {
           child.m_has_evaluation |= has_evaluation(child.m_state);
           if(child.m_has_evaluation) {
@@ -163,6 +164,7 @@ namespace Details {
           ++evaluation_count;
         }
         if(is_complete(child.m_state)) {
+          child.m_reactor = std::nullopt;
           ++completion_count;
           if(!child.m_has_evaluation) {
             state = State::COMPLETE;
@@ -194,14 +196,14 @@ namespace Details {
   template<typename... R>
   template<std::size_t I>
   std::tuple_element_t<I, std::tuple<R...>>& StaticCommitHandler<R...>::get() {
-    return std::get<I>(m_children).m_reactor;
+    return *std::get<I>(m_children).m_reactor;
   }
 
   template<typename... R>
   template<std::size_t I>
   const std::tuple_element_t<I, std::tuple<R...>>&
       StaticCommitHandler<R...>::get() const {
-    return std::get<I>(m_children).m_reactor;
+    return *std::get<I>(m_children).m_reactor;
   }
 
   template<typename... R>
