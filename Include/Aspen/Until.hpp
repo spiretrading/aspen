@@ -72,7 +72,7 @@ namespace Aspen {
             m_series = std::nullopt;
             state = State::COMPLETE;
           }
-        } catch(const std::exception&) {
+        } catch(...) {
           if constexpr(!is_noexcept) {
             m_value = std::current_exception();
           }

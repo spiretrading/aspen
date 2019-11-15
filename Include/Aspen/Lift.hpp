@@ -448,7 +448,7 @@ namespace Details {
   State Lift<F, A...>::invoke() {
     try {
       return Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
-    } catch(const std::exception&) {
+    } catch(...) {
       if constexpr(!is_noexcept) {
         m_value = std::current_exception();
       }
@@ -486,7 +486,7 @@ namespace Details {
     try {
       return Details::FunctionEvaluator<Type>()(m_value, m_function,
         std::tuple<>());
-    } catch(const std::exception&) {
+    } catch(...) {
       if constexpr(!is_noexcept) {
         m_value = std::current_exception();
       }

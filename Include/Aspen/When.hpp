@@ -69,7 +69,7 @@ namespace Aspen {
       if(has_evaluation(condition_state)) {
         try {
           m_is_triggered = m_condition.eval();
-        } catch(const std::exception&) {}
+        } catch(...) {}
       }
       m_is_condition_complete = is_complete(condition_state);
       if(!m_is_triggered) {

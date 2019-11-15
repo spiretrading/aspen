@@ -79,7 +79,7 @@ namespace Aspen {
         if(has_evaluation(producer_state)) {
           try {
             m_children.emplace_back(m_producer.eval());
-          } catch(const std::exception&) {}
+          } catch(...) {}
         }
         if(has_continuation(producer_state)) {
           return State::CONTINUE;

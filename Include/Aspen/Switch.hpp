@@ -73,7 +73,7 @@ namespace Aspen {
     if(has_evaluation(toggle_state)) {
       try {
         m_is_on = m_toggle.eval();
-      } catch(const std::exception&) {
+      } catch(...) {
         m_is_on = false;
         if constexpr(!is_noexcept) {
           m_value = std::current_exception();
