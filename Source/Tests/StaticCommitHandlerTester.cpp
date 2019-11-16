@@ -27,7 +27,7 @@ TEST_CASE("test_static_complete", "[StaticCommitHandler]") {
   REQUIRE(reactor.commit(1) == State::COMPLETE);
 }
 
-TEST_CASE("test_static_empty_and_evaluated", "[CommitHandler]") {
+TEST_CASE("test_static_empty_and_evaluated", "[StaticCommitHandler]") {
   auto reactor = StaticCommitHandler(Queue<int>(), Queue<int>());
   REQUIRE(reactor.commit(0) == State::NONE);
   reactor.get<0>().push(123);

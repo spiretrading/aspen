@@ -58,11 +58,11 @@ namespace Details {
 
       /** Returns the reactor at the specified index. */
       template<std::size_t I>
-      std::tuple_element_t<I, std::tuple<R...>>& get();
+      const std::tuple_element_t<I, std::tuple<R...>>& get() const noexcept;
 
       /** Returns the reactor at the specified index. */
       template<std::size_t I>
-      const std::tuple_element_t<I, std::tuple<R...>>& get() const;
+      std::tuple_element_t<I, std::tuple<R...>>& get() noexcept;
 
       /** Copies a StaticCommitHandler. */
       StaticCommitHandler& operator =(const StaticCommitHandler&) = default;
@@ -194,14 +194,15 @@ namespace Details {
 
   template<typename... R>
   template<std::size_t I>
-  std::tuple_element_t<I, std::tuple<R...>>& StaticCommitHandler<R...>::get() {
+  std::tuple_element_t<I, std::tuple<R...>>&
+      StaticCommitHandler<R...>::get() noexcept {
     return std::get<I>(m_children).m_reactor;
   }
 
   template<typename... R>
   template<std::size_t I>
   const std::tuple_element_t<I, std::tuple<R...>>&
-      StaticCommitHandler<R...>::get() const {
+      StaticCommitHandler<R...>::get() const noexcept {
     return std::get<I>(m_children).m_reactor;
   }
 

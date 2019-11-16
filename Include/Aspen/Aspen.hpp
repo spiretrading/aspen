@@ -36,6 +36,7 @@
 #include "Aspen/Unconsecutive.hpp"
 #include "Aspen/Unique.hpp"
 #include "Aspen/Until.hpp"
+#include "Aspen/VectorSync.hpp"
 #include "Aspen/When.hpp"
 
 #endif

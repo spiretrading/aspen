@@ -18,35 +18,26 @@ namespace {
 
   struct ArgumentsReactor {
     using Type = args;
-    std::vector<Shared<Box<object>>> m_arguments;
-    CommitHandler m_handler;
+    CommitHandler<Box<object>> m_arguments;
 
     explicit ArgumentsReactor(const args& arguments)
       : m_arguments(
           [&] {
-            auto children = std::vector<Shared<Box<object>>>();
+            auto children = std::vector<Box<object>>();
             for(auto i = std::size_t(0); i != len(arguments); ++i) {
               children.emplace_back(to_python_reactor(arguments[i]));
-            }
-            return children;
-          }()),
-        m_handler(
-          [&] {
-            auto children = std::vector<Box<void>>();
-            for(auto& argument : m_arguments) {
-              children.emplace_back(argument);
             }
             return children;
           }()) {}
 
     State commit(int sequence) noexcept {
-      return m_handler.commit(sequence);
+      return m_arguments.commit(sequence);
     }
 
     args eval() const {
       auto arguments = tuple(m_arguments.size());
       for(auto i = std::size_t(0); i != m_arguments.size(); ++i) {
-        arguments[i] = m_arguments[i].eval();
+        arguments[i] = m_arguments.get(i).eval();
       }
       return args(std::move(arguments));
     }
