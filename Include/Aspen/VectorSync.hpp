@@ -51,6 +51,9 @@ namespace Aspen {
 
   template<typename R, typename V>
   State VectorSync<R, V>::commit(int sequence) noexcept {
+    if(m_reactors.size() == 0) {
+      return State::COMPLETE_EVALUATED;
+    }
     auto state = m_reactors.commit(sequence);
     if constexpr(!is_noexcept) {
       if(has_evaluation(state)) {
