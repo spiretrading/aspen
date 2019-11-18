@@ -32,12 +32,6 @@ namespace Aspen {
        * Constructs a Unique reactor that owns its argument.
        * @param reactor The reactor to own.
        */
-      explicit Unique(Reactor reactor);
-
-      /**
-       * Constructs a Unique reactor that owns its argument.
-       * @param reactor The reactor to own.
-       */
       explicit Unique(std::unique_ptr<Reactor> reactor) noexcept;
 
       //! Returns a reference to the reactor.
@@ -64,10 +58,6 @@ namespace Aspen {
   template<typename R>
   Unique<R>::Unique(Reactor* reactor) noexcept
     : m_reactor(reactor) {}
-
-  template<typename R>
-  Unique<R>::Unique(Reactor reactor)
-    : Unique(std::make_unique<Reactor>(std::move(reactor))) {}
 
   template<typename R>
   Unique<R>::Unique(std::unique_ptr<Reactor> reactor) noexcept

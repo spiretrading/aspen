@@ -182,7 +182,7 @@ namespace Aspen {
     if constexpr(std::is_same_v<Result, void>) {
       m_value.get();
     } else {
-      return m_value;
+      return *m_value;
     }
   }
 }
