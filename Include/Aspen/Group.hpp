@@ -1,6 +1,7 @@
 #ifndef ASPEN_GROUP_HPP
 #define ASPEN_GROUP_HPP
 #include <list>
+#include <optional>
 #include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -39,8 +40,7 @@ namespace Aspen {
         template<typename U>
         Child(U&& reactor);
       };
-      T m_producer;
-      bool m_is_producer_complete;
+      std::optional<T> m_producer;
       std::list<Child> m_children;
       typename std::list<Child>::iterator m_position;
   };
@@ -68,26 +68,27 @@ namespace Aspen {
   template<typename TF, typename>
   Group<T>::Group(TF&& producer)
     : m_producer(std::forward<TF>(producer)),
-      m_is_producer_complete(false),
       m_position(m_children.end()) {}
 
   template<typename T>
   State Group<T>::commit(int sequence) noexcept {
     auto state = [&] {
-      if(!m_is_producer_complete) {
-        auto producer_state = m_producer.commit(sequence);
+      if(m_producer.has_value()) {
+        auto producer_state = m_producer->commit(sequence);
         if(has_evaluation(producer_state)) {
           try {
-            m_children.emplace_back(m_producer.eval());
+            m_children.emplace_back(m_producer->eval());
           } catch(...) {}
         }
         if(has_continuation(producer_state)) {
           return State::CONTINUE;
         }
-        m_is_producer_complete = is_complete(producer_state);
-        if(m_is_producer_complete && (m_children.empty() ||
-            m_children.size() == 1 && m_children.front().m_is_complete)) {
-          return State::COMPLETE;
+        if(is_complete(producer_state)) {
+          m_producer = std::nullopt;
+          if(m_children.empty() ||
+              m_children.size() == 1 && m_children.front().m_is_complete) {
+            return State::COMPLETE;
+          }
         }
       }
       return State::NONE;
@@ -110,7 +111,7 @@ namespace Aspen {
           state = combine(state, State::CONTINUE);
         } else if(is_complete(child_state)) {
           child.m_is_complete = true;
-          if(m_children.size() == 1 && m_is_producer_complete) {
+          if(m_children.size() == 1 && !m_producer.has_value()) {
             state = combine(state, State::COMPLETE);
           }
         }
