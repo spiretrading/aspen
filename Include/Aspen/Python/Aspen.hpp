@@ -1,6 +1,7 @@
 #ifndef ASPEN_PYTHON_HPP
 #define ASPEN_PYTHON_HPP
 #include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Cell.hpp"
 #include "Aspen/Python/Chain.hpp"
 #include "Aspen/Python/CommitHandler.hpp"
 #include "Aspen/Python/Concat.hpp"

@@ -8,6 +8,7 @@ template struct Aspen::Details::StaticTrigger<void>;
 
 PYBIND11_MODULE(aspen, module) {
   export_box(module);
+  export_cell(module);
   export_chain(module);
   export_commit_handler(module);
   export_concat(module);
