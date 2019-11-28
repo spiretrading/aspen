@@ -18,15 +18,15 @@ namespace Aspen {
   template<typename R>
   decltype(auto) to_object(R&& reactor) {
     if constexpr(std::is_same_v<reactor_result_t<R>, pybind11::object>) {
-      return SharedBox(std::forward<R>(reactor));
+      return shared_box(std::forward<R>(reactor));
     } else if constexpr(std::is_same_v<reactor_result_t<R>, void>) {
-      return SharedBox(lift(
+      return shared_box(lift(
         [] (const Maybe<void>& result) {
           result.get();
           return pybind11::object(pybind11::none());
         }, std::forward<R>(reactor)));
     } else {
-      return SharedBox(ConversionReactor(std::forward<R>(reactor),
+      return shared_box(ConversionReactor(std::forward<R>(reactor),
         [] (auto&& value) {
           return pybind11::cast(std::forward<decltype(value)>(value));
         }));
@@ -54,14 +54,14 @@ namespace Aspen {
       }
     }
     if(is_python_reactor(value)) {
-      return SharedBox(PythonBox<T>(std::move(value)));
+      return shared_box(PythonBox<T>(std::move(value)));
     } else {
       if constexpr(std::is_same_v<T, void>) {
         return SharedBox<void>(value);
       } else if constexpr(std::is_same_v<T, SharedBox<pybind11::object>>) {
-        return SharedBox(PythonBox<T>(std::move(value)));
+        return shared_box(PythonBox<T>(std::move(value)));
       } else {
-        return SharedBox(value.cast<T>());
+        return shared_box(value.cast<T>());
       }
     }
   }
@@ -101,71 +101,71 @@ namespace Aspen {
     if constexpr(std::is_same_v<Type, pybind11::object>) {
       reactor.def("__add__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self + to_python_reactor(object));
+          return shared_box(*self + to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__sub__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self - to_python_reactor(object));
+          return shared_box(*self - to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__mul__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self * to_python_reactor(object));
+          return shared_box(*self * to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__truediv__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self / to_python_reactor(object));
+          return shared_box(*self / to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__mod__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self % to_python_reactor(object));
+          return shared_box(*self % to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__xor__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self ^ to_python_reactor(object));
+          return shared_box(*self ^ to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__and__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self & to_python_reactor(object));
+          return shared_box(*self & to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__or__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self | to_python_reactor(object));
+          return shared_box(*self | to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__invert__",
         [] (ReactorPtr<T>& self) {
-          return SharedBox(~*self);
+          return shared_box(~*self);
         }, pybind11::is_operator());
       reactor.def("__lshift__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self << to_python_reactor(object));
+          return shared_box(*self << to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__rshift__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self >> to_python_reactor(object));
+          return shared_box(*self >> to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__lt__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self < to_python_reactor(object));
+          return shared_box(*self < to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__le__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self <= to_python_reactor(object));
+          return shared_box(*self <= to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__ge__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self >= to_python_reactor(object));
+          return shared_box(*self >= to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__gt__",
         [] (ReactorPtr<T>& self, const pybind11::object& object) {
-          return SharedBox(*self > to_python_reactor(object));
+          return shared_box(*self > to_python_reactor(object));
         }, pybind11::is_operator());
       reactor.def("__neg__",
         [] (ReactorPtr<T>& self) {
-          return SharedBox(-*self);
+          return shared_box(-*self);
         }, pybind11::is_operator());
       reactor.def("__pos__",
         [] (ReactorPtr<T>& self) {
-          return SharedBox(+*self);
+          return shared_box(+*self);
         }, pybind11::is_operator());
     }
     if constexpr(!std::is_same_v<T, SharedBox<Type>>) {

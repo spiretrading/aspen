@@ -9,6 +9,6 @@ void Aspen::export_override(pybind11::module& module) {
   export_box<SharedBox<object>>(module, "Box");
   module.def("override",
     [] (SharedBox<SharedBox<object>> producer) {
-      return SharedBox(override(std::move(producer)));
+      return shared_box(override(std::move(producer)));
     });
 }

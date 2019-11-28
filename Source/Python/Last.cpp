@@ -8,6 +8,6 @@ using namespace pybind11;
 void Aspen::export_last(pybind11::module& module) {
   module.def("last",
     [] (SharedBox<object> source) {
-      return SharedBox(last(std::move(source)));
+      return shared_box(last(std::move(source)));
     });
 }

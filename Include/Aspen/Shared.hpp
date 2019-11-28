@@ -2,11 +2,26 @@
 #define ASPEN_SHARED_HPP
 #include <memory>
 #include <utility>
+#include "Aspen/Box.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Unique.hpp"
 
 namespace Aspen {
+namespace Details {
+  struct SharedState {
+    State m_state;
+    bool m_is_empty;
+    int m_sequence;
+
+    SharedState();
+  };
+
+  inline SharedState::SharedState()
+    : m_state(State::NONE),
+      m_is_empty(true),
+      m_sequence(-1) {}
+}
 
   /**
    * Used to share a reactor as a child among multiple reactors.
@@ -20,20 +35,12 @@ namespace Aspen {
       using Result = decltype(std::declval<Reactor>().eval());
       static constexpr auto is_noexcept = is_noexcept_reactor_v<Reactor>;
 
-      /**
-       * Constructs a Shared reactor.
-       */
+      /** Constructs a Shared reactor. */
       Shared();
 
       /**
-       * Constructs a Shared reactor from a Unique reactor.
-       * @param reactor The reactor to transfer ownership from.
-       */
-      Shared(Unique<Reactor> reactor);
-
-      /**
        * Constructs a Shared reactor.
-       * @param args The arguments used to emplace the shared reactor.
+       * @param args The argument used to emplace the shared reactor.
        */
       template<typename A, typename = std::enable_if_t<
         !std::is_base_of_v<Shared, std::decay_t<A>>>>
@@ -45,7 +52,20 @@ namespace Aspen {
        */
       template<typename A, typename... B, typename = std::enable_if_t<
         !std::is_base_of_v<Shared, std::decay_t<A>>>>
-      explicit Shared(A&& arg, B&&... args);
+      explicit Shared(A&& a, B&&... args);
+
+      /**
+       * Constructs a Shared reactor from a Unique reactor.
+       * @param reactor The reactor to transfer ownership from.
+       */
+      Shared(Unique<Reactor> reactor);
+
+      /**
+       * Constructs a Shared reactor from an existing Shared reactor.
+       * @param reactor The reactor to share ownership with.
+       */
+      template<typename U>
+      Shared(Shared<U> reactor);
 
       Shared(const Shared& shared);
 
@@ -72,18 +92,24 @@ namespace Aspen {
       Shared& operator =(Shared&& shared) = default;
 
     private:
-      struct Entry {
-        Reactor m_reactor;
-        State m_state;
-        bool m_is_empty;
-        int m_sequence;
-
-        template<typename... A>
-        Entry(A&&... args);
-      };
-      std::shared_ptr<Entry> m_entry;
+      template<typename> friend class Shared;
+      std::shared_ptr<Details::SharedState> m_state;
+      std::shared_ptr<Reactor> m_reactor;
       bool m_is_empty;
   };
+
+  /** Type alias for a Shared<Box<T>>. */
+  template<typename T>
+  using SharedBox = Shared<Box<T>>;
+
+  /**
+   * Boxes a reactor into a copyable generic interface.
+   * @param reactor The reactor to wrap.
+   */
+  template<typename R>
+  auto shared_box(R&& reactor) {
+    return SharedBox<reactor_result_t<R>>(std::forward<R>(reactor));
+  }
 
   /**
    * A type trait that provides the type Shared<T> if T is not already wrapped
@@ -107,92 +133,106 @@ namespace Aspen {
   Shared(A&&) -> Shared<to_reactor_t<A>>;
 
   template<typename R>
-  template<typename... A>
-  Shared<R>::Entry::Entry(A&&... args)
-    : m_reactor(std::forward<A>(args)...),
-      m_state(State::NONE),
-      m_is_empty(true),
-      m_sequence(-1) {}
-
-  template<typename R>
   Shared<R>::Shared()
-    : m_entry(std::make_shared<Entry>()),
-      m_is_empty(true) {}
-
-  template<typename R>
-  Shared<R>::Shared(Unique<Reactor> reactor)
-    : m_entry(std::make_shared<Entry>(*reactor.m_reactor)),
+    : m_state(std::make_shared<Details::SharedState>()),
+      m_reactor(std::make_shared<Reactor>()),
       m_is_empty(true) {}
 
   template<typename R>
   template<typename A, typename>
   Shared<R>::Shared(A&& args)
-    : m_entry(std::make_shared<Entry>(std::forward<A>(args))),
+    : m_state(std::make_shared<Details::SharedState>()),
+      m_reactor(std::make_shared<Reactor>(std::forward<A>(args))),
       m_is_empty(true) {}
 
   template<typename R>
   template<typename A, typename... B, typename>
-  Shared<R>::Shared(A&& arg, B&&... args)
-    : m_entry(std::make_shared<Entry>(std::forward<A>(arg),
+  Shared<R>::Shared(A&& a, B&&... args)
+    : m_state(std::make_shared<Details::SharedState>()),
+      m_reactor(std::make_shared<Reactor>(std::forward<A>(a),
         std::forward<B>(args)...)),
       m_is_empty(true) {}
 
   template<typename R>
+  Shared<R>::Shared(Unique<Reactor> reactor)
+    : m_state(std::make_shared<Details::SharedState>()),
+      m_reactor(std::move(reactor.m_reactor)),
+      m_is_empty(true) {}
+
+  template<typename R>
+  template<typename U>
+  Shared<R>::Shared(Shared<U> reactor)
+    : m_state(reactor.m_state),
+      m_reactor(std::make_shared<Reactor>(std::move(reactor))),
+      m_is_empty(true) {}
+
+  template<typename R>
   Shared<R>::Shared(const Shared& shared)
-    : m_entry(shared.m_entry),
+    : m_state(shared.m_state),
+      m_reactor(shared.m_reactor),
       m_is_empty(true) {}
 
   template<typename R>
   const typename Shared<R>::Reactor& Shared<R>::operator *() const noexcept {
-    return m_entry->m_reactor;
+    return *m_reactor;
   }
 
   template<typename R>
   const typename Shared<R>::Reactor* Shared<R>::operator ->() const noexcept {
-    return &m_entry->m_reactor;
+    return &*m_reactor;
   }
 
   template<typename R>
   typename Shared<R>::Reactor& Shared<R>::operator *() noexcept {
-    return m_entry->m_reactor;
+    return *m_reactor;
   }
 
   template<typename R>
   typename Shared<R>::Reactor* Shared<R>::operator ->() noexcept {
-    return &m_entry->m_reactor;
+    return &*m_reactor;
   }
 
   template<typename R>
   State Shared<R>::commit(int sequence) noexcept {
-    if(sequence <= m_entry->m_sequence) {
-      auto state = m_entry->m_state;
-      if(m_is_empty && !m_entry->m_is_empty) {
+    if(sequence <= m_state->m_sequence) {
+      auto state = m_state->m_state;
+      if(m_is_empty && !m_state->m_is_empty) {
         m_is_empty = false;
         state = combine(state, State::EVALUATED);
       }
       return state;
     }
-    m_entry->m_state = m_entry->m_reactor.commit(sequence);
-    m_entry->m_sequence = sequence;
-    auto state = m_entry->m_state;
-    if(has_evaluation(state)) {
-      m_entry->m_is_empty = false;
-      m_is_empty = false;
-    } else if(m_is_empty && !m_entry->m_is_empty) {
-      m_is_empty = false;
-      state = combine(state, State::EVALUATED);
+    auto state = m_reactor->commit(sequence);
+    if(sequence == m_state->m_sequence) {
+      if(has_evaluation(state)) {
+        m_is_empty = false;
+      } else if(m_is_empty && !m_state->m_is_empty) {
+        m_is_empty = false;
+        state = combine(state, State::EVALUATED);
+      }
+    } else {
+      m_state->m_state = state;
+      m_state->m_sequence = sequence;
+      if(has_evaluation(state)) {
+        m_state->m_is_empty = false;
+        m_is_empty = false;
+      } else if(m_is_empty && !m_state->m_is_empty) {
+        m_is_empty = false;
+        state = combine(state, State::EVALUATED);
+      }
     }
     return state;
   }
 
   template<typename R>
   typename Shared<R>::Result Shared<R>::eval() const noexcept(is_noexcept) {
-    return m_entry->m_reactor.eval();
+    return m_reactor->eval();
   }
 
   template<typename R>
   Shared<R>& Shared<R>::operator =(const Shared& shared) {
-    m_entry = shared.m_entry;
+    m_state = shared.m_state;
+    m_reactor = shared.m_reactor;
     m_is_empty = true;
     return *this;
   }

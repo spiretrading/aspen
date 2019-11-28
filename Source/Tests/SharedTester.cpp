@@ -24,3 +24,10 @@ TEST_CASE("test_shared_from_unique", "[Shared]") {
   REQUIRE(s.commit(0) == State::COMPLETE_EVALUATED);
   REQUIRE(s.eval() == 5);
 }
+
+TEST_CASE("test_shared_constant_to_shared_box", "[Shared]") {
+  auto c = Shared(Constant(123));
+  auto b = Shared<Box<int>>(c);
+  REQUIRE(b.commit(0) == State::COMPLETE_EVALUATED);
+  REQUIRE(b.eval() == 123);
+}

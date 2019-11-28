@@ -1,6 +1,7 @@
 #include "Aspen/Python/CommitHandler.hpp"
 #include <pybind11/stl.h>
 #include "Aspen/CommitHandler.hpp"
+#include "Aspen/Shared.hpp"
 
 using namespace Aspen;
 using namespace pybind11;

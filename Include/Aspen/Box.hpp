@@ -4,7 +4,6 @@
 #include <optional>
 #include <type_traits>
 #include "Aspen/Maybe.hpp"
-#include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -73,17 +72,6 @@ namespace Aspen {
     std::decay_t<R>>>>
   Box(R&& reactor) -> Box<reactor_result_t<to_reactor_t<R>>>;
 
-  template<typename T>
-  struct SharedBox : Shared<Box<T>> {
-    template<typename R>
-    SharedBox(R&& reactor)
-      : Shared<Box<T>>(std::forward<R>(reactor)) {}
-  };
-
-  template<typename A, typename = std::enable_if_t<
-    !std::is_base_of_v<SharedBox<reactor_result_t<A>>, std::decay_t<A>>>>
-  SharedBox(A&&) -> SharedBox<reactor_result_t<A>>;
-
   /**
    * Boxes a reactor into a generic interface.
    * @param reactor The reactor to wrap.
@@ -91,15 +79,6 @@ namespace Aspen {
   template<typename R>
   auto box(R&& reactor) {
     return Box(std::forward<R>(reactor));
-  }
-
-  /**
-   * Boxes a reactor into a copyable generic interface.
-   * @param reactor The reactor to wrap.
-   */
-  template<typename R>
-  auto shared_box(R&& reactor) {
-    return SharedBox(std::forward<R>(reactor));
   }
 
   template<typename T>

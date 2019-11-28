@@ -9,6 +9,6 @@ void Aspen::export_group(pybind11::module& module) {
   export_group<SharedBox<SharedBox<object>>>(module, "");
   module.def("group",
     [] (SharedBox<SharedBox<object>> producer) {
-      return SharedBox(group(std::move(producer)));
+      return shared_box(group(std::move(producer)));
     });
 }

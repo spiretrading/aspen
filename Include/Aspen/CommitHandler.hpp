@@ -2,7 +2,6 @@
 #define ASPEN_COMMIT_HANDLER_HPP
 #include <utility>
 #include <vector>
-#include "Aspen/Box.hpp"
 #include "Aspen/State.hpp"
 
 namespace Aspen {

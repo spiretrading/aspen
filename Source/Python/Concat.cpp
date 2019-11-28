@@ -9,6 +9,6 @@ void Aspen::export_concat(pybind11::module& module) {
   export_concat<SharedBox<SharedBox<object>>>(module, "");
   module.def("concat",
     [] (SharedBox<SharedBox<object>> producer) {
-      return SharedBox(concat(std::move(producer)));
+      return shared_box(concat(std::move(producer)));
     });
 }

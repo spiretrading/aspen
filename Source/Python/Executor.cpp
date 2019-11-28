@@ -1,5 +1,6 @@
 #include "Aspen/Python/Executor.hpp"
 #include "Aspen/Executor.hpp"
+#include "Aspen/Shared.hpp"
 #include "Aspen/Python/GilAcquireReactor.hpp"
 
 using namespace Aspen;

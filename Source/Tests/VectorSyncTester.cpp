@@ -1,4 +1,5 @@
 #include <catch2/catch.hpp>
+#include "Aspen/Box.hpp"
 #include "Aspen/Chain.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Sync.hpp"

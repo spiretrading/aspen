@@ -8,6 +8,6 @@ using namespace pybind11;
 void Aspen::export_unconsecutive(pybind11::module& module) {
   module.def("unconsecutive",
     [] (SharedBox<object> series) {
-      return SharedBox(unconsecutive(std::move(series)));
+      return shared_box(unconsecutive(std::move(series)));
     });
 }

@@ -9,14 +9,14 @@ void Aspen::export_chain(pybind11::module& module) {
   module.def("chain",
     [] (const args& arguments) {
       if(len(arguments) == 0) {
-        return SharedBox(None<object>());
+        return shared_box(None<object>());
       } else if(len(arguments) == 1) {
         return to_python_reactor(arguments[0]);
       } else {
         auto size = len(arguments);
         auto c = to_python_reactor(arguments[size - 1]);
         for(auto i = size - 1; i-- > 0;) {
-          c = SharedBox(chain(to_python_reactor(arguments[i]), std::move(c)));
+          c = shared_box(chain(to_python_reactor(arguments[i]), std::move(c)));
         }
         return c;
       }
