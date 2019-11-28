@@ -38,6 +38,7 @@
 #include "Aspen/Unique.hpp"
 #include "Aspen/Until.hpp"
 #include "Aspen/VectorSync.hpp"
+#include "Aspen/Weak.hpp"
 #include "Aspen/When.hpp"
 
 #endif
