@@ -24,10 +24,10 @@ namespace Aspen {
     }
     export_reactor<When<C, T>>(module, name)
       .def(pybind11::init<C, T>());
-    if constexpr(!std::is_same_v<C, Box<bool>> ||
-        !std::is_same_v<T, Box<pybind11::object>>) {
-      pybind11::implicitly_convertible<When<C, T>, When<Box<bool>,
-        Box<pybind11::object>>>();
+    if constexpr(!std::is_same_v<C, SharedBox<bool>> ||
+        !std::is_same_v<T, SharedBox<pybind11::object>>) {
+      pybind11::implicitly_convertible<When<C, T>, When<SharedBox<bool>,
+        SharedBox<pybind11::object>>>();
     }
   }
 }

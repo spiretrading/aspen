@@ -18,12 +18,12 @@ namespace {
 
   struct ArgumentsReactor {
     using Type = args;
-    CommitHandler<Box<object>> m_arguments;
+    CommitHandler<SharedBox<object>> m_arguments;
 
     explicit ArgumentsReactor(const args& arguments)
       : m_arguments(
           [&] {
-            auto children = std::vector<Box<object>>();
+            auto children = std::vector<SharedBox<object>>();
             for(auto i = std::size_t(0); i != len(arguments); ++i) {
               children.emplace_back(to_python_reactor(arguments[i]));
             }
@@ -45,7 +45,7 @@ namespace {
 }
 
 void Aspen::export_lift(pybind11::module& module) {
-  using PythonLift = Lift<CallableWrapper, Box<args>>;
+  using PythonLift = Lift<CallableWrapper, SharedBox<args>>;
   export_reactor<PythonLift>(module, "Lift")
     .def(init(
       [] (object callable, const args& arguments) {

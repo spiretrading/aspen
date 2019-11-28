@@ -24,10 +24,10 @@ namespace Aspen {
     }
     export_reactor<Switch<T, S>>(module, name)
       .def(pybind11::init<T, S>());
-    if constexpr(!std::is_same_v<T, Box<bool>> ||
-        !std::is_same_v<S, Box<pybind11::object>>) {
+    if constexpr(!std::is_same_v<T, SharedBox<bool>> ||
+        !std::is_same_v<S, SharedBox<pybind11::object>>) {
       pybind11::implicitly_convertible<Switch<T, S>,
-        Switch<Box<bool>, Box<pybind11::object>>>();
+        Switch<SharedBox<bool>, SharedBox<pybind11::object>>>();
     }
   }
 }

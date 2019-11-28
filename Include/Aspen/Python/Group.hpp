@@ -24,9 +24,9 @@ namespace Aspen {
     }
     export_reactor<Group<T>>(module, name)
       .def(pybind11::init<T>());
-    if constexpr(!std::is_same_v<T, Box<Box<pybind11::object>>>) {
+    if constexpr(!std::is_same_v<T, SharedBox<SharedBox<pybind11::object>>>) {
       pybind11::implicitly_convertible<Group<T>,
-        Group<Box<Box<pybind11::object>>>>();
+        Group<SharedBox<SharedBox<pybind11::object>>>>();
     }
   }
 }

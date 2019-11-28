@@ -14,8 +14,8 @@ namespace {
 
 void Aspen::register_reactor(const object& type,
     void (*boxer)(const object&, void*, const std::type_info&),
-    Box<object> (*object_boxer)(const object&),
-    Box<void> (*void_boxer)(const object&)) {
+    SharedBox<object> (*object_boxer)(const object&),
+    SharedBox<void> (*void_boxer)(const object&)) {
   box_registry.insert(std::make_pair(
     reinterpret_cast<const _typeobject*>(type.ptr()),
     Boxers{boxer, object_boxer, void_boxer}));

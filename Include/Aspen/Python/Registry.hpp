@@ -19,16 +19,16 @@ namespace Aspen {
     void (*m_boxer)(const pybind11::object&, void*, const std::type_info&);
 
     /** Converts a Python object to a Box<object>. */
-    Box<pybind11::object> (*m_object_boxer)(const pybind11::object&);
+    SharedBox<pybind11::object> (*m_object_boxer)(const pybind11::object&);
 
     /** Converts a Python object to a Box<void>. */
-    Box<void> (*m_void_boxer)(const pybind11::object&);
+    SharedBox<void> (*m_void_boxer)(const pybind11::object&);
   };
 
   ASPEN_EXPORT_DLL void register_reactor(const pybind11::object& type,
     void (*boxer)(const pybind11::object&, void*, const std::type_info&),
-    Box<pybind11::object> (*objext_boxer)(const pybind11::object&),
-    Box<void> (*void_boxer)(const pybind11::object&));
+    SharedBox<pybind11::object> (*objext_boxer)(const pybind11::object&),
+    SharedBox<void> (*void_boxer)(const pybind11::object&));
 
   /**
    * Registers a reactor type so that it can be efficiently boxed.
@@ -41,9 +41,9 @@ namespace Aspen {
     register_reactor(type,
       [] (const pybind11::object& value, void* destination,
           const std::type_info& type) {
-        if(type == typeid(Box<reactor_result_t<T>>)) {
+        if(type == typeid(SharedBox<reactor_result_t<T>>)) {
           auto pointer = value.cast<ReactorPtr<T>>();
-          reinterpret_cast<std::optional<Box<reactor_result_t<T>>>*>(
+          reinterpret_cast<std::optional<SharedBox<reactor_result_t<T>>>*>(
             destination)->emplace(*pointer);
         }
       },
@@ -53,7 +53,7 @@ namespace Aspen {
       },
       [] (const pybind11::object& value) {
         auto pointer = value.cast<ReactorPtr<T>>();
-        return Box<void>(*pointer);
+        return SharedBox<void>(*pointer);
       });
   }
 

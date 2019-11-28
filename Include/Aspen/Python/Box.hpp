@@ -8,11 +8,11 @@
 
 namespace Aspen {
 
-  /** Exports a Box evaluating to a Python object. */
+  /** Exports a SharedBox evaluating to a Python object. */
   void export_box(pybind11::module& module);
 
   /**
-   * Exports the generic Box reactor.
+   * Exports the generic SharedBox reactor.
    * @param module The module to export to.
    * @param prefix The prefix to use when forming the type name.
    */
@@ -22,16 +22,18 @@ namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<Box<T>>(module, name)
+    export_reactor<SharedBox<T>>(module, name)
       .def(pybind11::init(
         [] (pybind11::object reactor) {
           return to_python_reactor<T>(std::move(reactor));
         }));
     if constexpr(!std::is_same_v<T, pybind11::object>) {
-      pybind11::implicitly_convertible<Box<T>, Box<pybind11::object>>();
-      pybind11::implicitly_convertible<Box<pybind11::object>, Box<T>>();
+      pybind11::implicitly_convertible<SharedBox<T>,
+        SharedBox<pybind11::object>>();
+      pybind11::implicitly_convertible<SharedBox<pybind11::object>,
+        SharedBox<T>>();
     }
-    pybind11::implicitly_convertible<pybind11::object, Box<T>>();
+    pybind11::implicitly_convertible<pybind11::object, SharedBox<T>>();
   }
 }
 

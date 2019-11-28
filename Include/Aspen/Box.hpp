@@ -28,47 +28,40 @@ namespace Aspen {
         !std::is_base_of_v<Box, std::decay_t<R>>>>
       explicit Box(R&& reactor);
 
-      Box(const Box& box);
-
       Box(Box&& box) = default;
 
       State commit(int sequence) noexcept;
 
       Result eval() const;
 
-      Box& operator =(const Box& box);
-
       Box& operator =(Box&& box) = default;
 
     private:
       struct BaseWrapper {
         virtual ~BaseWrapper() = default;
-        virtual std::unique_ptr<BaseWrapper> clone() = 0;
         virtual State commit(int sequence) noexcept = 0;
         virtual Result eval() const = 0;
       };
       template<typename R>
       struct ByReferenceWrapper final : BaseWrapper {
-        collapse_shared_t<R> m_reactor;
+        R m_reactor;
 
         template<typename Q, typename = std::enable_if_t<
           !std::is_base_of_v<ByReferenceWrapper, std::decay_t<Q>>>>
         ByReferenceWrapper(Q&& reactor);
-        std::unique_ptr<BaseWrapper> clone() override;
         State commit(int sequence) noexcept override;
         Result eval() const override;
       };
       template<typename R>
       struct ByValueWrapper final : BaseWrapper {
         static constexpr auto is_noexcept = is_noexcept_reactor_v<R>;
-        collapse_shared_t<R> m_reactor;
+        R m_reactor;
         std::conditional_t<is_noexcept, std::optional<Type>, Maybe<Type>>
           m_value;
 
         template<typename Q, typename = std::enable_if_t<
           !std::is_base_of_v<ByValueWrapper, std::decay_t<Q>>>>
         ByValueWrapper(Q&& reactor);
-        std::unique_ptr<BaseWrapper> clone() override;
         State commit(int sequence) noexcept override;
         Result eval() const override;
       };
@@ -80,6 +73,17 @@ namespace Aspen {
     std::decay_t<R>>>>
   Box(R&& reactor) -> Box<reactor_result_t<to_reactor_t<R>>>;
 
+  template<typename T>
+  struct SharedBox : Shared<Box<T>> {
+    template<typename R>
+    SharedBox(R&& reactor)
+      : Shared<Box<T>>(std::forward<R>(reactor)) {}
+  };
+
+  template<typename A, typename = std::enable_if_t<
+    !std::is_base_of_v<SharedBox<reactor_result_t<A>>, std::decay_t<A>>>>
+  SharedBox(A&&) -> SharedBox<reactor_result_t<A>>;
+
   /**
    * Boxes a reactor into a generic interface.
    * @param reactor The reactor to wrap.
@@ -87,6 +91,15 @@ namespace Aspen {
   template<typename R>
   auto box(R&& reactor) {
     return Box(std::forward<R>(reactor));
+  }
+
+  /**
+   * Boxes a reactor into a copyable generic interface.
+   * @param reactor The reactor to wrap.
+   */
+  template<typename R>
+  auto shared_box(R&& reactor) {
+    return SharedBox(std::forward<R>(reactor));
   }
 
   template<typename T>
@@ -104,10 +117,6 @@ namespace Aspen {
   }
 
   template<typename T>
-  Box<T>::Box(const Box& box)
-    : m_reactor(box.m_reactor->clone()) {}
-
-  template<typename T>
   State Box<T>::commit(int sequence) noexcept {
     return m_reactor->commit(sequence);
   }
@@ -118,23 +127,10 @@ namespace Aspen {
   }
 
   template<typename T>
-  Box<T>& Box<T>::operator =(const Box& box) {
-    m_reactor = box.m_reactor->clone();
-    return *this;
-  }
-
-  template<typename T>
   template<typename R>
   template<typename Q, typename>
   Box<T>::ByReferenceWrapper<R>::ByReferenceWrapper(Q&& reactor)
     : m_reactor(std::forward<Q>(reactor)) {}
-
-  template<typename T>
-  template<typename R>
-  std::unique_ptr<typename Box<T>::BaseWrapper>
-      Box<T>::ByReferenceWrapper<R>::clone() {
-    return std::make_unique<ByReferenceWrapper>(*this);
-  }
 
   template<typename T>
   template<typename R>
@@ -157,13 +153,6 @@ namespace Aspen {
   template<typename Q, typename>
   Box<T>::ByValueWrapper<R>::ByValueWrapper(Q&& reactor)
     : m_reactor(std::forward<Q>(reactor)) {}
-
-  template<typename T>
-  template<typename R>
-  std::unique_ptr<typename Box<T>::BaseWrapper>
-      Box<T>::ByValueWrapper<R>::clone() {
-    return std::make_unique<ByValueWrapper>(*this);
-  }
 
   template<typename T>
   template<typename R>

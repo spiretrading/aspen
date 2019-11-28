@@ -8,7 +8,7 @@ using namespace pybind11;
 void Aspen::export_count(pybind11::module& module) {
   export_box<int>(module, "Int");
   module.def("count",
-    [] (Box<void> series) {
-      return Box(count(std::move(series)));
+    [] (SharedBox<void> series) {
+      return SharedBox(count(std::move(series)));
     });
 }

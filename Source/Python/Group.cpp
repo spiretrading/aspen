@@ -5,10 +5,10 @@ using namespace Aspen;
 using namespace pybind11;
 
 void Aspen::export_group(pybind11::module& module) {
-  export_box<Box<object>>(module, "Box");
-  export_group<Box<Box<object>>>(module, "");
+  export_box<SharedBox<object>>(module, "Box");
+  export_group<SharedBox<SharedBox<object>>>(module, "");
   module.def("group",
-    [] (Box<Box<object>> producer) {
-      return Box(group(std::move(producer)));
+    [] (SharedBox<SharedBox<object>> producer) {
+      return SharedBox(group(std::move(producer)));
     });
 }

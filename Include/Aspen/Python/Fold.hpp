@@ -50,10 +50,10 @@ namespace Aspen {
     export_reactor<Fold<E, S>>(module, name)
       .def(pybind11::init<E, Shared<FoldArgument<Type>>,
         Shared<FoldArgument<Type>>, S>());
-    if constexpr(!std::is_same_v<E, Box<pybind11::object>> ||
-        !std::is_same_v<S, Box<pybind11::object>>) {
+    if constexpr(!std::is_same_v<E, SharedBox<pybind11::object>> ||
+        !std::is_same_v<S, SharedBox<pybind11::object>>) {
       pybind11::implicitly_convertible<Fold<E, S>,
-        Fold<Box<pybind11::object>, Box<pybind11::object>>>();
+        Fold<SharedBox<pybind11::object>, SharedBox<pybind11::object>>>();
     }
   }
 }

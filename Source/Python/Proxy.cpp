@@ -5,9 +5,9 @@ using namespace Aspen;
 using namespace pybind11;
 
 void Aspen::export_proxy(pybind11::module& module) {
-  export_proxy<Box<object>>(module, "");
+  export_proxy<SharedBox<object>>(module, "");
   module.def("proxy",
     [] {
-      return proxy<Box<object>>();
+      return proxy<SharedBox<object>>();
     });
 }

@@ -24,10 +24,10 @@ namespace Aspen {
     }
     export_reactor<Chain<A, B>>(module, name)
       .def(pybind11::init<A, B>());
-    if constexpr(!std::is_same_v<A, Box<pybind11::object>> ||
-        !std::is_same_v<B, Box<pybind11::object>>) {
+    if constexpr(!std::is_same_v<A, SharedBox<pybind11::object>> ||
+        !std::is_same_v<B, SharedBox<pybind11::object>>) {
       pybind11::implicitly_convertible<Chain<A, B>,
-        Chain<Box<pybind11::object>, Box<pybind11::object>>>();
+        Chain<SharedBox<pybind11::object>, SharedBox<pybind11::object>>>();
     }
   }
 }

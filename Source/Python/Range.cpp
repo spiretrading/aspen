@@ -8,11 +8,14 @@ using namespace pybind11;
 
 void Aspen::export_range(pybind11::module& module) {
   module.def("range",
-    [] (Box<object> start, Box<object> stop) {
-      return Box(range(std::move(start), std::move(stop), constant(cast(1))));
+    [] (SharedBox<object> start, SharedBox<object> stop) {
+      return SharedBox(range(std::move(start), std::move(stop),
+        constant(cast(1))));
     });
   module.def("range",
-    [] (Box<object> start, Box<object> stop, Box<object> step) {
-      return Box(range(std::move(start), std::move(stop), std::move(step)));
+    [] (SharedBox<object> start, SharedBox<object> stop,
+        SharedBox<object> step) {
+      return SharedBox(range(std::move(start), std::move(stop),
+        std::move(step)));
     });
 }

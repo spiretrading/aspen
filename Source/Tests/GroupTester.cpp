@@ -4,7 +4,7 @@
 using namespace Aspen;
 
 TEST_CASE("test_empty_group", "[Group]") {
-  auto queue = Shared(Queue<Box<int>>());
+  auto queue = Shared(Queue<SharedBox<int>>());
   auto reactor = group(queue);
   REQUIRE(reactor.commit(0) == State::NONE);
   queue->set_complete();
@@ -12,10 +12,10 @@ TEST_CASE("test_empty_group", "[Group]") {
 }
 
 TEST_CASE("test_loop_complete", "[Group]") {
-  auto queue = Shared(Queue<Box<int>>());
+  auto queue = Shared(Queue<SharedBox<int>>());
   auto reactor = group(queue);
-  queue->push(box(constant(123)));
-  queue->push(box(none<int>()));
+  queue->push(shared_box(constant(123)));
+  queue->push(shared_box(none<int>()));
   queue->set_complete();
   REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
   REQUIRE(reactor.eval() == 123);

@@ -6,9 +6,9 @@ using namespace pybind11;
 
 void Aspen::export_switch(pybind11::module& module) {
   export_box<bool>(module, "Bool");
-  export_switch<Box<bool>, Box<object>>(module, "");
+  export_switch<SharedBox<bool>, SharedBox<object>>(module, "");
   module.def("switch",
-    [] (Box<bool> toggle, Box<object> series) {
-      return switch_(Box(std::move(toggle)), std::move(series));
+    [] (SharedBox<bool> toggle, SharedBox<object> series) {
+      return switch_(std::move(toggle), std::move(series));
     });
 }

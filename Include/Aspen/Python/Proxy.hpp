@@ -27,9 +27,9 @@ namespace Aspen {
       .def("set_reactor", [] (Proxy<T>& self, T& reactor) {
         self.set_reactor(reactor);
       });
-    if constexpr(!std::is_same_v<T, Box<pybind11::object>>) {
+    if constexpr(!std::is_same_v<T, SharedBox<pybind11::object>>) {
       pybind11::implicitly_convertible<Proxy<T>,
-        Proxy<Box<pybind11::object>>>();
+        Proxy<SharedBox<pybind11::object>>>();
     }
   }
 }

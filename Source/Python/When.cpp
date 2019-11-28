@@ -6,9 +6,9 @@ using namespace pybind11;
 
 void Aspen::export_when(pybind11::module& module) {
   export_box<bool>(module, "Bool");
-  export_when<Box<bool>, Box<object>>(module, "");
+  export_when<SharedBox<bool>, SharedBox<object>>(module, "");
   module.def("when",
-    [] (Box<bool> condition, Box<object> series) {
-      return when(Box(std::move(condition)), std::move(series));
+    [] (SharedBox<bool> condition, SharedBox<object> series) {
+      return when(std::move(condition), std::move(series));
     });
 }

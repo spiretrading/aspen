@@ -11,24 +11,24 @@
 using namespace Aspen;
 
 TEST_CASE("test_constant_then_empty", "[Concat]") {
-  auto series = Shared<Queue<Box<int>>>();
+  auto series = Shared<Queue<SharedBox<int>>>();
   auto reactor = concat(series);
-  series->push(Box(5));
+  series->push(SharedBox(5));
   REQUIRE(reactor.commit(0) == State::EVALUATED);
   REQUIRE(reactor.eval() == 5);
   REQUIRE(reactor.commit(1) == State::NONE);
   REQUIRE(reactor.eval() == 5);
   auto producer = Shared<Queue<int>>();
-  series->push(Box(producer));
+  series->push(SharedBox(producer));
   REQUIRE(reactor.commit(2) == State::NONE);
   REQUIRE(reactor.eval() == 5);
 }
 
 TEST_CASE("test_constant_empty_constant", "[Concat]") {
-  auto series = Shared<Queue<Box<int>>>();
-  series->push(Box(5));
-  series->push(Box(None<int>()));
-  series->push(Box(10));
+  auto series = Shared<Queue<SharedBox<int>>>();
+  series->push(SharedBox(5));
+  series->push(SharedBox(None<int>()));
+  series->push(SharedBox(10));
   series->set_complete();
   auto reactor = concat(series);
   REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
@@ -40,9 +40,9 @@ TEST_CASE("test_constant_empty_constant", "[Concat]") {
 }
 
 TEST_CASE("test_no_evaluation_continue", "[Concat]") {
-  auto series = Shared<Queue<Box<int>>>();
-  series->push(Box(10));
-  series->push(Box(last(chain(3, 1))));
+  auto series = Shared<Queue<SharedBox<int>>>();
+  series->push(SharedBox(10));
+  series->push(SharedBox(last(chain(3, 1))));
   series->set_complete();
   auto reactor = concat(series);
   REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);

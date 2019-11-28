@@ -13,16 +13,17 @@ void Aspen::export_fold_argument(pybind11::module& module) {
 }
 
 void Aspen::export_fold(pybind11::module& module) {
-  export_fold<Box<object>, Box<object>>(module, "");
+  export_fold<SharedBox<object>, SharedBox<object>>(module, "");
   module.def("fold",
     [] (object evaluator, Shared<FoldArgument<object>> left,
         Shared<FoldArgument<object>> right, object series) {
-      return Box(fold(to_python_reactor(std::move(evaluator)), std::move(left),
-        std::move(right), to_python_reactor(std::move(series))));
+      return SharedBox(fold(to_python_reactor(std::move(evaluator)),
+        std::move(left), std::move(right),
+        to_python_reactor(std::move(series))));
     });
   module.def("fold",
     [] (object f, object series) {
-      return Box(fold(
+      return SharedBox(fold(
         [f = std::move(f)] (const object& a, const object& b) {
           return f(a, b);
         }, to_python_reactor(std::move(series))));
