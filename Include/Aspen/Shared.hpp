@@ -93,9 +93,13 @@ namespace Details {
 
     private:
       template<typename> friend class Shared;
+      template<typename> friend class Weak;
       std::shared_ptr<Details::SharedState> m_state;
       std::shared_ptr<Reactor> m_reactor;
       bool m_is_empty;
+
+      static State commit_state(int sequence, Details::SharedState& state,
+        Reactor& reactor, bool& is_empty);
   };
 
   /** Type alias for a Shared<Box<T>>. */
@@ -194,34 +198,7 @@ namespace Details {
 
   template<typename R>
   State Shared<R>::commit(int sequence) noexcept {
-    if(sequence <= m_state->m_sequence) {
-      auto state = m_state->m_state;
-      if(m_is_empty && !m_state->m_is_empty) {
-        m_is_empty = false;
-        state = combine(state, State::EVALUATED);
-      }
-      return state;
-    }
-    auto state = m_reactor->commit(sequence);
-    if(sequence == m_state->m_sequence) {
-      if(has_evaluation(state)) {
-        m_is_empty = false;
-      } else if(m_is_empty && !m_state->m_is_empty) {
-        m_is_empty = false;
-        state = combine(state, State::EVALUATED);
-      }
-    } else {
-      m_state->m_state = state;
-      m_state->m_sequence = sequence;
-      if(has_evaluation(state)) {
-        m_state->m_is_empty = false;
-        m_is_empty = false;
-      } else if(m_is_empty && !m_state->m_is_empty) {
-        m_is_empty = false;
-        state = combine(state, State::EVALUATED);
-      }
-    }
-    return state;
+    return commit_state(sequence, *m_state, *m_reactor, m_is_empty);
   }
 
   template<typename R>
@@ -235,6 +212,38 @@ namespace Details {
     m_reactor = shared.m_reactor;
     m_is_empty = true;
     return *this;
+  }
+
+  template<typename R>
+  State Shared<R>::commit_state(int sequence, Details::SharedState& state,
+      Reactor& reactor, bool& is_empty) {
+    if(sequence <= state.m_sequence) {
+      if(is_empty && !state.m_is_empty) {
+        is_empty = false;
+        return combine(state.m_state, State::EVALUATED);
+      }
+      return state.m_state;
+    }
+    auto reactor_state = reactor.commit(sequence);
+    if(sequence == state.m_sequence) {
+      if(has_evaluation(reactor_state)) {
+        is_empty = false;
+      } else if(is_empty && !state.m_is_empty) {
+        is_empty = false;
+        reactor_state = combine(reactor_state, State::EVALUATED);
+      }
+    } else {
+      state.m_state = reactor_state;
+      state.m_sequence = sequence;
+      if(has_evaluation(reactor_state)) {
+        state.m_is_empty = false;
+        is_empty = false;
+      } else if(is_empty && !state.m_is_empty) {
+        is_empty = false;
+        reactor_state = combine(reactor_state, State::EVALUATED);
+      }
+    }
+    return reactor_state;
   }
 }
 
