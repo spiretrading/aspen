@@ -72,6 +72,7 @@ namespace Aspen {
   Group<T>::Group(TF&& producer)
     : m_producer(std::forward<TF>(producer)),
       m_children(std::make_unique<std::list<Child>>()),
+      m_current(m_children->end()),
       m_position(m_children->end()) {}
 
   template<typename T>
@@ -96,6 +97,12 @@ namespace Aspen {
       }
       return State::NONE;
     }();
+    while(m_position != m_current && m_position->m_is_complete) {
+      m_position = m_children->erase(m_position);
+      if(m_position == m_children->end()) {
+        m_position = m_children->begin();
+      }
+    }
     if(!m_children->empty()) {
       auto start = m_position;
       while(true) {
