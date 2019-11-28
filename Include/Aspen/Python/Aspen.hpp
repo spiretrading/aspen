@@ -31,7 +31,6 @@
 #include "Aspen/Python/Trigger.hpp"
 #include "Aspen/Python/Unconsecutive.hpp"
 #include "Aspen/Python/Until.hpp"
-#include "Aspen/Python/Weak.hpp"
 #include "Aspen/Python/When.hpp"
 
 #endif

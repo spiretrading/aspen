@@ -67,7 +67,7 @@ namespace Details {
       template<typename U>
       Shared(Shared<U> reactor);
 
-      Shared(const Shared& shared);
+      Shared(const Shared& shared) noexcept;
 
       Shared(Shared&& shared) = default;
 
@@ -87,7 +87,7 @@ namespace Details {
 
       Result eval() const noexcept(is_noexcept);
 
-      Shared& operator =(const Shared& shared);
+      Shared& operator =(const Shared& shared) noexcept;
 
       Shared& operator =(Shared&& shared) = default;
 
@@ -98,6 +98,8 @@ namespace Details {
       std::shared_ptr<Reactor> m_reactor;
       bool m_is_empty;
 
+      Shared(std::shared_ptr<Details::SharedState> state,
+        std::shared_ptr<Reactor> reactor);
       static State commit_state(int sequence, Details::SharedState& state,
         Reactor& reactor, bool& is_empty);
   };
@@ -138,43 +140,35 @@ namespace Details {
 
   template<typename R>
   Shared<R>::Shared()
-    : m_state(std::make_shared<Details::SharedState>()),
-      m_reactor(std::make_shared<Reactor>()),
-      m_is_empty(true) {}
+    : Shared(std::make_shared<Details::SharedState>(),
+        std::make_shared<Reactor>()) {}
 
   template<typename R>
   template<typename A, typename>
   Shared<R>::Shared(A&& args)
-    : m_state(std::make_shared<Details::SharedState>()),
-      m_reactor(std::make_shared<Reactor>(std::forward<A>(args))),
-      m_is_empty(true) {}
+    : Shared(std::make_shared<Details::SharedState>(),
+        std::make_shared<Reactor>(std::forward<A>(args))) {}
 
   template<typename R>
   template<typename A, typename... B, typename>
   Shared<R>::Shared(A&& a, B&&... args)
-    : m_state(std::make_shared<Details::SharedState>()),
-      m_reactor(std::make_shared<Reactor>(std::forward<A>(a),
-        std::forward<B>(args)...)),
-      m_is_empty(true) {}
+    : Shared(std::make_shared<Details::SharedState>(),
+        std::make_shared<Reactor>(std::forward<A>(a),
+        std::forward<B>(args)...)) {}
 
   template<typename R>
   Shared<R>::Shared(Unique<Reactor> reactor)
-    : m_state(std::make_shared<Details::SharedState>()),
-      m_reactor(std::move(reactor.m_reactor)),
-      m_is_empty(true) {}
+    : Shared(std::make_shared<Details::SharedState>(),
+        std::shared_ptr<Reactor>(std::move(reactor.m_reactor))) {}
 
   template<typename R>
   template<typename U>
   Shared<R>::Shared(Shared<U> reactor)
-    : m_state(reactor.m_state),
-      m_reactor(std::make_shared<Reactor>(std::move(reactor))),
-      m_is_empty(true) {}
+    : Shared(reactor.m_state, std::make_shared<Reactor>(reactor)) {}
 
   template<typename R>
-  Shared<R>::Shared(const Shared& shared)
-    : m_state(shared.m_state),
-      m_reactor(shared.m_reactor),
-      m_is_empty(true) {}
+  Shared<R>::Shared(const Shared& shared) noexcept
+    : Shared(shared.m_state, shared.m_reactor) {}
 
   template<typename R>
   const typename Shared<R>::Reactor& Shared<R>::operator *() const noexcept {
@@ -207,12 +201,19 @@ namespace Details {
   }
 
   template<typename R>
-  Shared<R>& Shared<R>::operator =(const Shared& shared) {
+  Shared<R>& Shared<R>::operator =(const Shared& shared) noexcept {
     m_state = shared.m_state;
     m_reactor = shared.m_reactor;
     m_is_empty = true;
     return *this;
   }
+
+  template<typename R>
+  Shared<R>::Shared(std::shared_ptr<Details::SharedState> state,
+    std::shared_ptr<Reactor> reactor)
+    : m_state(std::move(state)),
+      m_reactor(std::move(reactor)),
+      m_is_empty(true) {}
 
   template<typename R>
   State Shared<R>::commit_state(int sequence, Details::SharedState& state,
