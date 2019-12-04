@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
+#include "Aspen/None.hpp"
 #include "Aspen/Shared.hpp"
 
 using namespace Aspen;
@@ -30,4 +31,17 @@ TEST_CASE("test_shared_constant_to_shared_box", "[Shared]") {
   auto b = Shared<Box<int>>(c);
   REQUIRE(b.commit(0) == State::COMPLETE_EVALUATED);
   REQUIRE(b.eval() == 123);
+}
+
+TEST_CASE("test_shared_with_none", "[Shared]") {
+  auto a = Shared(chain(123, none<int>(), 321, none<int>()));
+  auto b = Shared(a);
+  a.commit(0);
+  REQUIRE(b.commit(0) == State::CONTINUE_EVALUATED);
+  REQUIRE(b.eval() == 123);
+  a.commit(1);
+  a.commit(2);
+  a.commit(3);
+  REQUIRE(b.commit(3) == State::COMPLETE_EVALUATED);
+  REQUIRE(b.eval() == 321);
 }
