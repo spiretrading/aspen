@@ -1,7 +1,7 @@
 #ifndef ASPEN_WEAK_HPP
 #define ASPEN_WEAK_HPP
-#include <optional>
 #include <memory>
+#include <optional>
 #include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
