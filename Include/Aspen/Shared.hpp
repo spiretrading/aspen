@@ -21,7 +21,8 @@ namespace Details {
   struct SharedEvaluator {
     std::shared_ptr<SharedState> m_state;
     std::weak_ptr<R> m_reactor;
-    std::optional<Maybe<reactor_result_t<R>>> m_evaluation;
+    std::optional<try_maybe_t<reactor_result_t<R>,
+      !is_noexcept_reactor_v<R>>> m_evaluation;
 
     SharedEvaluator(std::shared_ptr<SharedState> state);
   };
@@ -83,6 +84,8 @@ namespace Details {
       Shared(const Shared& shared) noexcept;
 
       Shared(Shared&& shared) = default;
+
+      ~Shared();
 
       //! Returns a reference to the reactor.
       const Reactor& operator *() const noexcept;
@@ -197,6 +200,13 @@ namespace Details {
   template<typename R>
   Shared<R>::Shared(const Shared& shared) noexcept
     : Shared(shared.m_evaluator, shared.m_reactor) {}
+
+  template<typename R>
+  Shared<R>::~Shared() {
+    if(m_reactor.unique()) {
+      m_evaluator->m_evaluation = try_eval(*m_reactor);
+    }
+  }
 
   template<typename R>
   const typename Shared<R>::Reactor& Shared<R>::operator *() const noexcept {

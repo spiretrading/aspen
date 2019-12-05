@@ -55,12 +55,22 @@ namespace Aspen {
   template<typename R>
   State Weak<R>::commit(int sequence) noexcept {
     auto reactor = m_evaluator->m_reactor.lock();
-    return Shared<Reactor>::commit_state(sequence, *reactor, *m_evaluator,
-      m_last_evaluation);
+    if(reactor == nullptr) {
+      if(m_last_evaluation < m_evaluator->m_state->m_last_evaluation) {
+        return State::COMPLETE_EVALUATED;
+      }
+      return State::COMPLETE;
+    } else {
+      return Shared<Reactor>::commit_state(sequence, *reactor, *m_evaluator,
+        m_last_evaluation);
+    }
   }
 
   template<typename R>
   typename Weak<R>::Result Weak<R>::eval() const noexcept(is_noexcept) {
+    if(m_evaluator->m_evaluation.has_value()) {
+      return *m_evaluator->m_evaluation;
+    }
     auto reactor = m_evaluator->m_reactor.lock();
     return reactor->eval();
   }

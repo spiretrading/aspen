@@ -92,7 +92,12 @@ namespace Aspen {
   template<typename R>
   auto try_eval(const R& reactor) noexcept {
     if constexpr(is_noexcept_reactor_v<R>) {
-      return LocalPtr(reactor.eval());
+      if constexpr(std::is_same_v<reactor_result_t<R>, void>) {
+        reactor.eval();
+        return Maybe<void>();
+      } else {
+        return LocalPtr(reactor.eval());
+      }
     } else {
       return try_call([&] { return reactor.eval(); });
     }
