@@ -26,68 +26,37 @@ namespace Aspen {
        */
       explicit Weak(Shared<Reactor> reactor) noexcept;
 
-      Weak(const Weak& weak) noexcept;
-
-      Weak(Weak&& weak) = default;
-
       /** Returns a new Shared reactor to the reactor being observed. */
-      std::optional<Shared<R>> lock() const noexcept;
+      std::optional<Shared<Reactor>> lock() const noexcept;
 
       State commit(int sequence) noexcept;
 
       Result eval() const noexcept(is_noexcept);
 
-      Weak& operator =(const Weak& weak) noexcept;
-
-      Weak& operator =(Weak&& weak) = default;
-
     private:
-      std::shared_ptr<Reactor> m_reactor;
-      std::weak_ptr<Details::SharedState> m_state;
-      bool m_is_empty;
+      std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
+      int m_last_evaluation;
   };
 
   template<typename R>
   Weak<R>::Weak(Shared<Reactor> reactor) noexcept
-    : m_reactor(std::move(reactor.m_reactor)),
-      m_state(std::move(reactor.m_state)),
-      m_is_empty(true) {}
-
-  template<typename R>
-  Weak<R>::Weak(const Weak& weak) noexcept
-    : m_reactor(weak.m_reactor),
-      m_state(weak.m_state),
-      m_is_empty(true) {}
+    : m_evaluator(std::move(reactor.m_evaluator)),
+      m_last_evaluation(-1) {}
 
   template<typename R>
   std::optional<Shared<R>> Weak<R>::lock() const noexcept {
-    auto state = m_state.lock();
-    if(state == nullptr) {
-      return std::nullopt;
-    }
-    return Shared<Reactor>(state, m_reactor);
+    return std::nullopt;
   }
 
   template<typename R>
   State Weak<R>::commit(int sequence) noexcept {
-    auto state = m_state.lock();
-    if(state == nullptr) {
-      return State::COMPLETE;
-    }
-    return Shared<R>::commit_state(sequence, *state, *m_reactor, m_is_empty);
+    return Shared<Reactor>::commit_state(sequence, *m_evaluator,
+      m_last_evaluation);
   }
 
   template<typename R>
   typename Weak<R>::Result Weak<R>::eval() const noexcept(is_noexcept) {
-    return m_reactor->eval();
-  }
-
-  template<typename R>
-  Weak<R>& Weak<R>::operator =(const Weak& weak) noexcept {
-    m_reactor = weak.m_reactor;
-    m_state = weak.m_state;
-    m_is_empty = true;
-    return *this;
+    return m_evaluator->m_reactor->eval();
   }
 }
 
