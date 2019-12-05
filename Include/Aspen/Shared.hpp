@@ -20,7 +20,7 @@ namespace Details {
   template<typename R>
   struct SharedEvaluator {
     std::shared_ptr<SharedState> m_state;
-    R* m_reactor;
+    std::weak_ptr<R> m_reactor;
     std::optional<Maybe<reactor_result_t<R>>> m_evaluation;
 
     SharedEvaluator(std::shared_ptr<SharedState> state);
@@ -113,7 +113,7 @@ namespace Details {
 
       Shared(std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
         std::shared_ptr<Reactor> reactor);
-      static State commit_state(int sequence,
+      static State commit_state(int sequence, Reactor& reactor,
         Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation);
   };
 
@@ -156,7 +156,7 @@ namespace Details {
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         std::make_shared<Details::SharedState>()),
         std::make_shared<Reactor>()) {
-    m_evaluator->m_reactor = m_reactor.get();
+    m_evaluator->m_reactor = m_reactor;
   }
 
   template<typename R>
@@ -165,7 +165,7 @@ namespace Details {
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         std::make_shared<Details::SharedState>()),
         std::make_shared<Reactor>(std::forward<A>(args))) {
-    m_evaluator->m_reactor = m_reactor.get();
+    m_evaluator->m_reactor = m_reactor;
   }
 
   template<typename R>
@@ -175,7 +175,7 @@ namespace Details {
         std::make_shared<Details::SharedState>()),
         std::make_shared<Reactor>(std::forward<A>(a),
         std::forward<B>(args)...)) {
-    m_evaluator->m_reactor = m_reactor.get();
+    m_evaluator->m_reactor = m_reactor;
   }
 
   template<typename R>
@@ -183,7 +183,7 @@ namespace Details {
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         std::make_shared<Details::SharedState>()),
         std::shared_ptr<Reactor>(std::move(reactor.m_reactor))) {
-    m_evaluator->m_reactor = m_reactor.get();
+    m_evaluator->m_reactor = m_reactor;
   }
 
   template<typename R>
@@ -191,7 +191,7 @@ namespace Details {
   Shared<R>::Shared(Shared<U> reactor)
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         reactor.m_evaluator->m_state), std::make_shared<Reactor>(reactor)) {
-    m_evaluator->m_reactor = m_reactor.get();
+    m_evaluator->m_reactor = m_reactor;
   }
 
   template<typename R>
@@ -220,7 +220,7 @@ namespace Details {
 
   template<typename R>
   State Shared<R>::commit(int sequence) noexcept {
-    return commit_state(sequence, *m_evaluator, m_last_evaluation);
+    return commit_state(sequence, *m_reactor, *m_evaluator, m_last_evaluation);
   }
 
   template<typename R>
@@ -245,7 +245,7 @@ namespace Details {
       m_last_evaluation(-1) {}
 
   template<typename R>
-  State Shared<R>::commit_state(int sequence,
+  State Shared<R>::commit_state(int sequence, Reactor& reactor,
       Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation) {
     if(sequence <= evaluator.m_state->m_sequence) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
@@ -254,7 +254,7 @@ namespace Details {
       }
       return evaluator.m_state->m_state;
     }
-    auto reactor_state = evaluator.m_reactor->commit(sequence);
+    auto reactor_state = reactor.commit(sequence);
     if(sequence == evaluator.m_state->m_sequence) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;

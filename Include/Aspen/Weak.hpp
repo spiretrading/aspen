@@ -45,18 +45,24 @@ namespace Aspen {
 
   template<typename R>
   std::optional<Shared<R>> Weak<R>::lock() const noexcept {
-    return std::nullopt;
+    auto reactor = m_evaluator->m_reactor.lock();
+    if(reactor == nullptr) {
+      return std::nullopt;
+    }
+    return Shared(m_evaluator, std::move(reactor));
   }
 
   template<typename R>
   State Weak<R>::commit(int sequence) noexcept {
-    return Shared<Reactor>::commit_state(sequence, *m_evaluator,
+    auto reactor = m_evaluator->m_reactor.lock();
+    return Shared<Reactor>::commit_state(sequence, *reactor, *m_evaluator,
       m_last_evaluation);
   }
 
   template<typename R>
   typename Weak<R>::Result Weak<R>::eval() const noexcept(is_noexcept) {
-    return m_evaluator->m_reactor->eval();
+    auto reactor = m_evaluator->m_reactor.lock();
+    return reactor->eval();
   }
 }
 
