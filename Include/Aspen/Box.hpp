@@ -27,13 +27,9 @@ namespace Aspen {
         !std::is_base_of_v<Box, std::decay_t<R>>>>
       explicit Box(R&& reactor);
 
-      Box(Box&& box) = default;
-
       State commit(int sequence) noexcept;
 
       Result eval() const;
-
-      Box& operator =(Box&& box) = default;
 
     private:
       struct BaseWrapper {
