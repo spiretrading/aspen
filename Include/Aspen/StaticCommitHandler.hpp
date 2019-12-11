@@ -1,5 +1,6 @@
 #ifndef ASPEN_STATIC_COMMIT_HANDLER_HPP
 #define ASPEN_STATIC_COMMIT_HANDLER_HPP
+#include <functional>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -12,12 +13,12 @@ namespace Details {
   template<typename F, typename H, std::size_t... I>
   decltype(auto) apply_impl(F&& f, const H& handler,
       std::index_sequence<I...>) {
-    return std::invoke(std::forward<F>(f), handler.get<I>()...);
+    return std::invoke(std::forward<F>(f), handler.template get<I>()...);
   }
 
   template<typename F, typename H, std::size_t... I>
   decltype(auto) apply_impl(F&& f, H& handler, std::index_sequence<I...>) {
-    return std::invoke(std::forward<F>(f), handler.get<I>()...);
+    return std::invoke(std::forward<F>(f), handler.template get<I>()...);
   }
 }
 

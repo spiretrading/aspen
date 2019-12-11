@@ -53,7 +53,7 @@ namespace Details {
     if constexpr(!is_noexcept) {
       if(has_evaluation(state)) {
         try {
-          apply([] (const auto& reactors...) {
+          apply([] (const auto&... reactors) {
             (reactors.eval(), ...);
           }, m_reactors);
           this->m_exception = nullptr;
