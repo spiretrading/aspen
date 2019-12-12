@@ -154,7 +154,7 @@ namespace Details {
       }
       if(is_complete(child.m_state)) {
         ++completion_count;
-        if(child.m_has_evaluation) {
+        if(m_is_initializing && child.m_has_evaluation) {
           ++evaluation_count;
         }
       } else {

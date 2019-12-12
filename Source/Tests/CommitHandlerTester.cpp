@@ -46,4 +46,5 @@ TEST_CASE("test_commit_delayed_evaluation", "[StaticCommitHandler]") {
   REQUIRE(reactor.commit(0) == State::NONE);
   queue->push(123);
   REQUIRE(reactor.commit(1) == State::EVALUATED);
+  REQUIRE(reactor.commit(2) == State::NONE);
 }
