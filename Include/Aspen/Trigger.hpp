@@ -69,7 +69,9 @@ namespace Details {
       Slot m_slot;
 
       Trigger(const Trigger&) = delete;
+      Trigger(Trigger&&) = delete;
       Trigger& operator =(const Trigger&) = delete;
+      Trigger& operator =(Trigger&&) = delete;
   };
 
   inline Trigger* Trigger::get_trigger() {

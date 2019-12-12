@@ -59,7 +59,7 @@ namespace Aspen {
       Queue& operator =(Queue&& queue);
 
     private:
-      std::mutex m_mutex;
+      mutable std::mutex m_mutex;
       bool m_is_complete;
       bool m_has_commit;
       std::deque<Type> m_entries;
@@ -160,6 +160,7 @@ namespace Aspen {
 
   template<typename T>
   eval_result_t<typename Queue<T>::Type> Queue<T>::eval() const {
+    auto lock = std::lock_guard(m_mutex);
     if(m_entries.empty()) {
       std::rethrow_exception(m_exception);
     }

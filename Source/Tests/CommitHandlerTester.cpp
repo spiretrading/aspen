@@ -5,19 +5,19 @@
 
 using namespace Aspen;
 
-TEST_CASE("test_empty_commit", "[CommitHandler]") {
+TEST_CASE("test_commit_empty_commit", "[CommitHandler]") {
   auto reactor = CommitHandler<Box<void>>({});
   REQUIRE(reactor.commit(0) == State::COMPLETE);
 }
 
-TEST_CASE("test_immediate_complete", "[CommitHandler]") {
+TEST_CASE("test_commit_immediate_complete", "[CommitHandler]") {
   auto queue = Shared(Queue<int>());
-//  auto reactor = CommitHandler(std::vector{queue});
-//  queue->set_complete();
-//  REQUIRE(reactor.commit(0) == State::COMPLETE);
+  auto reactor = CommitHandler(std::vector{queue});
+  queue->set_complete();
+  REQUIRE(reactor.commit(0) == State::COMPLETE);
 }
 
-TEST_CASE("test_complete", "[CommitHandler]") {
+TEST_CASE("test_commit_complete", "[CommitHandler]") {
   auto queue = Shared(Queue<int>());
   auto reactor = CommitHandler(std::vector{queue, queue});
   queue->push(1);
@@ -26,7 +26,7 @@ TEST_CASE("test_complete", "[CommitHandler]") {
   REQUIRE(reactor.commit(1) == State::COMPLETE);
 }
 
-TEST_CASE("test_empty_and_evaluated", "[CommitHandler]") {
+TEST_CASE("test_commit_empty_and_evaluated", "[CommitHandler]") {
   auto queue_a = Shared(Queue<int>());
   auto queue_b = Shared(Queue<int>());
   auto reactor = CommitHandler(std::vector{queue_a, queue_b});
@@ -35,4 +35,15 @@ TEST_CASE("test_empty_and_evaluated", "[CommitHandler]") {
   REQUIRE(reactor.commit(1) == State::NONE);
   queue_b->push(321);
   REQUIRE(reactor.commit(2) == State::EVALUATED);
+}
+
+TEST_CASE("test_commit_delayed_evaluation", "[StaticCommitHandler]") {
+  auto queue = Shared(Queue<int>());
+  auto children = std::vector<Box<int>>();
+  children.push_back(box(queue));
+  children.push_back(box(constant(123)));
+  auto reactor = CommitHandler(std::move(children));
+  REQUIRE(reactor.commit(0) == State::NONE);
+  queue->push(123);
+  REQUIRE(reactor.commit(1) == State::EVALUATED);
 }

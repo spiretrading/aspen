@@ -154,6 +154,9 @@ namespace Details {
       }
       if(is_complete(child.m_state)) {
         ++completion_count;
+        if(child.m_has_evaluation) {
+          ++evaluation_count;
+        }
       } else {
         child.m_state = child.m_reactor.commit(sequence);
         if(m_is_initializing) {

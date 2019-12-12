@@ -35,3 +35,10 @@ TEST_CASE("test_static_empty_and_evaluated", "[StaticCommitHandler]") {
   reactor.get<1>().push(321);
   REQUIRE(reactor.commit(2) == State::EVALUATED);
 }
+
+TEST_CASE("test_static_delayed_evaluation", "[StaticCommitHandler]") {
+  auto reactor = StaticCommitHandler(Queue<int>(), constant(5));
+  REQUIRE(reactor.commit(0) == State::NONE);
+  reactor.get<0>().push(123);
+  REQUIRE(reactor.commit(1) == State::EVALUATED);
+}
