@@ -57,7 +57,7 @@ namespace Aspen {
 
   template<typename R>
   Unique<R>::Unique(Reactor* reactor) noexcept
-    : m_reactor(reactor) {}
+    : Unique(std::unique_ptr<Reactor>(reactor)) {}
 
   template<typename R>
   Unique<R>::Unique(std::unique_ptr<Reactor> reactor) noexcept
