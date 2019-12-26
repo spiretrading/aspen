@@ -13,18 +13,18 @@ IF NOT EXIST Catch2-2.6.1 (
 IF NOT EXIST pybind11-2.2.4 (
   git clone --branch v2.2.4 https://github.com/pybind/pybind11.git pybind11-2.2.4
 )
-IF NOT EXIST Python-3.7.2 (
-  wget https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tgz --no-check-certificate
-  IF EXIST Python-3.7.2.tgz (
-    gzip -d -c Python-3.7.2.tgz | tar -xf -
-    PUSHD Python-3.7.2
+IF NOT EXIST Python-3.8.1 (
+  wget https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tgz --no-check-certificate
+  IF EXIST Python-3.8.1.tgz (
+    gzip -d -c Python-3.8.1.tgz | tar -xf -
+    PUSHD Python-3.8.1
     PUSHD PCbuild
     CALL build.bat -E -c Debug -p Win32
     CALL build.bat -E -c Release -p Win32
     POPD
     COPY PC\pyconfig.h Include
     POPD
-    DEL Python-3.7.2.tgz
+    DEL Python-3.8.1.tgz
   )
 )
 ENDLOCAL
