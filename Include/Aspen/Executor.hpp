@@ -114,7 +114,7 @@ namespace Aspen {
     ::SetConsoleCtrlHandler(reinterpret_cast<PHANDLER_ROUTINE>(&ctrl_handler),
       FALSE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-    ::signal(previous_handler);
+    ::signal(SIGINT, previous_handler);
 #endif
     }
     Trigger::set_trigger(old_trigger);
