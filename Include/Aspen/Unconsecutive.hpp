@@ -11,6 +11,11 @@ namespace Details {
     std::optional<Type> m_previous;
 
     template<typename T>
+    std::optional<Type> operator ()(Maybe<T>&& series) {
+      return (*this)(std::move(*series));
+    }
+
+    template<typename T>
     std::optional<Type> operator ()(T&& series) {
       if(m_previous == series) {
         return std::nullopt;
