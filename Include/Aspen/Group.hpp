@@ -1,7 +1,6 @@
 #ifndef ASPEN_GROUP_HPP
 #define ASPEN_GROUP_HPP
-#include <list>
-#include <optional>
+#include <cstdint>
 #include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -9,157 +8,133 @@
 namespace Aspen {
 
   /**
-   * Implements a reactor that evaluates to every value produced by its
-   * children.
-   * @param <T> The type of reactor producing the reactors to evaluate to.
+   * Implements a reactor that evaluates two children concurrently.
+   * @param <A> The first reactor's type.
+   * @param <B> The second reactor's type.
    */
-  template<typename T>
+  template<typename A, typename B>
   class Group {
     public:
-      using Type = reactor_result_t<reactor_result_t<T>>;
-      static constexpr auto is_noexcept =
-        is_noexcept_reactor_v<reactor_result_t<T>>;
+      using Type = reactor_result_t<A>;
+      static constexpr auto is_noexcept = is_noexcept_reactor_v<A> &&
+        is_noexcept_reactor_v<B>;
 
       /**
        * Constructs a Group.
-       * @param producer The reactor producing the reactors to evaluate to.
+       * @param first The first reactor to commit.
+       * @param second The second reactor to commit.
        */
-      template<typename TF, typename = std::enable_if_t<
-        !std::is_base_of_v<Group, std::decay_t<TF>>>>
-      Group(TF&& producer);
+      template<typename AF, typename BF>
+      Group(AF&& first, BF&& second);
 
       State commit(int sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      struct Child {
-        reactor_result_t<T> m_reactor;
-        bool m_is_complete;
+      A m_first;
+      B m_second;
+      std::uint8_t m_is_complete: 2;
+      std::uint8_t m_current: 1;
+      std::uint8_t m_position: 2;
 
-        template<typename U>
-        Child(U&& reactor);
-      };
-      std::optional<T> m_producer;
-      std::unique_ptr<std::list<Child>> m_children;
-      typename std::list<Child>::iterator m_current;
-      typename std::list<Child>::iterator m_position;
-
-      void increment();
+      std::uint8_t next_position() const;
+      bool is_complete(std::uint8_t position) const;
   };
 
-  template<typename T, typename = std::enable_if_t<
-    !std::is_base_of_v<Group<to_reactor_t<T>>, std::decay_t<T>>>>
-  Group(T&&) -> Group<to_reactor_t<T>>;
+  template<typename A, typename B>
+  Group(A&&, B&&) -> Group<to_reactor_t<A>, to_reactor_t<B>>;
 
   /**
-   * Groups the reactors produced by its child.
-   * @param producer The reactor producing the reactors to evaluate to.
+   * Groups two reactors together to be evaluated concurrently.
+   * @param first The first reactor to commit.
+   * @param second The second reactor to commit.
    */
-  template<typename T>
-  auto group(T&& producer) {
-    return Group(std::forward<T>(producer));
+  template<typename A, typename B>
+  auto group(A&& first, B&& second) {
+    return Group(std::forward<A>(first), std::forward<B>(second));
   }
 
-  template<typename T>
-  template<typename U>
-  Group<T>::Child::Child(U&& reactor)
-    : m_reactor(std::forward<U>(reactor)),
-      m_is_complete(false) {}
+  /**
+   * Groups a series of reactors together.
+   * @param first The first reactor to commit.
+   * @param second The second reactor to commit.
+   */
+  template<typename A, typename B, typename... C>
+  auto group(A&& first, B&& second, C&&... remainder) {
+    return Group(std::forward<A>(first),
+      group(std::forward<B>(second), std::forward<C>(remainder)...));
+  }
 
-  template<typename T>
-  template<typename TF, typename>
-  Group<T>::Group(TF&& producer)
-    : m_producer(std::forward<TF>(producer)),
-      m_children(std::make_unique<std::list<Child>>()),
-      m_current(m_children->end()),
-      m_position(m_children->end()) {}
+  template<typename A, typename B>
+  template<typename AF, typename BF>
+  Group<A, B>::Group(AF&& first, BF&& second)
+    : m_first(std::forward<AF>(first)),
+      m_second(std::forward<BF>(second)),
+      m_is_complete(0),
+      m_current(0),
+      m_position(1) {}
 
-  template<typename T>
-  State Group<T>::commit(int sequence) noexcept {
-    auto state = [&] {
-      if(m_producer.has_value()) {
-        auto producer_state = m_producer->commit(sequence);
-        if(has_evaluation(producer_state)) {
-          try {
-            m_children->emplace_back(m_producer->eval());
-            if(m_children->size() == 1) {
-              m_position = m_children->begin();
-            }
-          } catch(...) {}
-        }
-        if(has_continuation(producer_state)) {
-          return State::CONTINUE;
-        }
-        if(is_complete(producer_state)) {
-          m_producer = std::nullopt;
-        }
-      }
-      return State::NONE;
-    }();
-    while(m_position != m_current && m_position->m_is_complete) {
-      m_position = m_children->erase(m_position);
-      if(m_position == m_children->end()) {
-        m_position = m_children->begin();
-      }
+  template<typename A, typename B>
+  State Group<A, B>::commit(int sequence) noexcept {
+    if(!is_complete(next_position())) {
+      m_position = next_position();
     }
-    if(!m_children->empty()) {
-      auto start = m_position;
-      while(true) {
-        auto& child = *m_position;
-        if(child.m_is_complete) {
-          if(m_position != m_current) {
-            m_position = m_children->erase(m_position);
-            if(m_position == m_children->end()) {
-              m_position = m_children->begin();
-            }
-          } else {
-            increment();
-          }
-        } else {
-          auto child_state = child.m_reactor.commit(sequence);
-          if(has_continuation(child_state)) {
-            state = combine(state, State::CONTINUE);
-          } else if(is_complete(child_state)) {
-            child.m_is_complete = true;
-          }
-          if(has_evaluation(child_state)) {
-            state = combine(state, State::EVALUATED);
-            if(m_children->size() > 1) {
-              state = combine(state, State::CONTINUE);
-            }
-            m_current = m_position;
-            increment();
-            break;
-          } else {
-            increment();
-          }
+    auto start = m_position;
+    auto state = State::NONE;
+    while(true) {
+      auto child_state = [&] {
+        if(m_position == 0) {
+          return m_first.commit(sequence);
         }
-        if(m_position == start) {
+        return m_second.commit(sequence);
+      }();
+      if(has_continuation(child_state)) {
+        state = combine(state, State::CONTINUE);
+      } else if(Aspen::is_complete(child_state)) {
+        m_is_complete |= 1 << m_position;
+        if(m_is_complete == 3) {
+          state = combine(state, State::COMPLETE);
+        }
+      }
+      if(has_evaluation(child_state)) {
+        state = combine(state, State::EVALUATED);
+        m_current = m_position;
+        if(!is_complete(next_position())) {
+          state = combine(state, State::CONTINUE);
+        }
+        break;
+      } else {
+        if(is_complete(next_position())) {
           break;
         }
+        m_position = next_position();
       }
-    }
-    if((m_children->empty() ||
-        m_children->size() == 1 && m_children->front().m_is_complete) &&
-        !m_producer.has_value()) {
-      state = combine(state, State::COMPLETE);
+      if(start == m_position) {
+        break;
+      }
     }
     return state;
   }
 
-  template<typename T>
-  eval_result_t<typename Group<T>::Type> Group<T>::eval()
+  template<typename A, typename B>
+  eval_result_t<typename Group<A, B>::Type> Group<A, B>::eval()
       const noexcept(is_noexcept) {
-    return m_current->m_reactor.eval();
+    if(m_current == 0) {
+      return m_first.eval();
+    } else {
+      return m_second.eval();
+    }
   }
 
-  template<typename T>
-  void Group<T>::increment() {
-    ++m_position;
-    if(m_position == m_children->end()) {
-      m_position = m_children->begin();
-    }
+  template<typename A, typename B>
+  std::uint8_t Group<A, B>::next_position() const {
+    return (m_position + 1) % 2;
+  }
+
+  template<typename A, typename B>
+  bool Group<A, B>::is_complete(std::uint8_t position) const {
+    return m_is_complete & (1 << position);
   }
 }
 

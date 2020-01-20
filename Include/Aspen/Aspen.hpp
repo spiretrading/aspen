@@ -5,6 +5,7 @@
 #include "Aspen/Chain.hpp"
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Concat.hpp"
+#include "Aspen/Concur.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Conversions.hpp"
 #include "Aspen/Count.hpp"

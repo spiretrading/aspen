@@ -5,6 +5,7 @@
 #include "Aspen/Python/Chain.hpp"
 #include "Aspen/Python/CommitHandler.hpp"
 #include "Aspen/Python/Concat.hpp"
+#include "Aspen/Python/Concur.hpp"
 #include "Aspen/Python/Constant.hpp"
 #include "Aspen/Python/Count.hpp"
 #include "Aspen/Python/Discard.hpp"
