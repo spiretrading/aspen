@@ -73,46 +73,50 @@ namespace Aspen {
       m_second(std::forward<BF>(second)),
       m_is_complete(0),
       m_current(0),
-      m_position(1) {}
+      m_position(0) {}
 
   template<typename A, typename B>
   State Group<A, B>::commit(int sequence) noexcept {
-    if(!is_complete(next_position())) {
+    if(m_position != m_current && is_complete(m_position)) {
       m_position = next_position();
     }
-    auto start = m_position;
     auto state = State::NONE;
-    while(true) {
-      auto child_state = [&] {
-        if(m_position == 0) {
-          return m_first.commit(sequence);
+    if(m_is_complete != 3) {
+      auto start = m_position;
+      while(true) {
+        if(is_complete(m_position)) {
+          m_position = next_position();
+        } else {
+          auto child_state = [&] {
+            if(m_position == 0) {
+              return m_first.commit(sequence);
+            }
+            return m_second.commit(sequence);
+          }();
+          if(has_continuation(child_state)) {
+            state = combine(state, State::CONTINUE);
+          } else if(Aspen::is_complete(child_state)) {
+            m_is_complete |= 1 << m_position;
+          }
+          if(has_evaluation(child_state)) {
+            state = combine(state, State::EVALUATED);
+            if(!is_complete(next_position())) {
+              state = combine(state, State::CONTINUE);
+            }
+            m_current = m_position;
+            m_position = next_position();
+            break;
+          } else {
+            m_position = next_position();
+          }
         }
-        return m_second.commit(sequence);
-      }();
-      if(has_continuation(child_state)) {
-        state = combine(state, State::CONTINUE);
-      } else if(Aspen::is_complete(child_state)) {
-        m_is_complete |= 1 << m_position;
-        if(m_is_complete == 3) {
-          state = combine(state, State::COMPLETE);
-        }
-      }
-      if(has_evaluation(child_state)) {
-        state = combine(state, State::EVALUATED);
-        m_current = m_position;
-        if(!is_complete(next_position())) {
-          state = combine(state, State::CONTINUE);
-        }
-        break;
-      } else {
-        if(is_complete(next_position())) {
+        if(m_position == start) {
           break;
         }
-        m_position = next_position();
       }
-      if(start == m_position) {
-        break;
-      }
+    }
+    if(m_is_complete == 3) {
+      state = combine(state, State::COMPLETE);
     }
     return state;
   }
