@@ -4,8 +4,8 @@ root="$(pwd)"
 if [ ! -d "Catch2-2.6.1" ]; then
   git clone --branch v2.6.1 https://github.com/catchorg/Catch2.git Catch2-2.6.1
 fi
-if [ ! -d "pybind11-2.2.4" ]; then
-  git clone --branch v2.2.4 https://github.com/pybind/pybind11.git pybind11-2.2.4
+if [ ! -d "pybind11-2.4.3" ]; then
+  git clone --branch v2.4.3 https://github.com/pybind/pybind11.git pybind11-2.4.3
 fi
 if [ ! -d "Python-3.6.7" ]; then
   wget https://www.python.org/ftp/python/3.6.7/Python-3.6.7.tgz --no-check-certificate

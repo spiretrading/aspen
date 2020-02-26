@@ -49,7 +49,7 @@ namespace Aspen {
    * Concats the reactors produced by its child.
    * @param producer The reactor producing the reactors to evaluate to.
    */
-  template<typename R>
+  template<typename R, std::enable_if_t<is_reactor_v<R>>* = 0>
   auto concat(R&& producer) {
     return Concat(std::forward<R>(producer));
   }
