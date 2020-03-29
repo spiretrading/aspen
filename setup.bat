@@ -39,4 +39,4 @@ IF NOT EXIST Python-3.8.1 (
   DEL /F /Q Python-3.8.1.tgz
 )
 ENDLOCAL
-EXIT %EXIT_STATUS%
+EXIT /B %EXIT_STATUS%
