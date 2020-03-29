@@ -3,7 +3,7 @@ SETLOCAL EnableDelayedExpansion
 SET EXIT_STATUS=0
 SET ROOT="%cd%"
 SET VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-FOR /f "usebackq delims=" %%i IN (`%VSWHERE% -prerelease -latest -property installationPath`) DO (
+FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property installationPath`) DO (
   IF EXIST "%%i\Common7\Tools\vsdevcmd.bat" (
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
@@ -39,4 +39,4 @@ IF NOT EXIST Python-3.8.1 (
   DEL /F /Q Python-3.8.1.tgz
 )
 ENDLOCAL
-EXIT /B %EXIT_STATUS%
+EXIT /B !EXIT_STATUS!
