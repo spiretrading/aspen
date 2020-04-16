@@ -8,12 +8,14 @@ FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property insta
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-IF NOT EXIST Catch2-2.6.1 (
-  git clone --branch v2.6.1 https://github.com/catchorg/Catch2.git Catch2-2.6.1
-  IF !ERRORLEVEL! NEQ 0 (
-    RD /S /Q Catch2-2.6.1
+IF NOT EXIST doctest-2.3.6 (
+  wget https://github.com/onqtam/doctest/archive/2.3.6.zip --no-check-certificate
+  IF !ERRORLEVEL! LEQ 0 (
+    unzip 2.3.6.zip
+  ) ELSE (
     SET EXIT_STATUS=1
   )
+  DEL /F /Q 2.3.6.zip
 )
 IF NOT EXIST pybind11-2.4.3 (
   git clone --branch v2.4.3 https://github.com/pybind/pybind11.git pybind11-2.4.3
@@ -24,7 +26,7 @@ IF NOT EXIST pybind11-2.4.3 (
 )
 IF NOT EXIST Python-3.8.1 (
   wget https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tgz --no-check-certificate
-  IF !ERRORLEVEL! EQU 0 (
+  IF !ERRORLEVEL! LEQ 0 (
     gzip -d -c Python-3.8.1.tgz | tar -xf -
     PUSHD Python-3.8.1
     PUSHD PCbuild

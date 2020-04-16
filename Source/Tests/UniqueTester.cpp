@@ -1,11 +1,13 @@
-#include <catch2/catch.hpp>
+#include <doctest/doctest.h>
 #include "Aspen/Constant.hpp"
 #include "Aspen/Unique.hpp"
 
 using namespace Aspen;
 
-TEST_CASE("test_unique_constant", "[Unique]") {
-  auto constant = Unique(new Constant(123));
-  REQUIRE(constant.commit(0) == State::COMPLETE_EVALUATED);
-  REQUIRE(constant.eval() == 123);
+TEST_SUITE("Unique") {
+  TEST_CASE("unique_constant") {
+    auto constant = Unique(new Constant(123));
+    REQUIRE(constant.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(constant.eval() == 123);
+  }
 }

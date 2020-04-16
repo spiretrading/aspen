@@ -2,12 +2,14 @@
 exit_status=0
 let cores="`grep -c "processor" < /proc/cpuinfo`"
 root="$(pwd)"
-if [ ! -d "Catch2-2.6.1" ]; then
-  git clone --branch v2.6.1 https://github.com/catchorg/Catch2.git Catch2-2.6.1
-  if [ "$?" != "0" ]; then
-    rm -rf Catch2-2.6.1
+if [ ! -d "doctest-2.3.6" ]; then
+  wget https://github.com/onqtam/doctest/archive/2.3.6.zip --no-check-certificate
+  if [ "$?" == "0" ]; then
+    unzip 2.3.6.zip
+  else
     exit_status=1
   fi
+  rm -f 2.3.6.zip
 fi
 if [ ! -d "pybind11-2.4.3" ]; then
   git clone --branch v2.4.3 https://github.com/pybind/pybind11.git pybind11-2.4.3
