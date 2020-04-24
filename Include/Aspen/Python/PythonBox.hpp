@@ -36,12 +36,12 @@ namespace Aspen {
 
   template<typename T>
   State PythonBox<T>::commit(int sequence) noexcept {
-    return m_reactor.attr("commit")(sequence).cast<State>();
+    return m_reactor.attr("commit")(sequence).template cast<State>();
   }
 
   template<typename T>
   typename PythonBox<T>::Type PythonBox<T>::eval() const {
-    return m_reactor.attr("eval")().cast<T>();
+    return m_reactor.attr("eval")().template cast<T>();
   }
 }
 
