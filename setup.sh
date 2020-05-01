@@ -18,13 +18,13 @@ if [ ! -d "pybind11-2.4.3" ]; then
     exit_status=1
   fi
 fi
-if [ ! -d "Python-3.6.7" ]; then
-  wget https://www.python.org/ftp/python/3.6.7/Python-3.6.7.tgz --no-check-certificate
+if [ ! -d "Python-3.8.2" ]; then
+  wget https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tgz --no-check-certificate
   if [ "$?" == "0" ]; then
-    gzip -d -c Python-3.6.7.tgz | tar -xf -
-    pushd Python-3.6.7
+    gzip -d -c Python-3.8.2.tgz | tar -xf -
+    pushd Python-3.8.2
     export CFLAGS="-fPIC"
-    ./configure --prefix="$root/Python-3.6.7"
+    ./configure --prefix="$root/Python-3.8.2"
     make -j $cores
     make install
     unset CFLAGS
@@ -32,6 +32,6 @@ if [ ! -d "Python-3.6.7" ]; then
   else
     exit_status=1
   fi
-  rm -rf Python-3.6.7.tgz
+  rm -rf Python-3.8.2.tgz
 fi
 exit $exit_status
