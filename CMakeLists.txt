@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(aspen)
+set(D "${CMAKE_SOURCE_DIR}/Dependencies" CACHE STRING
+  "Path to dependencies folder.")
+if(WIN32)
+  execute_process(COMMAND cmd /c
+    "CALL ${CMAKE_SOURCE_DIR}/configure.bat -DD=${D}")
+elseif(UNIX)
+  execute_process(COMMAND "${CMAKE_SOURCE_DIR}/configure.sh -DD=${D}")
+endif()
 set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
@@ -12,6 +20,7 @@ include_directories(${ASPEN_INCLUDE_PATH})
 set(TEST_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Tests")
 set(LIB_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Libraries")
 if(MSVC)
+  set(CMAKE_GENERATOR_PLATFORM Win32 CACHE INTERNAL "Force 32-bit compilation")
   set(CMAKE_LIBRARY_FLAGS "/LTCG")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX /bigobj /std:c++17 /Wv:18")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")

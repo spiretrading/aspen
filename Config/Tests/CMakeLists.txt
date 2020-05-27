@@ -7,6 +7,13 @@ add_executable(aspen_tester ${source_files})
 if(UNIX)
   target_link_libraries(aspen_tester pthread)
 endif()
+if(WIN32)
+  add_custom_command(TARGET aspen_tester PRE_BUILD COMMAND cmd /c
+    "CALL ${CMAKE_SOURCE_DIR}/configure.bat -DD=${D}")
+elseif(UNIX)
+  add_custom_command(TARGET aspen_tester PRE_BUILD COMMAND
+    "${CMAKE_SOURCE_DIR}/configure.sh -DD=${D}")
+endif()
 add_custom_command(TARGET aspen_tester POST_BUILD COMMAND aspen_tester)
 install(TARGETS aspen_tester CONFIGURATIONS Debug
   DESTINATION ${TEST_INSTALL_DIRECTORY}/Debug)
