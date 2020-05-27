@@ -27,3 +27,10 @@ install(TARGETS python CONFIGURATIONS Debug
   DESTINATION ${LIB_INSTALL_DIRECTORY}/Debug)
 install(TARGETS python CONFIGURATIONS Release RelWithDebInfo
   DESTINATION ${LIB_INSTALL_DIRECTORY}/Release)
+if(WIN32)
+  add_custom_command(TARGET python PRE_BUILD COMMAND cmd /c
+    "CALL configure.bat -DD=${D}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+elseif(UNIX)
+  add_custom_command(TARGET python PRE_BUILD COMMAND
+    "./configure.sh -DD=${D}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+endif()

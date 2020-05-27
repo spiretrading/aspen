@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 project(aspen)
 set(D "${CMAKE_SOURCE_DIR}/Dependencies" CACHE STRING
   "Path to dependencies folder.")
-if(WIN32)
-  execute_process(COMMAND cmd /c
-    "CALL ${CMAKE_SOURCE_DIR}/configure.bat -DD=${D}")
-elseif(UNIX)
-  execute_process(COMMAND "${CMAKE_SOURCE_DIR}/configure.sh -DD=${D}")
-endif()
 set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
@@ -62,5 +56,12 @@ add_library(aspen ${header_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(aspen PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE
   "${CMAKE_LIBRARY_FLAGS}" LINKER_LANGUAGE CXX OUTPUT_NAME aspen)
+if(WIN32)
+  add_custom_command(TARGET aspen PRE_BUILD COMMAND cmd /c
+    "CALL configure.bat -DD=${D}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+elseif(UNIX)
+  add_custom_command(TARGET aspen PRE_BUILD COMMAND
+    "./configure.sh -DD=${D}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+endif()
 add_subdirectory(Config/Python)
 add_subdirectory(Config/Tests)
