@@ -33,6 +33,6 @@ if(WIN32)
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 elseif(UNIX)
   add_custom_command(TARGET python PRE_BUILD COMMAND
-    "${CMAKE_SOURCE_DIR}/configure.sh -DD=${D}"
+    "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()

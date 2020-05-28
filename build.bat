@@ -32,9 +32,9 @@ IF "!CONFIG!" == "clean" (
   )
 ) ELSE (
   IF NOT "!DEPENDENCIES!" == "" (
-    cmake "!ROOT!" -DD=!DEPENDENCIES!
+    cmake -S "!ROOT!" -DD=!DEPENDENCIES!
   ) ELSE (
-    cmake "!ROOT!"
+    cmake -S "!ROOT!"
   )
   cmake --build "!ROOT!" --target INSTALL --config "!CONFIG!"
 )

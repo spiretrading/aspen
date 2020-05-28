@@ -8,8 +8,7 @@ if(WIN32)
     "CALL ${CMAKE_SOURCE_DIR}\\configure.bat -DD=${D}"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 elseif(UNIX)
-  execute_process(COMMAND
-    "${CMAKE_SOURCE_DIR}/configure.sh -DD=${D}"
+  execute_process(COMMAND "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()
 set(DEFAULT_BUILD_TYPE "Release")
@@ -72,7 +71,7 @@ if(WIN32)
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 elseif(UNIX)
   add_custom_command(TARGET aspen PRE_BUILD COMMAND
-    "${CMAKE_SOURCE_DIR}/configure.sh -DD=${D}"
+    "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()
 add_subdirectory(Config/Python)
