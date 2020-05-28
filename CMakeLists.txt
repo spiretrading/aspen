@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.8)
 project(aspen)
 set(D "${CMAKE_SOURCE_DIR}/Dependencies" CACHE STRING
   "Path to dependencies folder.")
+if(WIN32)
+  execute_process(COMMAND cmd /c
+    "CALL configure.bat -DD=${D}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+elseif(UNIX)
+  execute_process(COMMAND
+    "./configure.sh -DD=${D}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+endif()
 set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE

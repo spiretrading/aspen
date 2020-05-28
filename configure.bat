@@ -52,14 +52,25 @@ IF EXIST CMakeFiles (
   ) ELSE (
     SET RUN_CMAKE=1
   )
+  IF EXIST CMakeFiles\cpp_count.txt (
+    FOR /F %%i IN ('DIR /a-d /b /s "%~dp0Source\*.cpp" ^| wc -l') DO (
+      FOR /F %%j IN ('TYPE CMakeFiles\cpp_count.txt') DO (
+        IF "%%i" NEQ "%%j" (
+          SET RUN_CMAKE=1
+        )
+      )
+    )
+  ) ELSE (
+    SET RUN_CMAKE=1
+  )
 )
 IF "!RUN_CMAKE!" EQU "1" (
   FOR /F %%i IN ('DIR /a-d /b /s "%~dp0Include\*.hpp" ^| wc -l') DO (
     ECHO %%i > CMakeFiles\hpp_count.txt
   )
-  cmake "!ROOT!" -DD=!DEPENDENCIES!
-  FOR /F %%i IN ('DIR /a-d /b /s "%~dp0Include\*.hpp" ^| wc -l') DO (
-    ECHO %%i > CMakeFiles\hpp_count.txt
+  FOR /F %%i IN ('DIR /a-d /b /s "%~dp0Source\*.cpp" ^| wc -l') DO (
+    ECHO %%i > CMakeFiles\cpp_count.txt
   )
+  cmake "!ROOT!" -DD=!DEPENDENCIES!
 )
 ENDLOCAL
