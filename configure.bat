@@ -37,7 +37,24 @@ IF NOT EXIST "!DEPENDENCIES!" (
   MD "!DEPENDENCIES!"
 )
 PUSHD "!DEPENDENCIES!"
-CALL "!DIRECTORY!setup.bat"
+SET RUN_SETUP=
+IF NOT EXIST last_check.txt (
+  SET RUN_SETUP=1
+) ELSE (
+  FOR /F %%i IN (
+      'ls -l --time-style=full-iso "!DIRECTORY!setup.bat" ^| awk "{print $6 $7}"') DO (
+    FOR /F %%j IN (
+        'ls -l --time-style=full-iso last_check.txt ^| awk "{print $6 $7}"') DO (
+      IF "%%i" == "%%j" (
+        SET RUN_SETUP=1
+      )
+    )
+  )
+)
+IF "!RUN_SETUP!" == "1" (
+  CALL "!DIRECTORY!setup.bat"
+  ECHO timestamp > last_check.txt
+)
 POPD
 IF NOT "!DEPENDENCIES!" == "!ROOT!\Dependencies" (
   IF EXIST Dependencies (

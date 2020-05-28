@@ -22,8 +22,14 @@ IF "!CONFIG!" == "" (
 )
 IF "!CONFIG!" == "clean" (
   git clean -ffxd -e *Dependencies*
+  IF EXIST Dependencies\last_check.txt (
+    DEL Dependencies\last_check.txt
+  )
 ) ELSE IF "!CONFIG!" == "reset" (
   git clean -ffxd
+  IF EXIST Dependencies\last_check.txt (
+    DEL Dependencies\last_check.txt
+  )
 ) ELSE (
   IF NOT "!DEPENDENCIES!" == "" (
     cmake "!ROOT!" -DD=!DEPENDENCIES!
