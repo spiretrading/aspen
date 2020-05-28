@@ -6,6 +6,7 @@ SET ARG=%~1
 IF "!IS_DEPENDENCY!" == "1" (
   SET DEPENDENCIES=!ARG!
   SET IS_DEPENDENCY=
+  SHIFT
   GOTO begin_args
 ) ELSE IF NOT "!ARG!" == "" (
   IF "!ARG:~0,3!" == "-DD" (
@@ -20,12 +21,9 @@ IF "!CONFIG!" == "" (
   SET CONFIG=Release
 )
 IF "!CONFIG!" == "clean" (
-  git clean -fxd -e *Dependencies*
+  git clean -ffxd -e *Dependencies*
 ) ELSE IF "!CONFIG!" == "reset" (
-  IF EXIST Dependencies (
-    RD /S /Q Dependencies
-  )
-  git clean -fxd
+  git clean -ffxd
 ) ELSE (
   IF NOT "!DEPENDENCIES!" == "" (
     cmake "!ROOT!" -DD=!DEPENDENCIES!
