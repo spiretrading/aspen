@@ -58,7 +58,7 @@ fi
 if [[ "$@" != "" ]]; then
   configuration="-DCMAKE_BUILD_TYPE=$@"
 fi
-include_count=$(find Include -name "*.hpp" | wc -l)
+include_count=$(find $directory/Include -name "*.hpp" | wc -l)
 if [ -f "CMakeFiles/hpp_count.txt" ]; then
   hpp_count=$(cat "CMakeFiles/hpp_count.txt")
   if [ "$include_count" != "$hpp_count" ]; then
@@ -70,7 +70,7 @@ fi
 if [ "$run_cmake" = "1" ]; then
   echo $include_count > "CMakeFiles/hpp_count.txt"
 fi
-source_count=$(find Source -name "*.cpp" | wc -l)
+source_count=$(find $directory/Source -name "*.cpp" | wc -l)
 if [ -f "CMakeFiles/cpp_count.txt" ]; then
   cpp_count=$(cat "CMakeFiles/cpp_count.txt")
   if [ "$source_count" != "$cpp_count" ]; then
