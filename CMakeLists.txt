@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(aspen)
 set(D "${CMAKE_BINARY_DIR}/Dependencies" CACHE STRING
   "Path to dependencies folder.")
+file(TO_NATIVE_PATH "${D}" D)
 if(WIN32)
   execute_process(COMMAND cmd /c
     "CALL ${CMAKE_SOURCE_DIR}\\configure.bat -DD=${D}"

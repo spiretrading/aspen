@@ -3,7 +3,7 @@ SETLOCAL EnableDelayedExpansion
 SET ROOT=%cd%
 IF NOT EXIST CMakeFiles (
   ECHO Error: CMake needs to run before configuration.
-  EXIT 1
+  EXIT /b 1
 )
 IF NOT EXIST build.bat (
   ECHO @ECHO OFF > build.bat
@@ -46,37 +46,35 @@ IF NOT "!DEPENDENCIES!" == "!ROOT!\Dependencies" (
   mklink /j Dependencies "!DEPENDENCIES!" > NUL
 )
 SET RUN_CMAKE=
-IF EXIST CMakeFiles (
+FOR /F %%i IN ('DIR /a-d /b /s "!DIRECTORY!Include\*.hpp" ^| wc -l') DO (
   IF EXIST CMakeFiles\hpp_count.txt (
-    FOR /F %%i IN ('DIR /a-d /b /s "!DIRECTORY!Include\*.hpp" ^| wc -l') DO (
-      FOR /F %%j IN ('TYPE CMakeFiles\hpp_count.txt') DO (
-        IF "%%i" NEQ "%%j" (
-          SET RUN_CMAKE=1
-        )
+    FOR /F %%j IN ('TYPE CMakeFiles\hpp_count.txt') DO (
+      IF NOT "%%i" == "%%j" (
+        SET RUN_CMAKE=1
       )
     )
   ) ELSE (
     SET RUN_CMAKE=1
   )
-  IF EXIST CMakeFiles\cpp_count.txt (
-    FOR /F %%i IN ('DIR /a-d /b /s "!DIRECTORY!Source\*.cpp" ^| wc -l') DO (
-      FOR /F %%j IN ('TYPE CMakeFiles\cpp_count.txt') DO (
-        IF "%%i" NEQ "%%j" (
-          SET RUN_CMAKE=1
-        )
-      )
-    )
-  ) ELSE (
-    SET RUN_CMAKE=1
-  )
-)
-IF "!RUN_CMAKE!" EQU "1" (
-  FOR /F %%i IN ('DIR /a-d /b /s "!DIRECTORY!Include\*.hpp" ^| wc -l') DO (
+  IF "!RUN_CMAKE!" == "1" (
     ECHO %%i > CMakeFiles\hpp_count.txt
   )
-  FOR /F %%i IN ('DIR /a-d /b /s "!DIRECTORY!Source\*.cpp" ^| wc -l') DO (
+)
+FOR /F %%i IN ('DIR /a-d /b /s "!DIRECTORY!Source\*.cpp" ^| wc -l') DO (
+  IF EXIST CMakeFiles\cpp_count.txt (
+    FOR /F %%j IN ('TYPE CMakeFiles\cpp_count.txt') DO (
+      IF NOT "%%i" == "%%j" (
+        SET RUN_CMAKE=1
+      )
+    )
+  ) ELSE (
+    SET RUN_CMAKE=1
+  )
+  IF "!RUN_CMAKE!" == "1" (
     ECHO %%i > CMakeFiles\cpp_count.txt
   )
+)
+IF "!RUN_CMAKE!" == "1" (
   cmake -S !DIRECTORY! -DD=!DEPENDENCIES!
 )
 ENDLOCAL
