@@ -1,10 +1,6 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
 SET ROOT=%cd%
-IF NOT EXIST CMakeFiles (
-  ECHO Error: CMake needs to run before configuration.
-  EXIT /b 1
-)
 IF NOT EXIST build.bat (
   ECHO @ECHO OFF > build.bat
   ECHO CALL "%~dp0build.bat" %%* >> build.bat

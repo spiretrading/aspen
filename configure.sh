@@ -12,10 +12,6 @@ if [ "$(uname -s)" = "Darwin" ]; then
 else
   STAT='stat'
 fi
-if [ ! -d  CMakeFiles ]; then
-  echo "Error: CMake needs to run before configuration."
-  exit 1
-fi
 if [ ! -f "build.sh" ]; then
   ln -s "$directory/build.sh" build.sh
 fi
