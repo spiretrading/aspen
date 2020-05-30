@@ -1,7 +1,18 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
 SET EXIT_STATUS=0
-SET ROOT="%cd%"
+SET ROOT=%cd%
+IF EXIST cache_files\aspen.txt (
+  FOR /F %%i IN (
+      'ls -l --time-style=full-iso "%~dp0\setup.bat" ^| awk "{print $6 $7}"') DO (
+    FOR /F %%j IN (
+        'ls -l --time-style=full-iso cache_files\aspen.txt ^| awk "{print $6 $7}"') DO (
+      IF "%%i" LSS "%%j" (
+        EXIT /B 0
+      )
+    )
+  )
+)
 SET VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property installationPath`) DO (
   IF EXIST "%%i\Common7\Tools\vsdevcmd.bat" (
