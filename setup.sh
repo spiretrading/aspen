@@ -54,4 +54,8 @@ if [ ! -d "Python-3.8.2" ]; then
   fi
   rm -rf Python-3.8.2.tgz
 fi
+if [ ! -d cache_files ]; then
+  mkdir cache_files
+fi
+echo timestamp > cache_files/aspen.txt
 exit $exit_status

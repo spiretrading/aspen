@@ -51,5 +51,9 @@ IF NOT EXIST Python-3.8.1 (
   )
   DEL /F /Q Python-3.8.1.tgz
 )
+IF NOT EXIST cache_files (
+  MD cache_files
+)
+ECHO timestamp > cache_files\aspen.txt
 ENDLOCAL
 EXIT /B !EXIT_STATUS!
