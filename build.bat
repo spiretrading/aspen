@@ -22,19 +22,19 @@ IF "!CONFIG!" == "" (
 )
 IF "!CONFIG!" == "clean" (
   git clean -ffxd -e *Dependencies*
-  IF EXIST Dependencies\last_check.txt (
-    DEL Dependencies\last_check.txt
+  IF EXIST Dependencies\cache_files\aspen.txt (
+    DEL Dependencies\cache_files\aspen.txt
   )
 ) ELSE IF "!CONFIG!" == "reset" (
   git clean -ffxd
-  IF EXIST Dependencies\last_check.txt (
-    DEL Dependencies\last_check.txt
+  IF EXIST Dependencies\cache_files\aspen.txt (
+    DEL Dependencies\cache_files\aspen.txt
   )
 ) ELSE (
   IF NOT "!DEPENDENCIES!" == "" (
-    cmake -S "!ROOT!" -DD=!DEPENDENCIES!
+    CALL configure.bat -DD=!DEPENDENCIES!
   ) ELSE (
-    cmake -S "!ROOT!"
+    CALL configure.bat
   )
   cmake --build "!ROOT!" --target INSTALL --config "!CONFIG!"
 )

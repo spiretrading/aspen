@@ -26,22 +26,22 @@ if [ "$config" = "" ]; then
 fi
 if [ "$config" = "clean" ]; then
   git clean -ffxd -e *Dependencies*
-  if [ -f "Dependencies/last_check.txt" ]; then
-    rm "Dependencies/last_check.txt"
+  if [ -f "Dependencies/cache_files/aspen.txt" ]; then
+    rm "Dependencies/cache_files/aspen.txt"
   fi
 elif [ "$config" = "reset" ]; then
   git clean -ffxd
-  if [ -f "Dependencies/last_check.txt" ]; then
-    rm "Dependencies/last_check.txt"
+  if [ -f "Dependencies/cache_files/aspen.txt" ]; then
+    rm "Dependencies/cache_files/aspen.txt"
   fi
 else
   cores="`grep -c "processor" < /proc/cpuinfo` / 2 + 1"
   mem="`grep -oP "MemTotal: +\K([[:digit:]]+)(?=.*)" < /proc/meminfo` / 8388608"
   jobs="$(($cores<$mem?$cores:$mem))"
   if [ "$dependencies" != "" ]; then
-    cmake -S "$directory" -DCMAKE_BUILD_TYPE=$config -DD=$dependencies
+    ./configure.sh $config -DD=$dependencies
   else
-    cmake -S "$directory" -DCMAKE_BUILD_TYPE=$config
+    ./configure.sh $config
   fi
   cmake --build "$root" --target install -- -j$jobs
 fi
