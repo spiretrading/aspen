@@ -7,11 +7,6 @@ while [ -h "$source" ]; do
 done
 directory="$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd)"
 root=$(pwd)
-if [ "$(uname -s)" = "Darwin" ]; then
-  STAT='stat -x -t "%Y%m%d%H%M%S"'
-else
-  STAT='stat'
-fi
 if [ ! -f "build.sh" ]; then
   ln -s "$directory/build.sh" build.sh
 fi
@@ -24,8 +19,15 @@ for i in "$@"; do
       dependencies="${i#*=}"
       shift
       ;;
+    *)
+      config="$i"
+      shift
+      ;;
   esac
 done
+if [ "$config" = "" ]; then
+  config="Release"
+fi
 if [ "$dependencies" = "" ]; then
   dependencies="$root/Dependencies"
 fi
@@ -38,9 +40,6 @@ popd
 if [ "$dependencies" != "$root/Dependencies" ] && [ ! -d Dependencies ]; then
   rm -rf Dependencies
   ln -s "$dependencies" Dependencies
-fi
-if [[ "$@" != "" ]]; then
-  configuration="-DCMAKE_BUILD_TYPE=$@"
 fi
 if [ -d "$directory/Include" ]; then
   include_count=$(find $directory/Include -name "*.hpp" | wc -l)
@@ -77,5 +76,5 @@ if [ -d "$directory/Source" ]; then
   fi
 fi
 if [ "$run_cmake" = "1" ]; then
-  cmake -S "$directory" $configuration -DD=$dependencies
+  cmake -S "$directory" -DCMAKE_BUILD_TYPE=$config -DD=$dependencies
 fi
