@@ -1,5 +1,6 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
+SET DIRECTORY=%~dp0
 SET ROOT=%cd%
 :begin_args
 SET ARG=%~1
@@ -22,19 +23,19 @@ IF "!CONFIG!" == "" (
 )
 IF "!CONFIG!" == "clean" (
   git clean -ffxd -e *Dependencies*
-  IF EXIST Dependencies\cache_files\aspen.txt (
-    DEL Dependencies\cache_files\aspen.txt
+  IF EXIST Dependencies\cache_files\beam.txt (
+    DEL Dependencies\cache_files\beam.txt
   )
 ) ELSE IF "!CONFIG!" == "reset" (
   git clean -ffxd
-  IF EXIST Dependencies\cache_files\aspen.txt (
-    DEL Dependencies\cache_files\aspen.txt
+  IF EXIST Dependencies\cache_files\beam.txt (
+    DEL Dependencies\cache_files\beam.txt
   )
 ) ELSE (
   IF NOT "!DEPENDENCIES!" == "" (
-    CALL configure.bat -DD=!DEPENDENCIES!
+    CALL "!DIRECTORY!configure.bat" -DD="!DEPENDENCIES!"
   ) ELSE (
-    CALL configure.bat
+    CALL "!DIRECTORY!configure.bat"
   )
   cmake --build "!ROOT!" --target INSTALL --config "!CONFIG!"
 )
