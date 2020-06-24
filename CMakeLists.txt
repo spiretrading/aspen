@@ -65,14 +65,5 @@ add_library(aspen ${header_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(aspen PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE
   "${CMAKE_LIBRARY_FLAGS}" LINKER_LANGUAGE CXX OUTPUT_NAME aspen)
-if(WIN32)
-  add_custom_command(TARGET aspen PRE_BUILD COMMAND cmd /c
-    "CALL ${CMAKE_SOURCE_DIR}\\configure.bat -DD=${D}"
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-elseif(UNIX)
-  add_custom_command(TARGET aspen PRE_BUILD COMMAND
-    "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-endif()
 add_subdirectory(Config/Python)
 add_subdirectory(Config/Tests)
