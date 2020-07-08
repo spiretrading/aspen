@@ -12,7 +12,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 if(WIN32)
   execute_process(COMMAND cmd /c
-    "CALL ${CMAKE_SOURCE_DIR}\\configure.bat -DD=${D} ${CMAKE_BUILD_TYPE}"
+    "CALL ${CMAKE_SOURCE_DIR}\\configure.bat -DD=${D}"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 elseif(UNIX)
   execute_process(COMMAND "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
