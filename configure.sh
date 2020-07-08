@@ -37,6 +37,17 @@ fi
 pushd "$dependencies"
 "$directory"/setup.sh
 popd
+if [ -f "CMakeFiles/config.txt" ]; then
+  config_hash=$(cat "CMakeFiles/config.txt")
+  if [ "$config_hash" != "$config" ]; then
+    run_cmake=1
+  fi
+else
+  run_cmake=1
+fi
+if [ "$run_cmake" = "1" ]; then
+  echo $config > "CMakeFiles/config.txt"
+fi
 if [ "$dependencies" != "$root/Dependencies" ] && [ ! -d Dependencies ]; then
   rm -rf Dependencies
   ln -s "$dependencies" Dependencies
