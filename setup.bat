@@ -28,12 +28,15 @@ IF NOT EXIST doctest-2.3.6 (
   )
   DEL /F /Q 2.3.6.zip
 )
-IF NOT EXIST pybind11-2.4.3 (
-  git clone --branch v2.4.3 https://github.com/pybind/pybind11.git pybind11-2.4.3
-  IF !ERRORLEVEL! NEQ 0 (
-    RD /S /Q pybind11-2.4.3
+IF NOT EXIST pybind11-2.6.0 (
+  wget https://github.com/pybind/pybind11/archive/3e448c0b5e3abcd179781dd718df2bd2340ddb06.zip -O pybind11-2.6.0.zip --no-check-certificate
+  IF !ERRORLEVEL! LEQ 0 (
+    unzip pybind11-2.6.0.zip
+    mv pybind11-3e448c0b5e3abcd179781dd718df2bd2340ddb06 pybind11-2.6.0
+  ) ELSE (
     SET EXIT_STATUS=1
   )
+  DEL /F /Q pybind11-2.6.0.zip
 )
 IF NOT EXIST Python-3.8.1 (
   wget https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tgz --no-check-certificate

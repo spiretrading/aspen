@@ -30,12 +30,16 @@ if [ ! -d "doctest-2.3.6" ]; then
   fi
   rm -f 2.3.6.zip
 fi
-if [ ! -d "pybind11-2.4.3" ]; then
-  git clone --branch v2.4.3 https://github.com/pybind/pybind11.git pybind11-2.4.3
+if [ ! -d "pybind11-2.6.0" ]; then
+  wget https://github.com/pybind/pybind11/archive/3e448c0b5e3abcd179781dd718df2bd2340ddb06.zip -O pybind11-2.6.0.zip --no-check-certificate
+  if [ "$?" == "0" ]; then
+    unzip pybind11-2.6.0.zip
+    mv pybind11-3e448c0b5e3abcd179781dd718df2bd2340ddb06 pybind11-2.6.0
+  else
   if [ "$?" != "0" ]; then
-    rm -rf pybind11-2.4.3
     exit_status=1
   fi
+  rm -f pybind11-2.6.0.zip
 fi
 if [ ! -d "Python-3.8.2" ]; then
   wget https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tgz --no-check-certificate
