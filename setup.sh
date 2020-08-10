@@ -36,7 +36,6 @@ if [ ! -d "pybind11-2.6.0" ]; then
     unzip pybind11-2.6.0.zip
     mv pybind11-3e448c0b5e3abcd179781dd718df2bd2340ddb06 pybind11-2.6.0
   else
-  if [ "$?" != "0" ]; then
     exit_status=1
   fi
   rm -f pybind11-2.6.0.zip
