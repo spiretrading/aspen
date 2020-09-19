@@ -1,6 +1,7 @@
 #ifndef ASPEN_MAYBE_HPP
 #define ASPEN_MAYBE_HPP
 #include <exception>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -202,7 +203,7 @@ namespace Aspen {
     std::is_nothrow_constructible_v<Type, const U&>)
     : m_value([&] () -> std::variant<std::exception_ptr, Type> {
         if(maybe.has_value()) {
-          return static_cast<const U&>(maybe);
+          return static_cast<Type>(static_cast<const U&>(maybe));
         } else {
           return maybe.get_exception();
         }
