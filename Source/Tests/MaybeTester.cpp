@@ -24,7 +24,7 @@ TEST_SUITE("Maybe") {
     REQUIRE(!maybe.has_value());
     REQUIRE(maybe.has_exception());
     REQUIRE_THROWS_AS(maybe.get(), std::runtime_error);
-    REQUIRE_THROWS_AS((maybe == 123), std::runtime_error);
+    REQUIRE_THROWS_AS(void(maybe == 123), std::runtime_error);
     REQUIRE(maybe.get_exception() != nullptr);
   }
 
