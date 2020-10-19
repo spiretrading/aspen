@@ -28,6 +28,7 @@
 #include "Aspen/Python/Reactor.hpp"
 #include "Aspen/Python/Registry.hpp"
 #include "Aspen/Python/State.hpp"
+#include "Aspen/Python/StateReactor.hpp"
 #include "Aspen/Python/Switch.hpp"
 #include "Aspen/Python/Trigger.hpp"
 #include "Aspen/Python/Unconsecutive.hpp"
