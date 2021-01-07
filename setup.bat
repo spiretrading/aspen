@@ -19,30 +19,29 @@ FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property insta
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-IF NOT EXIST doctest-2.3.6 (
-  wget https://github.com/onqtam/doctest/archive/2.3.6.zip --no-check-certificate
+IF NOT EXIST doctest-2.4.4 (
+  wget https://github.com/onqtam/doctest/archive/2.4.4.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    unzip 2.3.6.zip
+    unzip 2.4.4.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q 2.3.6.zip
+  DEL /F /Q 2.4.4.zip
 )
-IF NOT EXIST pybind11-2.6.0 (
-  wget https://github.com/pybind/pybind11/archive/3e448c0b5e3abcd179781dd718df2bd2340ddb06.zip -O pybind11-2.6.0.zip --no-check-certificate
+IF NOT EXIST pybind11-2.6.1 (
+  wget https://github.com/pybind/pybind11/archive/v2.6.1.zip -O pybind11-2.6.1.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    unzip pybind11-2.6.0.zip
-    mv pybind11-3e448c0b5e3abcd179781dd718df2bd2340ddb06 pybind11-2.6.0
+    unzip pybind11-2.6.1.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q pybind11-2.6.0.zip
+  DEL /F /Q pybind11-2.6.1.zip
 )
-IF NOT EXIST Python-3.8.1 (
-  wget https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tgz --no-check-certificate
+IF NOT EXIST Python-3.9.1 (
+  wget https://www.python.org/ftp/python/3.9.1/Python-3.9.1.tgz --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    gzip -d -c Python-3.8.1.tgz | tar -xf -
-    PUSHD Python-3.8.1
+    gzip -d -c Python-3.9.1.tgz | tar -xf -
+    PUSHD Python-3.9.1
     PUSHD PCbuild
     CALL build.bat -E -c Debug -p Win32
     CALL build.bat -E -c Release -p Win32
@@ -52,7 +51,7 @@ IF NOT EXIST Python-3.8.1 (
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q Python-3.8.1.tgz
+  DEL /F /Q Python-3.9.1.tgz
 )
 IF NOT EXIST cache_files (
   MD cache_files
