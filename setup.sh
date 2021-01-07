@@ -21,32 +21,31 @@ if [ -f "cache_files/aspen.txt" ]; then
   fi
 fi
 let cores="`grep -c "processor" < /proc/cpuinfo`"
-if [ ! -d "doctest-2.3.6" ]; then
-  wget https://github.com/onqtam/doctest/archive/2.3.6.zip --no-check-certificate
+if [ ! -d "doctest-2.4.4" ]; then
+  wget https://github.com/onqtam/doctest/archive/2.4.4.zip --no-check-certificate
   if [ "$?" == "0" ]; then
-    unzip 2.3.6.zip
+    unzip 2.4.4.zip
   else
     exit_status=1
   fi
-  rm -f 2.3.6.zip
+  rm -f 2.4.4.zip
 fi
-if [ ! -d "pybind11-2.6.0" ]; then
-  wget https://github.com/pybind/pybind11/archive/3e448c0b5e3abcd179781dd718df2bd2340ddb06.zip -O pybind11-2.6.0.zip --no-check-certificate
+if [ ! -d "pybind11-2.6.1" ]; then
+  wget https://github.com/pybind/pybind11/archive/v2.6.1.zip -O pybind11-2.6.1.zip --no-check-certificate
   if [ "$?" == "0" ]; then
-    unzip pybind11-2.6.0.zip
-    mv pybind11-3e448c0b5e3abcd179781dd718df2bd2340ddb06 pybind11-2.6.0
+    unzip pybind11-2.6.1.zip
   else
     exit_status=1
   fi
-  rm -f pybind11-2.6.0.zip
+  rm -f pybind11-2.6.1.zip
 fi
-if [ ! -d "Python-3.8.2" ]; then
-  wget https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tgz --no-check-certificate
+if [ ! -d "Python-3.8.5" ]; then
+  wget https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz --no-check-certificate
   if [ "$?" == "0" ]; then
-    gzip -d -c Python-3.8.2.tgz | tar -xf -
-    pushd Python-3.8.2
+    gzip -d -c Python-3.8.5.tgz | tar -xf -
+    pushd Python-3.8.5
     export CFLAGS="-fPIC"
-    ./configure --prefix="$root/Python-3.8.2"
+    ./configure --prefix="$root/Python-3.8.5"
     make -j $cores
     make install
     unset CFLAGS
@@ -54,7 +53,7 @@ if [ ! -d "Python-3.8.2" ]; then
   else
     exit_status=1
   fi
-  rm -rf Python-3.8.2.tgz
+  rm -rf Python-3.8.5.tgz
 fi
 if [ ! -d cache_files ]; then
   mkdir cache_files
