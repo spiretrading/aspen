@@ -22,7 +22,7 @@ FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property insta
 IF NOT EXIST doctest-2.4.4 (
   wget https://github.com/onqtam/doctest/archive/2.4.4.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    unzip 2.4.4.zip
+    tar -xf 2.4.4.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
@@ -31,7 +31,7 @@ IF NOT EXIST doctest-2.4.4 (
 IF NOT EXIST pybind11-2.6.1 (
   wget https://github.com/pybind/pybind11/archive/v2.6.1.zip -O pybind11-2.6.1.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    unzip pybind11-2.6.1.zip
+    tar -xf pybind11-2.6.1.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
