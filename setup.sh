@@ -21,14 +21,14 @@ if [ -f "cache_files/aspen.txt" ]; then
   fi
 fi
 let cores="`grep -c "processor" < /proc/cpuinfo`"
-if [ ! -d "doctest-2.4.4" ]; then
-  wget https://github.com/onqtam/doctest/archive/2.4.4.zip --no-check-certificate
+if [ ! -d "doctest-2.4.6" ]; then
+  wget https://github.com/onqtam/doctest/archive/2.4.6.zip --no-check-certificate
   if [ "$?" == "0" ]; then
-    unzip 2.4.4.zip
+    unzip 2.4.6.zip
   else
     exit_status=1
   fi
-  rm -f 2.4.4.zip
+  rm -f 2.4.6.zip
 fi
 if [ ! -d "pybind11-2.6.1" ]; then
   wget https://github.com/pybind/pybind11/archive/v2.6.1.zip -O pybind11-2.6.1.zip --no-check-certificate

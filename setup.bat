@@ -19,14 +19,14 @@ FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property insta
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-IF NOT EXIST doctest-2.4.4 (
-  wget https://github.com/onqtam/doctest/archive/2.4.4.zip --no-check-certificate
+IF NOT EXIST doctest-2.4.6 (
+  wget https://github.com/onqtam/doctest/archive/2.4.6.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    tar -xf 2.4.4.zip
+    tar -xf 2.4.6.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q 2.4.4.zip
+  DEL /F /Q 2.4.6.zip
 )
 IF NOT EXIST pybind11-2.6.1 (
   wget https://github.com/pybind/pybind11/archive/v2.6.1.zip -O pybind11-2.6.1.zip --no-check-certificate
