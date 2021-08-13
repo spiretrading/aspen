@@ -203,7 +203,8 @@ namespace Details {
 
   template<typename R>
   Shared<R>::~Shared() {
-    if(m_reactor.unique() && m_evaluator->m_state->m_last_evaluation != -1) {
+    if(m_reactor.use_count() == 1 &&
+        m_evaluator->m_state->m_last_evaluation != -1) {
       m_evaluator->m_evaluation = try_eval(*m_reactor);
     }
   }
