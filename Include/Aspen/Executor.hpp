@@ -60,7 +60,7 @@ namespace Aspen {
 
   template<typename R>
   Executor::Executor(R&& reactor)
-    : m_trigger([=] { on_update(); }),
+    : m_trigger([this] { on_update(); }),
       m_sequence(0),
       m_reactor(std::forward<R>(reactor)),
       m_has_update(Update::NONE) {}
