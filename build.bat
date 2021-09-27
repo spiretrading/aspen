@@ -20,13 +20,13 @@ IF "!IS_DEPENDENCY!" == "1" (
 )
 IF "!CONFIG!" == "clean" (
   git clean -ffxd -e *Dependencies*
-  IF EXIST Dependencies\cache_files\beam.txt (
-    DEL Dependencies\cache_files\beam.txt
+  IF EXIST Dependencies\cache_files\aspen.txt (
+    DEL Dependencies\cache_files\aspen.txt
   )
 ) ELSE IF "!CONFIG!" == "reset" (
   git clean -ffxd
-  IF EXIST Dependencies\cache_files\beam.txt (
-    DEL Dependencies\cache_files\beam.txt
+  IF EXIST Dependencies\cache_files\aspen.txt (
+    DEL Dependencies\cache_files\aspen.txt
   )
 ) ELSE (
   IF "!CONFIG!" == "" (
