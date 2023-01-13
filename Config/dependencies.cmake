@@ -5,6 +5,6 @@ else()
 endif()
 set(ASPEN_INCLUDE_PATH "${CMAKE_CURRENT_LIST_DIR}/../Include")
 set(ASPEN_SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../Source")
-set(DOCTEST_INCLUDE_PATH "${PROJECT_BINARY_DIR}/Dependencies/doctest-2.4.6")
+set(DOCTEST_INCLUDE_PATH "${PROJECT_BINARY_DIR}/Dependencies/doctest-2.4.9")
 set(PYBIND11_INCLUDE_PATH
-  "${PROJECT_BINARY_DIR}/Dependencies/pybind11-2.6.1/include")
+  "${PROJECT_BINARY_DIR}/Dependencies/pybind11-2.10.3/include")
