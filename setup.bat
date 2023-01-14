@@ -22,11 +22,11 @@ FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property insta
 IF NOT EXIST doctest-2.4.9 (
   wget https://github.com/doctest/doctest/archive/refs/tags/v2.4.9.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    tar -xf 2.4.9.zip
+    tar -xf v2.4.9.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q 2.4.9.zip
+  DEL /F /Q v2.4.9.zip
 )
 IF NOT EXIST pybind11-2.10.3 (
   wget https://github.com/pybind/pybind11/archive/refs/tags/v2.10.3.zip -O pybind11-2.10.3.zip --no-check-certificate
@@ -43,8 +43,8 @@ IF NOT EXIST Python-3.11.1 (
     gzip -d -c Python-3.11.1.tgz | tar -xf -
     PUSHD Python-3.11.1
     PUSHD PCbuild
-    CALL build.bat -E -c Debug -p Win32
-    CALL build.bat -E -c Release -p Win32
+    CALL build.bat -c Debug -p Win32
+    CALL build.bat -c Release -p Win32
     POPD
     COPY PC\pyconfig.h Include
     POPD
