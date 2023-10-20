@@ -10,6 +10,7 @@
 #include "Aspen/Conversions.hpp"
 #include "Aspen/Count.hpp"
 #include "Aspen/Discard.hpp"
+#include "Aspen/Distinct.hpp"
 #include "Aspen/Executor.hpp"
 #include "Aspen/First.hpp"
 #include "Aspen/Fold.hpp"

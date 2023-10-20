@@ -16,6 +16,7 @@ PYBIND11_MODULE(aspen, m) {
   export_constant(m);
   export_count(m);
   export_discard(m);
+  export_distinct(m);
   export_executor(m);
   export_first(m);
   export_fold(m);
