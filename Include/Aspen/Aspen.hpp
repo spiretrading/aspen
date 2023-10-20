@@ -24,6 +24,7 @@
 #include "Aspen/Operators.hpp"
 #include "Aspen/Override.hpp"
 #include "Aspen/Perpetual.hpp"
+#include "Aspen/Previous.hpp"
 #include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Range.hpp"

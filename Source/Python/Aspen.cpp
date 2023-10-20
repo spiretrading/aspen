@@ -26,6 +26,7 @@ PYBIND11_MODULE(aspen, m) {
   export_none(m);
   export_override(m);
   export_perpetual(m);
+  export_previous(m);
   export_proxy(m);
   export_queue(m);
   export_range(m);

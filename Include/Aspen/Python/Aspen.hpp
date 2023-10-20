@@ -22,6 +22,7 @@
 #include "Aspen/Python/Object.hpp"
 #include "Aspen/Python/Override.hpp"
 #include "Aspen/Python/Perpetual.hpp"
+#include "Aspen/Python/Previous.hpp"
 #include "Aspen/Python/Proxy.hpp"
 #include "Aspen/Python/PythonBox.hpp"
 #include "Aspen/Python/Queue.hpp"
