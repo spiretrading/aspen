@@ -9,7 +9,7 @@ using namespace pybind11;
 template<>
 struct std::hash<object> {
   std::size_t operator()(const object& o) const noexcept {
-    return 0;
+    return o.attr("__hash__")().cast<int>();
   }
 };
 
