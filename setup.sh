@@ -39,13 +39,13 @@ if [ ! -d "pybind11-2.10.3" ]; then
   fi
   rm -f pybind11-2.10.3.zip
 fi
-if [ ! -d "Python-3.10.6" ]; then
-  wget https://www.python.org/ftp/python/3.10.6/Python-3.10.6.tgz --no-check-certificate
+if [ ! -d "Python-3.12.3" ]; then
+  wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz --no-check-certificate
   if [ "$?" == "0" ]; then
-    gzip -d -c Python-3.10.6.tgz | tar -xf -
-    pushd Python-3.10.6
+    gzip -d -c Python-3.12.3.tgz | tar -xf -
+    pushd Python-3.12.3
     export CFLAGS="-fPIC"
-    ./configure --prefix="$root/Python-3.10.6"
+    ./configure --prefix="$root/Python-3.12.3"
     make -j $cores
     make install
     unset CFLAGS
@@ -53,7 +53,7 @@ if [ ! -d "Python-3.10.6" ]; then
   else
     exit_status=1
   fi
-  rm -rf Python-3.10.6.tgz
+  rm -rf Python-3.12.3.tgz
 fi
 if [ ! -d cache_files ]; then
   mkdir cache_files
