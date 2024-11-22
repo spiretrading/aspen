@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/None.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

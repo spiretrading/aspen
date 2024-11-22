@@ -1,8 +1,7 @@
 #include <doctest/doctest.h>
-#include "Aspen/Constant.hpp"
-#include "Aspen/Lift.hpp"
-#include "Aspen/Queue.hpp"
-#include "Aspen/Shared.hpp"
+
+import <stdexcept>;
+import Aspen;
 
 using namespace Aspen;
 

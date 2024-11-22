@@ -1,6 +1,6 @@
-#include <exception>
 #include <doctest/doctest.h>
-#include "Aspen/Cell.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

@@ -1,12 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Box.hpp"
-#include "Aspen/Chain.hpp"
-#include "Aspen/Concat.hpp"
-#include "Aspen/Constant.hpp"
-#include "Aspen/Last.hpp"
-#include "Aspen/None.hpp"
-#include "Aspen/Queue.hpp"
-#include "Aspen/Shared.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

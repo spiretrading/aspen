@@ -62,3 +62,4 @@ set_target_properties(
   aspen PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
 set_source_files_properties(${module_files} PROPERTIES LANGUAGE CXX
   HEADER_FILE_ONLY FALSE)
+add_subdirectory(Config/Tests)

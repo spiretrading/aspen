@@ -1,7 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Queue.hpp"
-#include "Aspen/Range.hpp"
-#include "Aspen/Shared.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

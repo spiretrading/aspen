@@ -1,8 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Chain.hpp"
-#include "Aspen/None.hpp"
-#include "Aspen/Sync.hpp"
-#include "Aspen/Throw.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

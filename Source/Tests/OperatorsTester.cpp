@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Constant.hpp"
-#include "Aspen/Operators.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

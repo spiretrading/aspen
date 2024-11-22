@@ -1,6 +1,6 @@
-#include <exception>
 #include <doctest/doctest.h>
-#include "Aspen/Throw.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

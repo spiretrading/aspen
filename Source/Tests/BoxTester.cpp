@@ -1,6 +1,7 @@
 #include <doctest/doctest.h>
-#include "Aspen/Box.hpp"
-#include "Aspen/Constant.hpp"
+
+import <utility>;
+import Aspen;
 
 using namespace Aspen;
 

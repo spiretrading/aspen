@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Constant.hpp"
-#include "Aspen/Unique.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

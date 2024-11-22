@@ -1,6 +1,7 @@
 #include <string>
 #include <doctest/doctest.h>
-#include "Aspen/Constant.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 using namespace std::string_literals;

@@ -1,10 +1,7 @@
 #include <doctest/doctest.h>
-#include "Aspen/Box.hpp"
-#include "Aspen/Chain.hpp"
-#include "Aspen/None.hpp"
-#include "Aspen/Sync.hpp"
-#include "Aspen/Throw.hpp"
-#include "Aspen/VectorSync.hpp"
+
+import <vector>;
+import Aspen;
 
 using namespace Aspen;
 

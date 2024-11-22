@@ -1,13 +1,9 @@
-#include <optional>
 #include <thread>
-#include <vector>
 #include <doctest/doctest.h>
-#include "Aspen/Constant.hpp"
-#include "Aspen/Executor.hpp"
-#include "Aspen/Lift.hpp"
-#include "Aspen/None.hpp"
-#include "Aspen/Queue.hpp"
-#include "Aspen/Shared.hpp"
+
+import <optional>;
+import <vector>;
+import Aspen;
 
 using namespace Aspen;
 

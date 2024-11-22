@@ -1,8 +1,7 @@
 #include <doctest/doctest.h>
-#include <optional>
-#include "Aspen/Constant.hpp"
-#include "Aspen/Queue.hpp"
-#include "Aspen/Weak.hpp"
+
+import <optional>;
+import Aspen;
 
 using namespace Aspen;
 

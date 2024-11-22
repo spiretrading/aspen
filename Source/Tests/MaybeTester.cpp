@@ -1,6 +1,7 @@
-#include <stdexcept>
 #include <doctest/doctest.h>
-#include "Aspen/Maybe.hpp"
+
+import <stdexcept>;
+import Aspen;
 
 using namespace Aspen;
 

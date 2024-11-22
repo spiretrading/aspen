@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Perpetual.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

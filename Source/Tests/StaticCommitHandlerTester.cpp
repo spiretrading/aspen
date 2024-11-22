@@ -1,7 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/StaticCommitHandler.hpp"
-#include "Aspen/Queue.hpp"
-#include "Aspen/Shared.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 

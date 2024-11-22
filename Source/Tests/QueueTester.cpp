@@ -1,6 +1,7 @@
-#include <exception>
 #include <doctest/doctest.h>
-#include "Aspen/Queue.hpp"
+
+import <stdexcept>;
+import Aspen;
 
 using namespace Aspen;
 
