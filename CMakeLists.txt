@@ -55,11 +55,12 @@ endif()
 file(GLOB aspen_header_files ${ASPEN_INCLUDE_PATH}/Aspen/*.hpp)
 source_group("Header Files" FILES ${aspen_header_files})
 file(GLOB header_files ${aspen_header_files})
-file(GLOB_RECURSE module_files "${ASPEN_MODULES_PATH}/*.ixx")
+file(GLOB module_files "${ASPEN_MODULES_PATH}/*.ixx")
 add_library(aspen STATIC ${module_files} ${aspen_header_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(
   aspen PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
 set_source_files_properties(${module_files} PROPERTIES LANGUAGE CXX
   HEADER_FILE_ONLY FALSE)
+add_subdirectory(Config/Python)
 add_subdirectory(Config/Tests)
