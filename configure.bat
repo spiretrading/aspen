@@ -90,6 +90,31 @@ IF EXIST "!DIRECTORY!Include" (
   )
   DEL hpp_hash.txt
 )
+IF EXIST "!DIRECTORY!Modules" (
+  DIR /a-d /b /s "!DIRECTORY!Modules\*" > ixx_hash.txt
+  SET C=0
+  FOR /F %%i IN ('certutil -hashfile ixx_hash.txt') DO (
+    IF !C!==1 (
+      IF EXIST CMakeFiles\ixx_hash.txt (
+        FOR /F %%j IN ('TYPE CMakeFiles\ixx_hash.txt') DO (
+          IF NOT "%%i" == "%%j" (
+            SET RUN_CMAKE=1
+          )
+        )
+      ) ELSE (
+        SET RUN_CMAKE=1
+      )
+      IF "!RUN_CMAKE!" == "1" (
+        IF NOT EXIST CMakeFiles (
+          MD CMakeFiles
+        )
+        ECHO %%i > CMakeFiles\ixx_hash.txt
+      )
+    )
+    SET /A C=C+1
+  )
+  DEL ixx_hash.txt
+)
 IF EXIST "!DIRECTORY!Source" (
   DIR /a-d /b /s "!DIRECTORY!Source\*" > cpp_hash.txt
   SET C=0
