@@ -7,7 +7,6 @@ import <string>;
 import <type_traits>;
 import Aspen;
 import :Box;
-import :Reactor;
 
 export namespace Aspen {
 
@@ -25,8 +24,8 @@ export namespace Aspen {
     export_reactor<Concur<T>>(module, name).
       def(pybind11::init<T>());
     if constexpr(!std::is_same_v<T, SharedBox<SharedBox<pybind11::object>>>) {
-      pybind11::implicitly_convertible<Concur<T>,
-        Concur<SharedBox<SharedBox<pybind11::object>>>>();
+      pybind11::implicitly_convertible<
+        Concur<T>, Concur<SharedBox<SharedBox<pybind11::object>>>>();
     }
   }
 

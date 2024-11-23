@@ -21,11 +21,11 @@ export namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<Constant<T>>(module, name)
-      .def(pybind11::init<T>());
+    export_reactor<Constant<T>>(module, name).
+      def(pybind11::init<T>());
     if constexpr(!std::is_same_v<T, pybind11::object>) {
-      pybind11::implicitly_convertible<Constant<T>,
-        Constant<pybind11::object>>();
+      pybind11::implicitly_convertible<
+        Constant<T>, Constant<pybind11::object>>();
     }
   }
 

@@ -7,7 +7,6 @@ import <string>;
 import <type_traits>;
 import Aspen;
 import :Box;
-import :Reactor;
 
 export namespace Aspen {
 

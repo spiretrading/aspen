@@ -51,8 +51,8 @@ export namespace Aspen {
       return;
     }
     export_fold_argument<Type>(module, prefix);
-    export_reactor<Fold<E, S>>(module, name)
-      .def(pybind11::init<E, Shared<FoldArgument<Type>>,
+    export_reactor<Fold<E, S>>(module, name).
+      def(pybind11::init<E, Shared<FoldArgument<Type>>,
         Shared<FoldArgument<Type>>, S>());
     if constexpr(!std::is_same_v<E, SharedBox<pybind11::object>> ||
         !std::is_same_v<S, SharedBox<pybind11::object>>) {
@@ -76,8 +76,8 @@ export namespace Aspen {
       });
     module.def("fold", [] (pybind11::object f, pybind11::object series) {
       return shared_box(fold(
-        [f = std::move(f)] (const pybind11::object& a,
-            const pybind11::object& b) {
+        [f = std::move(f)] (
+            const pybind11::object& a, const pybind11::object& b) {
           return f(a, b);
         }, to_python_reactor(std::move(series))));
     });

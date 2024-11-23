@@ -1,9 +1,16 @@
-export module Aspen:Previous;
+module;
+#include <pybind11/pybind11.h>
 
-import <pybind11/pybind11.h>;
+export module Aspen.Python:Previous;
+
+import Aspen;
 
 export namespace Aspen {
 
   /** Exports a previous reactor evaluating to a Python object. */
-  void export_previous(pybind11::module& module);
+  void export_previous(pybind11::module& module) {
+    module.def("previous", [] (SharedBox<pybind11::object> source) {
+      return shared_box(previous(std::move(source)));
+    });
+  }
 }

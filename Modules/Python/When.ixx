@@ -1,15 +1,14 @@
-export module Aspen:When;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:When;
 
 import <string>;
 import <type_traits>;
-import <pybind11/pybind11.h>;
-import :When;
-#include "Aspen/Python/Reactor.hpp"
+import Aspen;
+import :Box;
 
 export namespace Aspen {
-
-  /** Exports a When evaluating to a Python object. */
-  void export_when(pybind11::module& module);
 
   /**
    * Exports the generic When reactor.
@@ -22,12 +21,22 @@ export namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<When<C, T>>(module, name)
-      .def(pybind11::init<C, T>());
+    export_reactor<When<C, T>>(module, name).
+      def(pybind11::init<C, T>());
     if constexpr(!std::is_same_v<C, SharedBox<bool>> ||
         !std::is_same_v<T, SharedBox<pybind11::object>>) {
-      pybind11::implicitly_convertible<When<C, T>, When<SharedBox<bool>,
-        SharedBox<pybind11::object>>>();
+      pybind11::implicitly_convertible<
+        When<C, T>, When<SharedBox<bool>, SharedBox<pybind11::object>>>();
     }
+  }
+
+  /** Exports a When evaluating to a Python object. */
+  void export_when(pybind11::module& module) {
+    export_box<bool>(module, "Bool");
+    export_when<SharedBox<bool>, SharedBox<pybind11::object>>(module, "");
+    module.def("when",
+      [] (SharedBox<bool> condition, SharedBox<pybind11::object> series) {
+        return when(std::move(condition), std::move(series));
+      });
   }
 }

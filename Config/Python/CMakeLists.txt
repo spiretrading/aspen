@@ -1,7 +1,8 @@
 include_directories(SYSTEM ${PYBIND11_INCLUDE_PATH})
 include_directories(SYSTEM ${PYTHON_INCLUDE_PATH})
 file(GLOB header_files ${ASPEN_INCLUDE_PATH}/Aspen/Python/*.hpp)
-file(GLOB module_files "${ASPEN_MODULES_PATH}/Python/*.ixx")
+file(GLOB module_files "${ASPEN_MODULES_PATH}/Python/*.ixx"
+  "${ASPEN_MODULES_PATH}/Python/*.cpp")
 add_library(python SHARED ${header_files} ${module_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(python PROPERTIES OUTPUT_NAME aspen)
