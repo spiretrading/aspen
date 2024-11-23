@@ -9,7 +9,6 @@ import Aspen;
 import :Reactor;
 
 export namespace Aspen {
-#if 0
 
   /**
    * Exports the generic SharedBox reactor.
@@ -22,16 +21,15 @@ export namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<SharedBox<T>>(module, name)
-      .def(pybind11::init(
-        [] (pybind11::object reactor) {
-          return to_python_reactor<T>(std::move(reactor));
-        }));
+    export_reactor<SharedBox<T>>(module, name).
+      def(pybind11::init([] (pybind11::object reactor) {
+        return to_python_reactor<T>(std::move(reactor));
+      }));
     if constexpr(!std::is_same_v<T, pybind11::object>) {
-      pybind11::implicitly_convertible<SharedBox<T>,
-        SharedBox<pybind11::object>>();
-      pybind11::implicitly_convertible<SharedBox<pybind11::object>,
-        SharedBox<T>>();
+      pybind11::implicitly_convertible<
+        SharedBox<T>, SharedBox<pybind11::object>>();
+      pybind11::implicitly_convertible<
+        SharedBox<pybind11::object>, SharedBox<T>>();
     }
     pybind11::implicitly_convertible<pybind11::object, SharedBox<T>>();
   }
@@ -43,5 +41,4 @@ export namespace Aspen {
     pybind11::implicitly_convertible<
       SharedBox<pybind11::object>, SharedBox<void>>();
   }
-#endif
 }

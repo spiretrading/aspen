@@ -9,7 +9,6 @@ import Aspen;
 
 export namespace Aspen {
 
-#if 0
   /**
    * The type used to ensure that all reactors are properly shared from within
    * Python.
@@ -27,16 +26,16 @@ export namespace Aspen {
       /** Constructs a pointer to a reactor. */
       ReactorPtr(Reactor* reactor);
 
-      //! Returns a reference to the reactor.
+      /** Returns a reference to the reactor. */
       const Shared<Unique<Reactor>>& operator *() const noexcept;
 
-      //! Returns a pointer to the reactor.
+      /** Returns a pointer to the reactor. */
       const Shared<Unique<Reactor>>* operator ->() const noexcept;
 
-      //! Returns a reference to the reactor.
+      /** Returns a reference to the reactor. */
       Shared<Unique<Reactor>>& operator *() noexcept;
 
-      //! Returns a pointer to the reactor.
+      /** Returns a pointer to the reactor. */
       Shared<Unique<Reactor>>* operator ->() noexcept;
 
       State commit(int sequence) noexcept;
@@ -85,18 +84,17 @@ export namespace Aspen {
       const noexcept(is_noexcept) {
     return m_reactor->eval();
   }
-#endif
 }
 
-//export PYBIND11_DECLARE_HOLDER_TYPE(T, Aspen::ReactorPtr<T>);
+export {
+  PYBIND11_DECLARE_HOLDER_TYPE(T, Aspen::ReactorPtr<T>);
 
-#if 0
-export namespace pybind11::detail {
-  template<typename T>
-  struct holder_helper<Aspen::ReactorPtr<T>> {
-    static const T* get(const Aspen::ReactorPtr<T>& p) {
-      return &***p;
-    }
-  };
+  namespace pybind11::detail {
+    template<typename T>
+    struct holder_helper<Aspen::ReactorPtr<T>> {
+      static const T* get(const Aspen::ReactorPtr<T>& p) {
+        return &***p;
+      }
+    };
+  }
 }
-#endif

@@ -28,14 +28,14 @@ IF NOT EXIST doctest-2.4.9 (
   )
   DEL /F /Q v2.4.9.zip
 )
-IF NOT EXIST pybind11-2.10.3 (
-  wget https://github.com/pybind/pybind11/archive/refs/tags/v2.10.3.zip -O pybind11-2.10.3.zip --no-check-certificate
+IF NOT EXIST pybind11-2.13.6 (
+  wget https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip -O pybind11-2.13.6.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    tar -xf pybind11-2.10.3.zip
+    tar -xf pybind11-2.13.6.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q pybind11-2.10.3.zip
+  DEL /F /Q pybind11-2.13.6.zip
 )
 IF NOT EXIST Python-3.13.0 (
   wget https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz --no-check-certificate

@@ -1,9 +1,10 @@
-export module Aspen:GilAcquireReactor;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:GilAcquireReactor;
 
 import <type_traits>;
-import <pybind11/pybind11.h>;
-import :LocalPtr;
-import :Traits;
+import Aspen;
 
 export namespace Aspen {
 
@@ -21,7 +22,7 @@ export namespace Aspen {
        * @param reactor Initializes the reactor to wrap.
        */
       template<typename RF>
-      GilAcquireReactor(RF&& reactor);
+      explicit GilAcquireReactor(RF&& reactor);
 
       State commit(int sequence) noexcept;
 

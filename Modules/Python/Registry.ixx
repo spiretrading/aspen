@@ -6,15 +6,16 @@ export module Aspen.Python:Registry;
 
 import <optional>;
 import <typeinfo>;
+import <unordered_map>;
+import <utility>;
 import Aspen;
 import :ReactorPtr;
 
-#if 0
 export namespace Aspen {
 
   /**
-   * Stores the function pointers needed to convert a Python object back to
-   * a Boxed C++ reactor.
+   * Stores the function pointers needed to convert a Python object back to a
+   * Boxed C++ reactor.
    */
   struct Boxers {
 
@@ -64,4 +65,25 @@ export namespace Aspen {
   ASPEN_EXPORT_DLL const Boxers& find_boxers(const pybind11::object& value);
 }
 
-#endif
+std::unordered_map<const _typeobject*, Aspen::Boxers> box_registry;
+
+auto VALUE_BOXERS = [] {
+  return Aspen::Boxers{nullptr, nullptr, nullptr};
+}();
+
+void Aspen::register_reactor(const pybind11::object& type,
+    void (*boxer)(const pybind11::object&, void*, const std::type_info&),
+    Aspen::SharedBox<pybind11::object> (*object_boxer)(const pybind11::object&),
+    Aspen::SharedBox<void> (*void_boxer)(const pybind11::object&)) {
+  box_registry.insert(
+    std::pair(reinterpret_cast<const _typeobject*>(type.ptr()),
+      Aspen::Boxers{boxer, object_boxer, void_boxer}));
+}
+
+const Aspen::Boxers& Aspen::find_boxers(const pybind11::object& value) {
+  auto i = box_registry.find(value.ptr()->ob_type);
+  if(i == box_registry.end()) {
+    return VALUE_BOXERS;
+  }
+  return i->second;
+}

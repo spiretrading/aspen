@@ -1,15 +1,14 @@
-export module Aspen:Fold;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:Fold;
 
 import <string>;
 import <type_traits>;
-import <pybind11/pybind11.h>;
-import :Fold;
-#include "Aspen/Python/Reactor.hpp"
+import Aspen;
+import :Reactor;
 
 export namespace Aspen {
-
-  /** Exports a FoldArgument evaluating to a Python object. */
-  void export_fold_argument(pybind11::module& module);
 
   /**
    * Exports the generic FoldArgument reactor.
@@ -17,22 +16,27 @@ export namespace Aspen {
    * @param prefix The prefix to use when forming the type name.
    */
   template<typename T>
-  void export_fold_argument(pybind11::module& module,
-      const std::string& prefix) {
+  void export_fold_argument(
+      pybind11::module& module, const std::string& prefix) {
     auto name = prefix + "FoldArgument";
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<FoldArgument<T>>(module, name)
-      .def(pybind11::init<>());
+    export_reactor<FoldArgument<T>>(module, name).
+      def(pybind11::init<>());
     if constexpr(!std::is_same_v<T, pybind11::object>) {
-      pybind11::implicitly_convertible<FoldArgument<T>,
-        FoldArgument<pybind11::object>>();
+      pybind11::implicitly_convertible<
+        FoldArgument<T>, FoldArgument<pybind11::object>>();
     }
   }
 
-  /** Exports a Fold reactor evaluating to a Python object. */
-  void export_fold(pybind11::module& module);
+  /** Exports a FoldArgument evaluating to a Python object. */
+  void export_fold_argument(pybind11::module& module) {
+    export_fold_argument<pybind11::object>(module, "");
+    module.def("make_fold_argument", [] {
+      return make_fold_argument<pybind11::object>();
+    });
+  }
 
   /**
    * Exports the generic Fold reactor.
@@ -55,5 +59,27 @@ export namespace Aspen {
       pybind11::implicitly_convertible<Fold<E, S>,
         Fold<SharedBox<pybind11::object>, SharedBox<pybind11::object>>>();
     }
+  }
+
+  /** Exports a Fold reactor evaluating to a Python object. */
+  void export_fold(pybind11::module& module) {
+    export_fold<SharedBox<pybind11::object>, SharedBox<pybind11::object>>(
+      module, "");
+    module.def("fold",
+      [] (pybind11::object evaluator,
+          Shared<FoldArgument<pybind11::object>> left,
+          Shared<FoldArgument<pybind11::object>> right,
+          pybind11::object series) {
+        return shared_box(fold(to_python_reactor(std::move(evaluator)),
+          std::move(left), std::move(right),
+          to_python_reactor(std::move(series))));
+      });
+    module.def("fold", [] (pybind11::object f, pybind11::object series) {
+      return shared_box(fold(
+        [f = std::move(f)] (const pybind11::object& a,
+            const pybind11::object& b) {
+          return f(a, b);
+        }, to_python_reactor(std::move(series))));
+    });
   }
 }

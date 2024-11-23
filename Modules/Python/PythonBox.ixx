@@ -1,9 +1,10 @@
-export module Aspen:PythonBox;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:PythonBox;
 
 import <utility>;
-import <pybind11/pybind11.h>;
-import :State;
-import :Traits;
+import Aspen;
 
 export namespace Aspen {
 

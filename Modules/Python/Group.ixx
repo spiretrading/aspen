@@ -1,15 +1,14 @@
-export module Aspen:Group;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:Group;
 
 import <string>;
 import <type_traits>;
-import <pybind11/pybind11.h>;
-import :Group;
-#include "Aspen/Python/Reactor.hpp"
+import Aspen;
+import :Reactor;
 
 export namespace Aspen {
-
-  /** Exports a Group evaluating to a Python object. */
-  void export_group(pybind11::module& module);
 
   /**
    * Exports the generic Group reactor.
@@ -29,5 +28,25 @@ export namespace Aspen {
       pybind11::implicitly_convertible<Group<A, B>,
         Group<SharedBox<pybind11::object>, SharedBox<pybind11::object>>>();
     }
+  }
+
+  /** Exports a Group evaluating to a Python object. */
+  void export_group(pybind11::module& module) {
+    export_group<SharedBox<pybind11::object>, SharedBox<pybind11::object>>(
+      module, "");
+    module.def("group", [] (const pybind11::args& arguments) {
+      if(pybind11::len(arguments) == 0) {
+        return shared_box(None<pybind11::object>());
+      } else if(pybind11::len(arguments) == 1) {
+        return to_python_reactor(arguments[0]);
+      } else {
+        auto size = pybind11::len(arguments);
+        auto c = to_python_reactor(arguments[size - 1]);
+        for(auto i = size - 1; i-- > 0;) {
+          c = shared_box(group(to_python_reactor(arguments[i]), std::move(c)));
+        }
+        return c;
+      }
+    });
   }
 }

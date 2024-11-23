@@ -1,15 +1,14 @@
-export module Aspen:Constant;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:Constant;
 
 import <string>;
 import <type_traits>;
-import <pybind11/pybind11.h>;
-import :Constant;
-#include "Aspen/Python/Reactor.hpp"
+import Aspen;
+import :Reactor;
 
 export namespace Aspen {
-
-  /** Exports a Constant evaluating to a Python object. */
-  void export_constant(pybind11::module& module);
 
   /**
    * Exports the generic Constant class.
@@ -28,5 +27,13 @@ export namespace Aspen {
       pybind11::implicitly_convertible<Constant<T>,
         Constant<pybind11::object>>();
     }
+  }
+
+  /** Exports a Constant evaluating to a Python object. */
+  void export_constant(pybind11::module& module) {
+    export_constant<pybind11::object>(module, "");
+    module.def("constant", [] (pybind11::object value) {
+      return constant(std::move(value));
+    });
   }
 }

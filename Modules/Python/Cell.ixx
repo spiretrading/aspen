@@ -1,15 +1,14 @@
-export module Aspen:Cell;
+module;
+#include <pybind11/pybind11.h>
+
+export module Aspen.Python:Cell;
 
 import <string>;
 import <type_traits>;
-import <pybind11/pybind11.h>;
-import :Cell;
-#include "Aspen/Python/Reactor.hpp"
+import Aspen;
+import :Reactor;
 
 export namespace Aspen {
-
-  /** Exports a Cell evaluating to a Python object. */
-  void export_cell(pybind11::module& module);
 
   /**
    * Exports the generic Cell class.
@@ -22,16 +21,21 @@ export namespace Aspen {
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
-    export_reactor<Cell<T>>(module, name)
-      .def(pybind11::init<>())
-      .def(pybind11::init<T>())
-      .def("set", &Cell<T>::set)
-      .def("set_complete",
-        static_cast<void (Cell<T>::*)()>(&Cell<T>::set_complete))
-      .def("set_complete",
+    export_reactor<Cell<T>>(module, name).
+      def(pybind11::init<>()).
+      def(pybind11::init<T>()).
+      def("set", &Cell<T>::set).
+      def("set_complete",
+        static_cast<void (Cell<T>::*)()>(&Cell<T>::set_complete)).
+      def("set_complete",
         static_cast<void (Cell<T>::*)(T)>(&Cell<T>::set_complete));
     if constexpr(!std::is_same_v<T, pybind11::object>) {
       pybind11::implicitly_convertible<Cell<T>, Cell<pybind11::object>>();
     }
+  }
+
+  /** Exports a Cell evaluating to a Python object. */
+  void export_cell(pybind11::module& module) {
+    export_cell<pybind11::object>(module, "");
   }
 }
