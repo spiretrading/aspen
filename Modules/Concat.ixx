@@ -1,8 +1,10 @@
+module;
+#include <list>
+#include <type_traits>
+#include <utility>
+
 export module Aspen:Concat;
 
-import <list>;
-import <type_traits>;
-import <utility>;
 import :State;
 import :Traits;
 

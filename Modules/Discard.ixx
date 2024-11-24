@@ -1,6 +1,9 @@
+module;
+#include <optional>
+#include <utility>
+
 export module Aspen:Discard;
 
-import <utility>;
 import :Lift;
 
 export namespace Aspen {

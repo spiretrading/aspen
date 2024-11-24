@@ -1,6 +1,8 @@
+module;
+#include <utility>
+
 export module Aspen:First;
 
-import <utility>;
 import :Lift;
 
 export namespace Aspen {

@@ -1,13 +1,15 @@
+module;
+#include <condition_variable>
+#include <mutex>
+#if defined WIN32
+  #include <windows.h>
+#elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+  #include <signal.h>
+#endif
+#include <set>
+
 export module Aspen:Executor;
 
-import <condition_variable>;
-import <mutex>;
-#if defined WIN32
-  import <windows.h>;
-#elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-  import <signal.h>;
-#endif
-import <set>;
 import :Box;
 import :Trigger;
 

@@ -1,7 +1,8 @@
-export module Aspen:LocalPtr;
+module;
+#include <type_traits>
+#include <utility>
 
-import <type_traits>;
-import <utility>;
+export module Aspen:LocalPtr;
 
 export namespace Aspen {
 

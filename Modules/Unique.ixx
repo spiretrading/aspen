@@ -1,7 +1,9 @@
+module;
+#include <memory>
+#include <utility>
+
 export module Aspen:Unique;
 
-import <memory>;
-import <utility>;
 import :State;
 import :Traits;
 

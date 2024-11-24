@@ -1,6 +1,8 @@
+module;
+#include <optional>
+
 export module Aspen:Until;
 
-import <optional>;
 import :Maybe;
 import :State;
 import :Traits;

@@ -1,12 +1,13 @@
+module;
+#include <exception>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <variant>
+
 export module Aspen:Maybe;
 
 import :LocalPtr;
-
-import <exception>;
-import <stdexcept>;
-import <type_traits>;
-import <utility>;
-import <variant>;
 
 export namespace Aspen {
 

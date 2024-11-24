@@ -1,6 +1,8 @@
+module;
+#include <stdexcept>
+
 export module Aspen:None;
 
-import <exception>;
 import :State;
 import :Traits;
 

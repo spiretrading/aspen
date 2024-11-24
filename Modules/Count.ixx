@@ -1,6 +1,8 @@
+module;
+#include <utility>
+
 export module Aspen:Count;
 
-import <utility>;
 import :Lift;
 
 export namespace Aspen {

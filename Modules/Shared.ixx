@@ -1,7 +1,10 @@
+module;
+#include <memory>
+#include <optional>
+#include <utility>
+
 export module Aspen:Shared;
 
-import <memory>;
-import <utility>;
 import :Box;
 import :State;
 import :Traits;

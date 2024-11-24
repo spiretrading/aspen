@@ -1,3 +1,6 @@
+module;
+#include <exception>
+
 export module Aspen:MultiSync;
 
 import :State;

@@ -1,7 +1,9 @@
+module;
+#include <cstdint>
+#include <utility>
+
 export module Aspen:Group;
 
-import <cstdint>;
-import <utility>;
 import :State;
 import :Traits;
 

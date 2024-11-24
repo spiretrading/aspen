@@ -1,8 +1,11 @@
+module;
+#include <list>
+#include <memory>
+#include <optional>
+#include <utility>
+
 export module Aspen:Concur;
 
-import <list>;
-import <optional>;
-import <utility>;
 import :State;
 import :Traits;
 

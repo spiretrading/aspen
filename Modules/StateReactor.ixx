@@ -1,6 +1,8 @@
+module;
+#include <utility>
+
 export module Aspen:StateReactor;
 
-import <utility>;
 import :State;
 import :Traits;
 

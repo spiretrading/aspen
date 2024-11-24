@@ -1,10 +1,10 @@
 module;
+#include <memory>
+#include <utility>
 #include <pybind11/pybind11.h>
 
 export module Aspen.Python:ReactorPtr;
 
-import <memory>;
-import <utility>;
 import Aspen;
 
 export namespace Aspen {

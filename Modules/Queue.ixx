@@ -1,8 +1,10 @@
+module;
+#include <deque>
+#include <exception>
+#include <mutex>
+
 export module Aspen:Queue;
 
-import <deque>;
-import <exception>;
-import <mutex>;
 import :Maybe;
 import :State;
 import :Traits;

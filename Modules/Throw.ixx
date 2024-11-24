@@ -1,8 +1,10 @@
+module;
+#include <exception>
+#include <type_traits>
+#include <utility>
+
 export module Aspen:Throw;
 
-import <exception>;
-import <type_traits>;
-import <utility>;
 import :State;
 import :Traits;
 

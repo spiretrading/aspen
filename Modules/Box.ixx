@@ -1,8 +1,10 @@
+module;
+#include <memory>
+#include <optional>
+#include <type_traits>
+
 export module Aspen:Box;
 
-import <memory>;
-import <optional>;
-import <type_traits>;
 import :Maybe;
 import :State;
 import :Traits;

@@ -1,10 +1,10 @@
 module;
+#include <string>
 #include <pybind11/pybind11.h>
 #include "Aspen/Python/DllExports.hpp"
 
 export module Aspen.Python:Reactor;
 
-import <string>;
 import Aspen;
 import :Object;
 import :PythonBox;

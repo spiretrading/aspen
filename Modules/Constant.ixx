@@ -1,6 +1,8 @@
+module;
+#include <utility>
+
 export module Aspen:Constant;
 
-import <utility>;
 import :State;
 
 export namespace Aspen {

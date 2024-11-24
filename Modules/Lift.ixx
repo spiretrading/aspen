@@ -1,10 +1,12 @@
+module;
+#include <cassert>
+#include <optional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+
 export module Aspen:Lift;
 
-import <cassert>;
-import <optional>;
-import <tuple>;
-import <type_traits>;
-import <utility>;
 import :Maybe;
 import :State;
 import :StaticCommitHandler;

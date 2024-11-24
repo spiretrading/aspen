@@ -1,10 +1,10 @@
 module;
+#include <string>
+#include <type_traits>
 #include <pybind11/pybind11.h>
 
 export module Aspen.Python:Chain;
 
-import <string>;
-import <type_traits>;
 import Aspen;
 import :Reactor;
 

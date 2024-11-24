@@ -1,7 +1,9 @@
+module;
+#include <unordered_set>
+#include <utility>
+
 export module Aspen:Distinct;
 
-import <unordered_set>;
-import <utility>;
 import :Lift;
 import :Traits;
 

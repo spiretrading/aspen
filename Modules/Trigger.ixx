@@ -1,9 +1,9 @@
+module;
+#include <functional>
+#include <utility>
 #include "Aspen/Python/DllExports.hpp"
 
 export module Aspen:Trigger;
-
-import <functional>;
-import <utility>;
 
 export namespace Aspen {
   class Trigger;

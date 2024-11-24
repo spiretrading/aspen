@@ -1,8 +1,10 @@
+module;
+#include <optional>
+#include <type_traits>
+#include <utility>
+
 export module Aspen:Switch;
 
-import <optional>;
-import <type_traits>;
-import <utility>;
 import :Maybe;
 import :State;
 import :Traits;

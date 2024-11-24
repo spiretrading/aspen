@@ -1,6 +1,8 @@
+module;
+#include <vector>
+
 export module Aspen:VectorSync;
 
-import <vector>;
 import :CommitHandler;
 import :State;
 import :Sync;

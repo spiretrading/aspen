@@ -1,3 +1,6 @@
+module;
+#include <utility>
+
 export module Aspen:When;
 
 import :State;

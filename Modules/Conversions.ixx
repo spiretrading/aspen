@@ -1,7 +1,9 @@
+module;
+#include <type_traits>
+#include <utility>
+
 export module Aspen:Conversions;
 
-import <type_traits>;
-import <utility>;
 import :State;
 import :Traits;
 

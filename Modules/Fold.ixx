@@ -1,8 +1,10 @@
+module;
+#include <memory>
+#include <optional>
+#include <utility>
+
 export module Aspen:Fold;
 
-import <memory>;
-import <optional>;
-import <utility>;
 import :Lift;
 import :Maybe;
 import :Shared;

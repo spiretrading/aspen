@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <doctest/doctest.h>
 
 import Aspen;

@@ -1,3 +1,4 @@
+#include <memory>
 #include <doctest/doctest.h>
 
 import Aspen;

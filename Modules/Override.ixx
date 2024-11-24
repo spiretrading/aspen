@@ -1,6 +1,8 @@
+module;
+#include <utility>
+
 export module Aspen:Override;
 
-import <utility>;
 import :Concat;
 import :Count;
 import :Lift;

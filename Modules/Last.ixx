@@ -1,6 +1,8 @@
+module;
+#include <utility>
+
 export module Aspen:Last;
 
-import <utility>;
 import :Lift;
 import :Shared;
 import :StateReactor;
