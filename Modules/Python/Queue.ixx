@@ -1,10 +1,7 @@
-module;
-#include <string>
-#include <type_traits>
-#include <pybind11/pybind11.h>
-
 export module Aspen.Python:Queue;
 
+import std;
+import <pybind11/pybind11.h>;
 import Aspen;
 import :Reactor;
 

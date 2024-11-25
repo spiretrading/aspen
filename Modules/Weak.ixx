@@ -1,9 +1,6 @@
-module;
-#include <memory>
-#include <optional>
-
 export module Aspen:Weak;
 
+import std;
 import :Shared;
 import :State;
 import :Traits;

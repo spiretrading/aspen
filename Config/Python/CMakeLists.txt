@@ -7,9 +7,10 @@ add_library(python SHARED ${header_files} ${module_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(python PROPERTIES OUTPUT_NAME aspen)
 set_target_properties(
-  python PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+  python PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 add_definitions(-DASPEN_BUILD_DLL)
 if(MSVC)
+  target_compile_options(python PRIVATE /Zc:preprocessor)
   set_target_properties(python PROPERTIES SUFFIX ".pyd" LINK_FLAGS /SAFESEH:NO
     LINK_FLAGS_RELEASE /LTCG)
 endif()
@@ -20,6 +21,7 @@ endif()
 if(UNIX)
   set_target_properties(python PROPERTIES PREFIX "")
 endif()
+target_precompile_headers(python PUBLIC <pybind11/pybind11.h>)
 set_source_files_properties(${module_files} PROPERTIES LANGUAGE CXX
   HEADER_FILE_ONLY FALSE)
 target_link_libraries(python

@@ -1,8 +1,6 @@
-module;
-#include <pybind11/pybind11.h>
-
 export module Aspen.Python:Lift;
 
+import <pybind11/pybind11.h>;
 import Aspen;
 import :Reactor;
 

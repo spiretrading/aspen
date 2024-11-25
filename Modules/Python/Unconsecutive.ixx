@@ -1,9 +1,7 @@
-module;
-#include <optional>
-#include <pybind11/pybind11.h>
-
 export module Aspen.Python:Unconsecutive;
 
+import std;
+import <pybind11/pybind11.h>;
 import Aspen;
 
 struct UnconsecutiveCore {

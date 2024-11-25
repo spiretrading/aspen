@@ -1,8 +1,6 @@
-module;
-#include <exception>
-
 export module Aspen:Sync;
 
+import std;
 import :State;
 import :Traits;
 

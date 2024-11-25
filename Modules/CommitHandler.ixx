@@ -1,10 +1,6 @@
-module;
-#include <cstddef>
-#include <utility>
-#include <vector>
-
 export module Aspen:CommitHandler;
 
+import std;
 import :State;
 
 export namespace Aspen {

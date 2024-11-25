@@ -1,12 +1,6 @@
-module;
-#include <functional>
-#include <optional>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-
 export module Aspen:StaticCommitHandler;
 
+import std;
 import :State;
 import :Traits;
 

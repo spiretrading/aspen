@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 project(aspen LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(D "${CMAKE_BINARY_DIR}/Dependencies" CACHE STRING
   "Path to dependencies folder.")
 file(TO_NATIVE_PATH "${D}" D)
@@ -22,23 +25,23 @@ include(Config/dependencies.cmake)
 include_directories(${ASPEN_INCLUDE_PATH})
 set(TEST_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Tests")
 set(LIB_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Libraries")
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 if(MSVC)
   set(CMAKE_GENERATOR_PLATFORM Win32 CACHE INTERNAL "Force 32-bit compilation")
-  set(CMAKE_LIBRARY_FLAGS "/LTCG")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX /bigobj /std:c++20 /dxifcInlineFunctions-")
+  add_compile_definitions(
+    _CRT_SECURE_NO_DEPRECATE
+    NOMINMAX
+    _SCL_SECURE_NO_WARNINGS
+    _WIN32_WINNT=0x0501
+    WIN32_LEAN_AND_MEAN)
+  add_compile_options(
+    /WX
+    /bigobj
+    /dxifcInlineFunctions-
+    /external:anglebrackets
+    /external:W0)
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH:NO")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-  add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
-  add_definitions(-DNOMINMAX)
-  add_definitions(-D_SCL_SECURE_NO_WARNINGS)
-  add_definitions(-D_WIN32_WINNT=0x0501)
-  add_definitions(-DWIN32_LEAN_AND_MEAN)
-  add_definitions(/external:anglebrackets)
-  add_definitions(/external:W0)
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR
     ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++20 -fmodules-ts")
@@ -59,7 +62,7 @@ file(GLOB module_files "${ASPEN_MODULES_PATH}/*.ixx")
 add_library(aspen STATIC ${module_files} ${aspen_header_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(
-  aspen PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+  aspen PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 set_source_files_properties(${module_files} PROPERTIES LANGUAGE CXX
   HEADER_FILE_ONLY FALSE)
 add_subdirectory(Config/Python)

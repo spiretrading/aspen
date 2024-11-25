@@ -1,13 +1,10 @@
 module;
-#include <optional>
-#include <typeinfo>
-#include <unordered_map>
-#include <utility>
-#include <pybind11/pybind11.h>
 #include "Aspen/Python/DllExports.hpp"
 
 export module Aspen.Python:Registry;
 
+import std;
+import <pybind11/pybind11.h>;
 import Aspen;
 import :ReactorPtr;
 

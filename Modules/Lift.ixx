@@ -1,12 +1,6 @@
-module;
-#include <cassert>
-#include <optional>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-
 export module Aspen:Lift;
 
+import std;
 import :Maybe;
 import :State;
 import :StaticCommitHandler;
@@ -347,9 +341,7 @@ namespace Details {
 
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(State state)
-      : m_state(state) {
-    assert(!has_evaluation(m_state));
-  }
+    : m_state(state) {}
 
   inline FunctionEvaluation<void>::FunctionEvaluation()
     : m_state(State::NONE) {}
@@ -395,9 +387,7 @@ namespace Details {
   }
 
   inline FunctionEvaluation<void>::FunctionEvaluation(State state)
-      : m_state(state) {
-    assert(!has_evaluation(m_state));
-  }
+    : m_state(state) {}
 
   template<typename F, typename... A>
   template<typename FF, typename AF, typename... AR>

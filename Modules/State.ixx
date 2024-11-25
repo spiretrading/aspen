@@ -1,7 +1,6 @@
-module;
-#include <ostream>
-
 export module Aspen:State;
+
+import std;
 
 export namespace Aspen {
 

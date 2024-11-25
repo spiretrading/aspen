@@ -1,9 +1,6 @@
-module;
-#include <type_traits>
-#include <utility>
-
 export module Aspen:Operators;
 
+import std;
 import :Lift;
 import :Traits;
 

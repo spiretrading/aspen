@@ -1,10 +1,6 @@
-module;
-#include <mutex>
-#include <optional>
-#include <utility>
-
 export module Aspen:Cell;
 
+import std;
 import :State;
 import :Traits;
 import :Trigger;

@@ -1,6 +1,6 @@
-#include <string>
 #include <doctest/doctest.h>
 
+import std;
 import Aspen;
 
 using namespace Aspen;

@@ -1,8 +1,9 @@
 module;
-#include <pybind11/pybind11.h>
 #include "Aspen/Python/DllExports.hpp"
 
 export module Aspen.Python:Object;
+
+import <pybind11/pybind11.h>;
 
 export namespace pybind11 {
   ASPEN_EXPORT_DLL object operator %(const object& left, const object& right) {

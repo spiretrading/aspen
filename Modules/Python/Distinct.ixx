@@ -1,9 +1,6 @@
-module;
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 export module Aspen.Python:Distinct;
 
+import <pybind11/pybind11.h>;
 import Aspen;
 import :Box;
 

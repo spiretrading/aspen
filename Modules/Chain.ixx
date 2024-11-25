@@ -1,9 +1,6 @@
-module;
-#include <cstdint>
-#include <utility>
-
 export module Aspen:Chain;
 
+import std;
 import :State;
 import :Traits;
 

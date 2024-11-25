@@ -1,8 +1,6 @@
-module;
-#include <optional>
-
 export module Aspen:Proxy;
 
+import std;
 import :State;
 import :Traits;
 

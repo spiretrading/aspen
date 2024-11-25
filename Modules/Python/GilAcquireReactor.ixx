@@ -1,9 +1,7 @@
-module;
-#include <type_traits>
-#include <pybind11/pybind11.h>
-
 export module Aspen.Python:GilAcquireReactor;
 
+import std;
+import <pybind11/pybind11.h>;
 import Aspen;
 
 export namespace Aspen {

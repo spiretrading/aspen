@@ -1,10 +1,6 @@
-module;
-#include <memory>
-#include <type_traits>
-#include <utility>
-
 export module Aspen:Traits;
 
+import std;
 import :Constant;
 import :LocalPtr;
 import :Maybe;

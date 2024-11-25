@@ -1,8 +1,6 @@
-module;
-#include <exception>
-
 export module Aspen:MultiSync;
 
+import std;
 import :State;
 import :StaticCommitHandler;
 import :Sync;

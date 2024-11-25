@@ -1,12 +1,6 @@
-module;
-#include <exception>
-#include <stdexcept>
-#include <type_traits>
-#include <utility>
-#include <variant>
-
 export module Aspen:Maybe;
 
+import std;
 import :LocalPtr;
 
 export namespace Aspen {
