@@ -1,7 +1,6 @@
 #include <doctest/doctest.h>
-#include "Aspen/Chain.hpp"
-#include "Aspen/Constant.hpp"
-#include "Aspen/Count.hpp"
+
+import Aspen;
 
 using namespace Aspen;
 
