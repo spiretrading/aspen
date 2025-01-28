@@ -19,23 +19,23 @@ FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property insta
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-IF NOT EXIST doctest-2.4.9 (
-  wget https://github.com/doctest/doctest/archive/refs/tags/v2.4.9.zip --no-check-certificate
+IF NOT EXIST doctest-2.4.11 (
+  wget https://github.com/doctest/doctest/archive/refs/tags/v2.4.11.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    tar -xf v2.4.9.zip
+    tar -xf v2.4.11.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q v2.4.9.zip
+  DEL /F /Q v2.4.11.zip
 )
-IF NOT EXIST pybind11-2.10.3 (
-  wget https://github.com/pybind/pybind11/archive/refs/tags/v2.10.3.zip -O pybind11-2.10.3.zip --no-check-certificate
+IF NOT EXIST pybind11-2.13.6 (
+  wget https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip -O pybind11-2.13.6.zip --no-check-certificate
   IF !ERRORLEVEL! LEQ 0 (
-    tar -xf pybind11-2.10.3.zip
+    tar -xf pybind11-2.13.6.zip
   ) ELSE (
     SET EXIT_STATUS=1
   )
-  DEL /F /Q pybind11-2.10.3.zip
+  DEL /F /Q pybind11-2.13.6.zip
 )
 IF NOT EXIST Python-3.13.0 (
   wget https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz --no-check-certificate
@@ -43,10 +43,10 @@ IF NOT EXIST Python-3.13.0 (
     gzip -d -c Python-3.13.0.tgz | tar -xf -
     PUSHD Python-3.13.0
     PUSHD PCbuild
-    CALL build.bat -c Debug -p Win32
-    CALL build.bat -c Release -p Win32
+    CALL build.bat -c Debug
+    CALL build.bat -c Release
     POPD
-    COPY PCbuild\win32\pyconfig.h Include
+    COPY PCbuild\amd64\pyconfig.h Include
     POPD
   ) ELSE (
     SET EXIT_STATUS=1
