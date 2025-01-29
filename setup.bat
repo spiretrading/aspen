@@ -23,46 +23,20 @@ FOR /F "usebackq delims=" %%i IN (` ^
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-IF NOT EXIST doctest-2.4.11 (
-  powershell -Command "Invoke-WebRequest "^
-    "-Uri https://github.com/doctest/doctest/archive/refs/tags/v2.4.11.zip "^
-    "-OutFile v2.4.11.zip"
-  IF !ERRORLEVEL! LEQ 0 (
-    powershell -Command "Expand-Archive -Path v2.4.11.zip -DestinationPath ."
-  ) ELSE (
-    SET EXIT_STATUS=1
-  )
-  DEL /F /Q v2.4.11.zip
-)
-IF NOT EXIST pybind11-2.13.6 (
-  powershell -Command "Invoke-WebRequest "^
-    "-Uri https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip "^
-    "-OutFile pybind11-2.13.6.zip"
-  IF !ERRORLEVEL! LEQ 0 (
-    powershell ^
-      -Command "Expand-Archive -Path pybind11-2.13.6.zip -DestinationPath ."
-  ) ELSE (
-    SET EXIT_STATUS=1
-  )
-  DEL /F /Q pybind11-2.13.6.zip
-)
-IF NOT EXIST Python-3.13.0 (
-  powershell -Command "Invoke-WebRequest "^
-    "-Uri https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz "^
-    "-OutFile Python-3.13.0.tgz"
-  IF !ERRORLEVEL! LEQ 0 (
-    powershell -Command "tar -xf Python-3.13.0.tgz"
-    PUSHD Python-3.13.0
-    PUSHD PCbuild
-    CALL build.bat -c Debug
-    CALL build.bat -c Release
-    POPD
-    COPY PCbuild\amd64\pyconfig.h Include
-    POPD
-  ) ELSE (
-    SET EXIT_STATUS=1
-  )
-  DEL /F /Q Python-3.13.0.tgz
+CALL :DownloadAndExtract "doctest-2.4.11" ^
+  "https://github.com/doctest/doctest/archive/refs/tags/v2.4.11.zip"
+CALL :DownloadAndExtract "pybind11-2.13.6" ^
+  "https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip"
+CALL :DownloadAndExtract "Python-3.13.0" ^
+  "https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz"
+IF %BUILD_NEEDED%==1 (
+  PUSHD Python-3.13.0
+  PUSHD PCbuild
+  CALL build.bat -c Debug
+  CALL build.bat -c Release
+  POPD
+  COPY PCbuild\amd64\pyconfig.h Include
+  POPD
 )
 IF NOT EXIST cache_files (
   MD cache_files
@@ -70,3 +44,40 @@ IF NOT EXIST cache_files (
 ECHO timestamp > cache_files\aspen.txt
 ENDLOCAL
 EXIT /B !EXIT_STATUS!
+
+:DownloadAndExtract
+SET FOLDER=%~1
+SET URL=%~2
+SET BUILD_NEEDED=0
+FOR /F "tokens=* delims=/" %%A IN ("%URL%") DO (
+  SET ARCHIVE=%%~nxA
+)
+SET EXTENSION=%ARCHIVE:~-4%
+IF EXIST %FOLDER% (
+  EXIT /B 0
+)
+powershell -Command "Invoke-WebRequest -Uri '%URL%' -OutFile '%ARCHIVE%'"
+IF ERRORLEVEL 1 (
+  ECHO Error: Failed to download %ARCHIVE%.
+  SET EXIT_STATUS=1
+  EXIT /B 0
+)
+IF /I "%EXTENSION%"==".zip" (
+  powershell -Command "Expand-Archive -Path '%ARCHIVE%' -DestinationPath ."
+) ELSE IF /I "%EXTENSION%"==".tgz" (
+  powershell -Command "tar -xf '%ARCHIVE%'"
+) ELSE IF /I "%ARCHIVE:~-7%"==".tar.gz" (
+  powershell -Command "tar -xf '%ARCHIVE%'"
+) ELSE (
+  ECHO Error: Unknown archive format for %ARCHIVE%.
+  SET EXIT_STATUS=1
+  EXIT /B 0
+)
+IF ERRORLEVEL 1 (
+  ECHO Error: Failed to extract %ARCHIVE%.
+  SET EXIT_STATUS=1
+  EXIT /B 0
+)
+SET BUILD_NEEDED=1
+DEL /F /Q %ARCHIVE%
+EXIT /B 0
