@@ -60,7 +60,7 @@ powershell -Command "Invoke-WebRequest -Uri '%URL%' -OutFile '%ARCHIVE%'"
 IF ERRORLEVEL 1 (
   ECHO Error: Failed to download %ARCHIVE%.
   SET EXIT_STATUS=1
-  EXIT /B 0
+  EXIT /B
 )
 IF /I "%EXTENSION%"==".zip" (
   powershell -Command "Expand-Archive -Path '%ARCHIVE%' -DestinationPath ."
@@ -71,7 +71,7 @@ IF /I "%EXTENSION%"==".zip" (
 ) ELSE (
   ECHO Error: Unknown archive format for %ARCHIVE%.
   SET EXIT_STATUS=1
-  EXIT /B 0
+  EXIT /B 1
 )
 IF ERRORLEVEL 1 (
   ECHO Error: Failed to extract %ARCHIVE%.
