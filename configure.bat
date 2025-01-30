@@ -45,24 +45,23 @@ SET RUN_CMAKE=
 IF NOT EXIST CMakeFiles\timestamp.txt (
   SET RUN_CMAKE=1
 ) ELSE (
-  powershell -Command "& { "^
-    "$timestampFileTime = "^
-    "  (Get-Item 'CMakeFiles\\timestamp.txt').LastWriteTime;"^
-    "$filesToCheck = @('.\\CMakeLists.txt');"^
+  SET TIMESTAMP_COMMAND=powershell -Command "& { " ^
+    "$timestampFileTime = " ^
+    "  (Get-Item 'CMakeFiles\\timestamp.txt').LastWriteTime;" ^
+    "$filesToCheck = @('.\\CMakeLists.txt');" ^
     "$filesToCheck += Get-ChildItem '.\\Config\\*.cmake';"^
-    "foreach ($file in $filesToCheck) {"^
-    "  if (Test-Path $file) {"^
-    "    $fileTime = (Get-Item $file).LastWriteTime;"^
-    "    if ($fileTime -ge $timestampFileTime) {"^
-    "      Exit 1;"^
-    "    }"^
-    "  }"^
-    "};"^
-    "Exit 0;"^
+    "foreach($file in $filesToCheck) {" ^
+    "  if(Test-Path $file) {" ^
+    "    $fileTime = (Get-Item $file).LastWriteTime;" ^
+    "    if($fileTime -ge $timestampFileTime) {" ^
+    "      Write-Output '1';" ^
+    "      Exit;" ^
+    "    }" ^
+    "  } " ^
+    "};" ^
+    "Exit;" ^
   "}"
-  IF ERRORLEVEL 1 (
-    SET RUN_CMAKE=1
-  )
+  FOR /F "delims=" %%A IN ('CALL !TIMESTAMP_COMMAND!') DO SET RUN_CMAKE=%%A
 )
 IF "!RUN_CMAKE!" == "1" (
   IF NOT EXIST CMakeFiles (

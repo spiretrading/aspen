@@ -3,16 +3,17 @@ SETLOCAL EnableDelayedExpansion
 SET EXIT_STATUS=0
 SET ROOT=%cd%
 IF EXIST cache_files\aspen.txt (
-  powershell -Command "& { "^
-    "$setupTimestamp = (Get-Item '%~dp0setup.bat').LastWriteTime; "^
-    "$aspenTimestamp = (Get-Item 'cache_files\\aspen.txt').LastWriteTime; "^
-    "if ($setupTimestamp -lt $aspenTimestamp) {"^
-    "  Exit 0;"^
-    "} else {"^
-    "  Exit 1;"^
-    "}"^
+  SET CACHE_COMMAND=powershell -Command "& { " ^
+    "$setupTimestamp = (Get-Item '%~dp0setup.bat').LastWriteTime; " ^
+    "$aspenTimestamp = (Get-Item 'cache_files\\aspen.txt').LastWriteTime; " ^
+    "if($setupTimestamp -lt $aspenTimestamp) {" ^
+    "  Write-Output '0';" ^
+    "} else {" ^
+    "  Write-Output '1';" ^
+    "}" ^
   "}"
-  IF ERRORLEVEL 0 (
+  FOR /F "delims=" %%A IN ('CALL !CACHE_COMMAND!') DO SET IS_CACHED=%%A
+  IF "!IS_CACHED!"=="0" (
     EXIT /B 0
   )
 )
@@ -53,31 +54,61 @@ FOR /F "tokens=* delims=/" %%A IN ("%URL%") DO (
   SET ARCHIVE=%%~nxA
 )
 SET EXTENSION=%ARCHIVE:~-4%
-IF EXIST %FOLDER% (
+IF EXIST !FOLDER! (
   EXIT /B 0
 )
-powershell -Command "Invoke-WebRequest -Uri '%URL%' -OutFile '%ARCHIVE%'"
+powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+  "Invoke-WebRequest -Uri '%URL%' -OutFile '%ARCHIVE%'"
 IF ERRORLEVEL 1 (
-  ECHO Error: Failed to download %ARCHIVE%.
+  ECHO Error: Failed to download !ARCHIVE!.
   SET EXIT_STATUS=1
   EXIT /B
 )
-IF /I "%EXTENSION%"==".zip" (
-  powershell -Command "Expand-Archive -Path '%ARCHIVE%' -DestinationPath ."
-) ELSE IF /I "%EXTENSION%"==".tgz" (
-  powershell -Command "tar -xf '%ARCHIVE%'"
+SET EXTRACT_PATH=_extract_tmp
+RD /S /Q "!EXTRACT_PATH!" >NUL 2>NUL
+MD "!EXTRACT_PATH!"
+IF /I "!EXTENSION!"==".zip" (
+  powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+    "Expand-Archive -Path '%ARCHIVE%' -DestinationPath '%EXTRACT_PATH%'"
+) ELSE IF /I "!EXTENSION!"==".tgz" (
+  powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+    "tar -xf '%ARCHIVE%' -C '%EXTRACT_PATH%'"
 ) ELSE IF /I "%ARCHIVE:~-7%"==".tar.gz" (
-  powershell -Command "tar -xf '%ARCHIVE%'"
+  powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+    "tar -xf '%ARCHIVE%' -C '%EXTRACT_PATH%'"
 ) ELSE (
   ECHO Error: Unknown archive format for %ARCHIVE%.
   SET EXIT_STATUS=1
   EXIT /B 1
 )
+SET DETECTED_FOLDER=
+FOR %%F IN ("!EXTRACT_PATH!\*") DO (
+  IF "!DETECTED_FOLDER!"=="" (
+    SET DETECTED_FOLDER=%%F
+  ) ELSE (
+    SET DETECTED_FOLDER=MULTIPLE
+  )
+)
+FOR /D %%F IN ("!EXTRACT_PATH!\*") DO (
+  IF "!DETECTED_FOLDER!"=="" (
+    SET DETECTED_FOLDER=%%F
+  ) ELSE (
+    SET DETECTED_FOLDER=MULTIPLE
+  )
+)
+IF "!DETECTED_FOLDER!"=="MULTIPLE" (
+  REN "!EXTRACT_PATH!" "!FOLDER!"
+) ELSE IF NOT "!DETECTED_FOLDER!"=="!EXTRACT_PATH!\!FOLDER!" (
+  MOVE /Y "!DETECTED_FOLDER!" "!FOLDER!" >NUL
+) ELSE (
+  MOVE /Y "!EXTRACT_PATH!\!FOLDER!" "!ROOT!" >NUL
+)
+RD /S /Q "!EXTRACT_PATH!"
 IF ERRORLEVEL 1 (
-  ECHO Error: Failed to extract %ARCHIVE%.
+  ECHO Error: Failed to extract !ARCHIVE!.
   SET EXIT_STATUS=1
   EXIT /B 0
 )
 SET BUILD_NEEDED=1
-DEL /F /Q %ARCHIVE%
+DEL /F /Q !ARCHIVE!
 EXIT /B 0
