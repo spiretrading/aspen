@@ -6,11 +6,11 @@ add_library(python SHARED ${header_files} ${source_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(python PROPERTIES OUTPUT_NAME aspen)
 target_compile_definitions(python PRIVATE ASPEN_BUILD_DLL)
+set_target_properties(python PROPERTIES CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN 1)
 if(MSVC)
   set_target_properties(python PROPERTIES SUFFIX ".pyd"
     LINK_FLAGS_RELEASE /LTCG)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-fvisibility=hidden)
 endif()
 if(UNIX)
   set_target_properties(python PROPERTIES PREFIX "")
