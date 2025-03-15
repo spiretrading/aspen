@@ -6,22 +6,18 @@ file(GLOB module_files "${ASPEN_MODULES_PATH}/Python/*.ixx"
 add_library(python SHARED ${header_files} ${module_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(python PROPERTIES OUTPUT_NAME aspen)
-set_target_properties(
-  python PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
+target_compile_definitions(python PRIVATE ASPEN_BUILD_DLL)
+set_target_properties(python PROPERTIES CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN 1)
 add_definitions(-DASPEN_BUILD_DLL)
 if(MSVC)
   target_compile_options(python PRIVATE /Zc:preprocessor)
-  set_target_properties(python PROPERTIES SUFFIX ".pyd" LINK_FLAGS /SAFESEH:NO
+  set_target_properties(python PROPERTIES SUFFIX ".pyd"
     LINK_FLAGS_RELEASE /LTCG)
-endif()
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR
-    ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 endif()
 if(UNIX)
   set_target_properties(python PROPERTIES PREFIX "")
 endif()
-target_precompile_headers(python PUBLIC <pybind11/pybind11.h>)
 set_source_files_properties(${module_files} PROPERTIES LANGUAGE CXX
   HEADER_FILE_ONLY FALSE)
 target_link_libraries(python

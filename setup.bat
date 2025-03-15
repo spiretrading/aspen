@@ -3,55 +3,41 @@ SETLOCAL EnableDelayedExpansion
 SET EXIT_STATUS=0
 SET ROOT=%cd%
 IF EXIST cache_files\aspen.txt (
-  FOR /F %%i IN (
-      'ls -l --time-style=full-iso "%~dp0\setup.bat" ^| awk "{print $6 $7}"') DO (
-    FOR /F %%j IN (
-        'ls -l --time-style=full-iso cache_files\aspen.txt ^| awk "{print $6 $7}"') DO (
-      IF "%%i" LSS "%%j" (
-        EXIT /B 0
-      )
-    )
+  SET CACHE_COMMAND=powershell -Command "& { " ^
+    "$setupTimestamp = (Get-Item '%~dp0setup.bat').LastWriteTime; " ^
+    "$aspenTimestamp = (Get-Item 'cache_files\\aspen.txt').LastWriteTime; " ^
+    "if($setupTimestamp -lt $aspenTimestamp) {" ^
+    "  Write-Output '0';" ^
+    "} else {" ^
+    "  Write-Output '1';" ^
+    "}" ^
+  "}"
+  FOR /F "delims=" %%A IN ('CALL !CACHE_COMMAND!') DO SET IS_CACHED=%%A
+  IF "!IS_CACHED!"=="0" (
+    EXIT /B 0
   )
 )
 SET VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-FOR /f "usebackq delims=" %%i IN (`!VSWHERE! -prerelease -latest -property installationPath`) DO (
+FOR /F "usebackq delims=" %%i IN (` ^
+    !VSWHERE! -prerelease -latest -property installationPath`) DO (
   IF EXIST "%%i\Common7\Tools\vsdevcmd.bat" (
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-IF NOT EXIST doctest-2.4.9 (
-  wget https://github.com/doctest/doctest/archive/refs/tags/v2.4.9.zip --no-check-certificate
-  IF !ERRORLEVEL! LEQ 0 (
-    tar -xf v2.4.9.zip
-  ) ELSE (
-    SET EXIT_STATUS=1
-  )
-  DEL /F /Q v2.4.9.zip
-)
-IF NOT EXIST pybind11-2.13.6 (
-  wget https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip -O pybind11-2.13.6.zip --no-check-certificate
-  IF !ERRORLEVEL! LEQ 0 (
-    tar -xf pybind11-2.13.6.zip
-  ) ELSE (
-    SET EXIT_STATUS=1
-  )
-  DEL /F /Q pybind11-2.13.6.zip
-)
-IF NOT EXIST Python-3.13.0 (
-  wget https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz --no-check-certificate
-  IF !ERRORLEVEL! LEQ 0 (
-    gzip -d -c Python-3.13.0.tgz | tar -xf -
-    PUSHD Python-3.13.0
-    PUSHD PCbuild
-    CALL build.bat -c Debug -p Win32
-    CALL build.bat -c Release -p Win32
-    POPD
-    COPY PCbuild\win32\pyconfig.h Include
-    POPD
-  ) ELSE (
-    SET EXIT_STATUS=1
-  )
-  DEL /F /Q Python-3.13.0.tgz
+CALL :DownloadAndExtract "doctest-2.4.11" ^
+  "https://github.com/doctest/doctest/archive/refs/tags/v2.4.11.zip"
+CALL :DownloadAndExtract "pybind11-2.13.6" ^
+  "https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip"
+CALL :DownloadAndExtract "Python-3.13.0" ^
+  "https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz"
+IF %BUILD_NEEDED%==1 (
+  PUSHD Python-3.13.0
+  PUSHD PCbuild
+  CALL build.bat -c Debug
+  CALL build.bat -c Release
+  POPD
+  COPY PCbuild\amd64\pyconfig.h Include
+  POPD
 )
 IF NOT EXIST cache_files (
   MD cache_files
@@ -59,3 +45,70 @@ IF NOT EXIST cache_files (
 ECHO timestamp > cache_files\aspen.txt
 ENDLOCAL
 EXIT /B !EXIT_STATUS!
+
+:DownloadAndExtract
+SET FOLDER=%~1
+SET URL=%~2
+SET BUILD_NEEDED=0
+FOR /F "tokens=* delims=/" %%A IN ("%URL%") DO (
+  SET ARCHIVE=%%~nxA
+)
+SET EXTENSION=%ARCHIVE:~-4%
+IF EXIST !FOLDER! (
+  EXIT /B 0
+)
+powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+  "Invoke-WebRequest -Uri '%URL%' -OutFile '%ARCHIVE%'"
+IF ERRORLEVEL 1 (
+  ECHO Error: Failed to download !ARCHIVE!.
+  SET EXIT_STATUS=1
+  EXIT /B
+)
+SET EXTRACT_PATH=_extract_tmp
+RD /S /Q "!EXTRACT_PATH!" >NUL 2>NUL
+MD "!EXTRACT_PATH!"
+IF /I "!EXTENSION!"==".zip" (
+  powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+    "Expand-Archive -Path '%ARCHIVE%' -DestinationPath '%EXTRACT_PATH%'"
+) ELSE IF /I "!EXTENSION!"==".tgz" (
+  powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+    "tar -xf '%ARCHIVE%' -C '%EXTRACT_PATH%'"
+) ELSE IF /I "%ARCHIVE:~-7%"==".tar.gz" (
+  powershell -Command "$ProgressPreference = 'SilentlyContinue'; "^
+    "tar -xf '%ARCHIVE%' -C '%EXTRACT_PATH%'"
+) ELSE (
+  ECHO Error: Unknown archive format for %ARCHIVE%.
+  SET EXIT_STATUS=1
+  EXIT /B 1
+)
+SET DETECTED_FOLDER=
+FOR %%F IN ("!EXTRACT_PATH!\*") DO (
+  IF "!DETECTED_FOLDER!"=="" (
+    SET DETECTED_FOLDER=%%F
+  ) ELSE (
+    SET DETECTED_FOLDER=MULTIPLE
+  )
+)
+FOR /D %%F IN ("!EXTRACT_PATH!\*") DO (
+  IF "!DETECTED_FOLDER!"=="" (
+    SET DETECTED_FOLDER=%%F
+  ) ELSE (
+    SET DETECTED_FOLDER=MULTIPLE
+  )
+)
+IF "!DETECTED_FOLDER!"=="MULTIPLE" (
+  REN "!EXTRACT_PATH!" "!FOLDER!"
+) ELSE IF NOT "!DETECTED_FOLDER!"=="!EXTRACT_PATH!\!FOLDER!" (
+  MOVE /Y "!DETECTED_FOLDER!" "!FOLDER!" >NUL
+) ELSE (
+  MOVE /Y "!EXTRACT_PATH!\!FOLDER!" "!ROOT!" >NUL
+)
+RD /S /Q "!EXTRACT_PATH!"
+IF ERRORLEVEL 1 (
+  ECHO Error: Failed to extract !ARCHIVE!.
+  SET EXIT_STATUS=1
+  EXIT /B 0
+)
+SET BUILD_NEEDED=1
+DEL /F /Q !ARCHIVE!
+EXIT /B 0

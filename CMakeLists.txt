@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.28)
 project(aspen LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,56 +14,47 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 if(WIN32)
-  execute_process(COMMAND cmd /c
-    "CALL ${CMAKE_SOURCE_DIR}\\configure.bat -DD=${D}"
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+  set(configure_script
+    cmd /c "CALL ${CMAKE_SOURCE_DIR}/configure.bat -DD=${D}")
 elseif(UNIX)
-  execute_process(COMMAND "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
-    "${CMAKE_BUILD_TYPE}" WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+  set(configure_script "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
+    "${CMAKE_BUILD_TYPE}")
+endif()
+execute_process(COMMAND ${configure_script}
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" RESULT_VARIABLE configure_result
+  OUTPUT_VARIABLE configure_output ERROR_VARIABLE configure_error
+  OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
+if(NOT configure_result EQUAL 0)
+  message(FATAL_ERROR "Configuration script failed with error:\n${configure_error}\nOutput:\n${configure_output}")
 endif()
 include(Config/dependencies.cmake)
 include_directories(${ASPEN_INCLUDE_PATH})
 set(TEST_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Tests")
 set(LIB_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Libraries")
 if(MSVC)
-  set(CMAKE_GENERATOR_PLATFORM Win32 CACHE INTERNAL "Force 32-bit compilation")
-  add_compile_definitions(
-    _CRT_SECURE_NO_DEPRECATE
-    NOMINMAX
-    _SCL_SECURE_NO_WARNINGS
-    _WIN32_WINNT=0x0501
-    WIN32_LEAN_AND_MEAN)
-  add_compile_options(
-    /WX
-    /bigobj
-    /dxifcInlineFunctions-
-    /external:anglebrackets
-    /external:W0)
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH:NO")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR
-    ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++20 -fmodules-ts")
+  add_compile_options(/bigobj /dxifcInlineFunctions- /external:anglebrackets
+    /external:W0 $<$<CONFIG:Release>:/GL> /MP /WX)
+  add_compile_definitions(_CRT_SECURE_NO_DEPRECATE NOMINMAX
+    _SCL_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0501)
+  add_link_options($<$<CONFIG:Release>:/LTCG>)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_options(-g $<$<CONFIG:Release>:-DNDEBUG>)
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsized-deallocation")
+    add_compile_options(-fsized-deallocation)
   endif()
 endif()
 if(CYGWIN)
-  add_definitions(-D__USE_W32_SOCKETS)
+  add_compile_definitions(__USE_W32_SOCKETS)
 endif()
-if(${CMAKE_SYSTEM_NAME} STREQUAL "SunOS")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE} -pthreads")
+if(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+  add_compile_options($<$<CONFIG:Release>:-pthreads>)
 endif()
 file(GLOB aspen_header_files ${ASPEN_INCLUDE_PATH}/Aspen/*.hpp)
-source_group("Header Files" FILES ${aspen_header_files})
+source_group("Aspen" FILES ${aspen_header_files})
 file(GLOB header_files ${aspen_header_files})
 file(GLOB module_files "${ASPEN_MODULES_PATH}/*.ixx")
 add_library(aspen STATIC ${module_files} ${aspen_header_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
-set_target_properties(
-  aspen PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
-set_source_files_properties(${module_files} PROPERTIES LANGUAGE CXX
-  HEADER_FILE_ONLY FALSE)
+set_target_properties(aspen PROPERTIES LINKER_LANGUAGE CXX OUTPUT_NAME aspen)
 add_subdirectory(Config/Python)
 add_subdirectory(Config/Tests)
