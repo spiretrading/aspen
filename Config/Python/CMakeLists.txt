@@ -6,8 +6,8 @@ add_library(python SHARED ${header_files} ${source_files})
 set_source_files_properties(${header_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_target_properties(python PROPERTIES OUTPUT_NAME aspen)
 target_compile_definitions(python PRIVATE ASPEN_BUILD_DLL)
-set_target_properties(python PROPERTIES CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN 1)
+set_target_properties(python PROPERTIES CXX_VISIBILITY_PRESET default
+  VISIBILITY_INLINES_HIDDEN 0)
 if(MSVC)
   set_target_properties(python PROPERTIES SUFFIX ".pyd"
     LINK_FLAGS_RELEASE /LTCG)
