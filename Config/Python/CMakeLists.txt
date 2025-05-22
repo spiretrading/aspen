@@ -12,6 +12,8 @@ if(MSVC)
   set_target_properties(python PROPERTIES SUFFIX ".pyd"
     LINK_FLAGS_RELEASE /LTCG)
 endif()
+target_compile_options(python PRIVATE
+  $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-fvisibility=hidden>)
 if(UNIX)
   set_target_properties(python PROPERTIES PREFIX "")
 endif()
