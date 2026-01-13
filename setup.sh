@@ -21,23 +21,23 @@ if [ -f "cache_files/aspen.txt" ]; then
   fi
 fi
 let cores="`grep -c "processor" < /proc/cpuinfo`"
-if [ ! -d "doctest-2.4.11" ]; then
-  wget https://github.com/doctest/doctest/archive/refs/tags/v2.4.11.zip --no-check-certificate
+if [ ! -d "doctest-2.4.12" ]; then
+  wget https://github.com/doctest/doctest/archive/refs/tags/v2.4.12.zip --no-check-certificate
   if [ "$?" == "0" ]; then
-    unzip v2.4.11.zip
+    unzip v2.4.12.zip
   else
     exit_status=1
   fi
-  rm -f v2.4.11.zip
+  rm -f v2.4.12.zip
 fi
-if [ ! -d "pybind11-2.13.6" ]; then
-  wget https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip -O pybind11-2.13.6.zip --no-check-certificate
+if [ ! -d "pybind11-3.0.1" ]; then
+  wget https://github.com/pybind/pybind11/archive/refs/tags/v3.0.1.zip -O pybind11-3.0.1.zip --no-check-certificate
   if [ "$?" == "0" ]; then
-    unzip pybind11-2.13.6.zip
+    unzip pybind11-3.0.1.zip
   else
     exit_status=1
   fi
-  rm -f pybind11-2.13.6.zip
+  rm -f pybind11-3.0.1.zip
 fi
 if [ ! -d "Python-3.12.3" ]; then
   wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz --no-check-certificate
