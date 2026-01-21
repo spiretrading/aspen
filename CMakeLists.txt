@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28)
 project(aspen LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(D "${CMAKE_BINARY_DIR}/Dependencies" CACHE STRING
   "Path to dependencies folder.")
 file(TO_NATIVE_PATH "${D}" D)
@@ -32,10 +32,10 @@ include_directories(${ASPEN_INCLUDE_PATH})
 set(TEST_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Tests")
 set(LIB_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Libraries")
 if(MSVC)
-  add_compile_options(/bigobj /dxifcInlineFunctions- /external:anglebrackets
-    /external:W0 $<$<CONFIG:Release>:/GL> /MP /WX)
+  add_compile_options(/bigobj /external:anglebrackets /external:W0
+    $<$<CONFIG:Release>:/GL> /MP /WX /Zc:__cplusplus /Zc:preprocessor)
   add_compile_definitions(_CRT_SECURE_NO_DEPRECATE NOMINMAX
-    _SCL_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0501)
+    _SCL_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
   add_link_options($<$<CONFIG:Release>:/LTCG>)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-g $<$<CONFIG:Release>:-DNDEBUG>)

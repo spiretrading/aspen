@@ -24,19 +24,23 @@ FOR /F "usebackq delims=" %%i IN (` ^
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )
 )
-CALL :DownloadAndExtract "doctest-2.4.11" ^
-  "https://github.com/doctest/doctest/archive/refs/tags/v2.4.11.zip"
-CALL :DownloadAndExtract "pybind11-2.13.6" ^
-  "https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip"
-CALL :DownloadAndExtract "Python-3.13.0" ^
-  "https://www.python.org/ftp/python/3.13.0/Python-3.13.0.tgz"
+CALL :DownloadAndExtract "doctest-2.4.12" ^
+  "https://github.com/doctest/doctest/archive/refs/tags/v2.4.12.zip"
+CALL :DownloadAndExtract "pybind11-3.0.1" ^
+  "https://github.com/pybind/pybind11/archive/refs/tags/v3.0.1.zip"
+CALL :DownloadAndExtract "Python-3.14.2" ^
+  "https://www.python.org/ftp/python/3.14.2/Python-3.14.2.tgz"
 IF %BUILD_NEEDED%==1 (
-  PUSHD Python-3.13.0
+  PUSHD Python-3.14.2
   PUSHD PCbuild
   CALL build.bat -c Debug
   CALL build.bat -c Release
   POPD
-  COPY PCbuild\amd64\pyconfig.h Include
+  IF EXIST "PCbuild\amd64\pyconfig.h" (
+    COPY /Y "PCbuild\amd64\pyconfig.h" "Include\pyconfig.h"
+  ) ELSE (
+    COPY /Y "PC\pyconfig.h" "Include\pyconfig.h"
+  )
   POPD
 )
 IF NOT EXIST cache_files (
