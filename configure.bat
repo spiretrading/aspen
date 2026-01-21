@@ -2,12 +2,12 @@
 SETLOCAL EnableDelayedExpansion
 SET ROOT=%cd%
 IF NOT EXIST build.bat (
-  ECHO @ECHO OFF > build.bat
-  ECHO CALL "%~dp0build.bat" %%* >> build.bat
+  >build.bat ECHO @ECHO OFF
+  >>build.bat ECHO CALL "%~dp0build.bat" %%*
 )
 IF NOT EXIST configure.bat (
-  ECHO @ECHO OFF > configure.bat
-  ECHO CALL "%~dp0configure.bat" %%* >> configure.bat
+  >configure.bat ECHO @ECHO OFF
+  >>configure.bat ECHO CALL "%~dp0configure.bat" %%*
 )
 SET DIRECTORY=%~dp0
 SET DEPENDENCIES=
