@@ -1,15 +1,16 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
-SET ROOT=%cd%
-SET DIRECTORY=%~dp0
+SET "ROOT=%cd%"
+SET "DIRECTORY=%~dp0"
 CALL :CreateForwardingScripts
 CALL :ParseArgs %*
 CALL :SetupDependencies
 IF ERRORLEVEL 1 EXIT /B 1
 CALL :CheckHashes
+IF ERRORLEVEL 1 EXIT /B 1
 CALL :RunCMake
-ENDLOCAL
 EXIT /B !ERRORLEVEL!
+ENDLOCAL
 
 :CreateForwardingScripts
 IF NOT EXIST build.bat (
@@ -23,30 +24,33 @@ IF NOT EXIST configure.bat (
 EXIT /B 0
 
 :ParseArgs
-SET DEPENDENCIES=
-SET IS_DEPENDENCY=
+SET "DEPENDENCIES="
+SET "IS_DEPENDENCY="
 :ParseArgsLoop
-SET ARG=%~1
+SET "ARG=%~1"
 IF "!IS_DEPENDENCY!"=="1" (
-  SET DEPENDENCIES=!ARG!
-  SET IS_DEPENDENCY=
+  SET "DEPENDENCIES=!ARG!"
+  SET "IS_DEPENDENCY="
   SHIFT
   GOTO ParseArgsLoop
 ) ELSE IF NOT "!ARG!"=="" (
-  IF "!ARG:~0,3!"=="-DD" (
-    SET IS_DEPENDENCY=1
+  IF "!ARG:~0,4!"=="-DD=" (
+    SET "DEPENDENCIES=!ARG:~4!"
+  ) ELSE IF "!ARG!"=="-DD" (
+    SET "IS_DEPENDENCY=1"
   )
   SHIFT
   GOTO ParseArgsLoop
 )
 IF "!DEPENDENCIES!"=="" (
-  SET DEPENDENCIES=!ROOT!\Dependencies
+  SET "DEPENDENCIES=!ROOT!\Dependencies"
 )
 EXIT /B 0
 
 :SetupDependencies
 IF NOT EXIST "!DEPENDENCIES!" (
   MD "!DEPENDENCIES!"
+  IF ERRORLEVEL 1 EXIT /B 1
 )
 PUSHD "!DEPENDENCIES!"
 CALL "!DIRECTORY!setup.bat"
@@ -59,20 +63,23 @@ POPD
 IF NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
   IF EXIST Dependencies (
     RD /S /Q Dependencies
+    IF ERRORLEVEL 1 EXIT /B 1
   )
   mklink /j Dependencies "!DEPENDENCIES!" > NUL
+  IF ERRORLEVEL 1 EXIT /B 1
 )
 EXIT /B 0
 
 :CheckHashes
-SET RUN_CMAKE=
+SET "RUN_CMAKE="
 IF NOT EXIST CMakeFiles (
   MD CMakeFiles
-  SET RUN_CMAKE=1
+  IF ERRORLEVEL 1 EXIT /B 1
+  SET "RUN_CMAKE=1"
 )
-SET TEMP_FILE=!ROOT!\temp_%RANDOM%%RANDOM%.txt
+SET "TEMP_FILE=!ROOT!\temp_%RANDOM%%RANDOM%.txt"
 TYPE "!DIRECTORY!CMakeLists.txt" > "!TEMP_FILE!"
-FOR %%F IN (!DIRECTORY!Config\*.cmake) DO TYPE "%%F" >> "!TEMP_FILE!"
+FOR %%F IN ("!DIRECTORY!Config\*.cmake") DO TYPE "%%F" >> "!TEMP_FILE!"
 PUSHD "!DIRECTORY!Config"
 FOR /R %%F IN (*) DO (
   IF "%%~nxF"=="CMakeLists.txt" TYPE "%%F" >> "!TEMP_FILE!"
@@ -106,7 +113,7 @@ EXIT /B 0
 
 :RunCMake
 IF "!RUN_CMAKE!"=="1" (
-  cmake -S !DIRECTORY! -DD=!DEPENDENCIES!
+  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!"
   IF ERRORLEVEL 1 (
     ECHO Error: CMake configuration failed.
     EXIT /B 1

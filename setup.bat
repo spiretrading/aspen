@@ -16,25 +16,28 @@ CALL :AddDependency "Python-3.14.2" ^
 CALL :InstallDependencies
 IF ERRORLEVEL 1 EXIT /B 1
 CALL :Commit
-ENDLOCAL
 EXIT /B !ERRORLEVEL!
+ENDLOCAL
 
 :BuildPython
 PUSHD PCbuild
 CALL build.bat -c Debug
+IF ERRORLEVEL 1 POPD & EXIT /B 1
 CALL build.bat -c Release
+IF ERRORLEVEL 1 POPD & EXIT /B 1
 POPD
 IF EXIST "PCbuild\amd64\pyconfig.h" (
   COPY /Y "PCbuild\amd64\pyconfig.h" "Include\pyconfig.h"
 ) ELSE (
   COPY /Y "PC\pyconfig.h" "Include\pyconfig.h"
 )
-EXIT /B 0
+EXIT /B !ERRORLEVEL!
 
 :CheckCache
-SET CACHE_NAME=%~1
+SET "CACHE_NAME=%~1"
+SET "SETUP_HASH="
 FOR /F "skip=1" %%H IN ('certutil -hashfile "%~dp0setup.bat" SHA256') DO (
-  IF NOT DEFINED SETUP_HASH SET SETUP_HASH=%%H
+  IF NOT DEFINED SETUP_HASH SET "SETUP_HASH=%%H"
 )
 IF EXIST "cache_files\!CACHE_NAME!.txt" (
   SET /P CACHED_HASH=<"cache_files\!CACHE_NAME!.txt"
@@ -45,12 +48,13 @@ EXIT /B 0
 :Commit
 IF NOT EXIST cache_files (
   MD cache_files
+  IF ERRORLEVEL 1 EXIT /B 1
 )
 >"cache_files\!CACHE_NAME!.txt" ECHO !SETUP_HASH!
 EXIT /B 0
 
 :SetupVSEnvironment
-SET VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+SET "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 FOR /F "usebackq delims=" %%i IN (` ^
     "!VSWHERE!" -prerelease -latest -property installationPath`) DO (
   IF EXIST "%%i\Common7\Tools\vsdevcmd.bat" (
@@ -60,16 +64,16 @@ FOR /F "usebackq delims=" %%i IN (` ^
 EXIT /B 0
 
 :AddDependency
-IF NOT DEFINED NEXT_DEPENDENCY_INDEX SET NEXT_DEPENDENCY_INDEX=0
-SET DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].NAME=%~1
-SET DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].URL=%~2
-SET DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].HASH=%~3
-SET DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].BUILD=%~4
+IF NOT DEFINED NEXT_DEPENDENCY_INDEX SET "NEXT_DEPENDENCY_INDEX=0"
+SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].NAME=%~1"
+SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].URL=%~2"
+SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].HASH=%~3"
+SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].BUILD=%~4"
 SET /A NEXT_DEPENDENCY_INDEX+=1
 EXIT /B 0
 
 :InstallDependencies
-SET I=0
+SET "I=0"
 :InstallDependenciesLoop
 IF NOT DEFINED DEPENDENCIES[%I%].NAME EXIT /B 0
 CALL :DownloadAndExtract "!DEPENDENCIES[%I%].NAME!" "!DEPENDENCIES[%I%].URL!" ^
@@ -79,12 +83,13 @@ SET /A I+=1
 GOTO InstallDependenciesLoop
 
 :DownloadAndExtract
-SET FOLDER=%~1
-SET URL=%~2
-SET EXPECTED_HASH=%~3
-SET BUILD_LABEL=%~4
+SET "FOLDER=%~1"
+SET "URL=%~2"
+SET "EXPECTED_HASH=%~3"
+SET "BUILD_LABEL=%~4"
+SET "ACTUAL_HASH="
 FOR /F "tokens=* delims=/" %%A IN ("!URL!") DO (
-  SET ARCHIVE=%%~nxA
+  SET "ARCHIVE=%%~nxA"
 )
 IF EXIST "!FOLDER!" (
   EXIT /B 0
@@ -97,48 +102,51 @@ IF NOT EXIST "!ARCHIVE!" (
   )
 )
 FOR /F "skip=1 tokens=*" %%H IN ('certutil -hashfile "!ARCHIVE!" SHA256') DO (
-  IF NOT DEFINED ACTUAL_HASH SET ACTUAL_HASH=%%H
+  IF NOT DEFINED ACTUAL_HASH SET "ACTUAL_HASH=%%H"
 )
-SET ACTUAL_HASH=!ACTUAL_HASH: =!
+SET "ACTUAL_HASH=!ACTUAL_HASH: =!"
 IF /I NOT "!ACTUAL_HASH!"=="!EXPECTED_HASH!" (
   ECHO Error: SHA256 mismatch for !ARCHIVE!.
   ECHO   Expected: !EXPECTED_HASH!
   ECHO   Actual:   !ACTUAL_HASH!
   DEL /F /Q "!ARCHIVE!"
-  SET ACTUAL_HASH=
+  SET "ACTUAL_HASH="
   EXIT /B 1
 )
-SET ACTUAL_HASH=
+SET "ACTUAL_HASH="
 MD "!FOLDER!"
+IF ERRORLEVEL 1 EXIT /B 1
 tar -xf "!ARCHIVE!" -C "!FOLDER!"
 IF ERRORLEVEL 1 (
   ECHO Error: Failed to extract !ARCHIVE!.
   RD /S /Q "!FOLDER!" >NUL 2>NUL
   EXIT /B 1
 )
-DEL /F /Q "!ARCHIVE!"
-SET DIR_COUNT=0
-SET FILE_COUNT=0
-SET SINGLE_DIR=
+SET "DIR_COUNT=0"
+SET "FILE_COUNT=0"
+SET "SINGLE_DIR="
 FOR /D %%D IN ("!FOLDER!\*") DO (
   SET /A DIR_COUNT+=1
-  SET SINGLE_DIR=%%~nxD
+  SET "SINGLE_DIR=%%~nxD"
 )
 FOR %%F IN ("!FOLDER!\*") DO (
   SET /A FILE_COUNT+=1
 )
 IF "!DIR_COUNT!"=="1" IF "!FILE_COUNT!"=="0" (
-  FOR /D %%D IN ("!FOLDER!\!SINGLE_DIR!\*") DO (
-    MOVE "%%D" "!FOLDER!" >NUL
+  FOR /F "delims=" %%D IN ('DIR /AD /B "!FOLDER!\!SINGLE_DIR!" 2^>NUL') DO (
+    MOVE "!FOLDER!\!SINGLE_DIR!\%%D" "!FOLDER!" >NUL
   )
-  FOR %%F IN ("!FOLDER!\!SINGLE_DIR!\*") DO (
-    MOVE "%%F" "!FOLDER!" >NUL
+  FOR /F "delims=" %%F IN ('DIR /A-D /B "!FOLDER!\!SINGLE_DIR!" 2^>NUL') DO (
+    MOVE "!FOLDER!\!SINGLE_DIR!\%%F" "!FOLDER!" >NUL
   )
-  RD "!FOLDER!\!SINGLE_DIR!"
+  RD /S /Q "!FOLDER!\!SINGLE_DIR!" 2>NUL
 )
 IF DEFINED BUILD_LABEL (
   PUSHD "!FOLDER!"
-  CALL %BUILD_LABEL%
+  CALL !BUILD_LABEL!
+  SET "BUILD_RESULT=!ERRORLEVEL!"
   POPD
+  IF NOT "!BUILD_RESULT!"=="0" EXIT /B !BUILD_RESULT!
 )
+DEL /F /Q "!ARCHIVE!"
 EXIT /B 0

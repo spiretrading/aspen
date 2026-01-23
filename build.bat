@@ -1,37 +1,40 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
-SET DIRECTORY=%~dp0
-SET ROOT=%cd%
+SET "DIRECTORY=%~dp0"
+SET "ROOT=%cd%"
 CALL :ParseArgs %*
 IF "!CONFIG!"=="clean" (
   CALL :CleanBuild "clean"
-  EXIT /B 0
+  EXIT /B !ERRORLEVEL!
 )
 IF "!CONFIG!"=="reset" (
   CALL :CleanBuild "reset"
-  EXIT /B 0
+  EXIT /B !ERRORLEVEL!
 )
 CALL :Configure
+IF ERRORLEVEL 1 EXIT /B 1
 CALL :RunBuild
-ENDLOCAL
 EXIT /B !ERRORLEVEL!
+ENDLOCAL
 
 :ParseArgs
-SET DEPENDENCIES=
-SET IS_DEPENDENCY=
-SET CONFIG=
+SET "DEPENDENCIES="
+SET "IS_DEPENDENCY="
+SET "CONFIG="
 :ParseArgsLoop
-SET ARG=%~1
+SET "ARG=%~1"
 IF "!IS_DEPENDENCY!"=="1" (
-  SET DEPENDENCIES=!ARG!
-  SET IS_DEPENDENCY=
+  SET "DEPENDENCIES=!ARG!"
+  SET "IS_DEPENDENCY="
   SHIFT
   GOTO ParseArgsLoop
 ) ELSE IF NOT "!ARG!"=="" (
-  IF "!ARG:~0,3!"=="-DD" (
-    SET IS_DEPENDENCY=1
+  IF "!ARG:~0,4!"=="-DD=" (
+    SET "DEPENDENCIES=!ARG:~4!"
+  ) ELSE IF "!ARG!"=="-DD" (
+    SET "IS_DEPENDENCY=1"
   ) ELSE (
-    SET CONFIG=!ARG!
+    SET "CONFIG=!ARG!"
   )
   SHIFT
   GOTO ParseArgsLoop
@@ -39,31 +42,41 @@ IF "!IS_DEPENDENCY!"=="1" (
 EXIT /B 0
 
 :CleanBuild
+SET "CLEAN_ERROR=0"
 IF "%~1"=="reset" (
   RD /S /Q Dependencies 2>NUL
   git clean -ffxd
+  IF ERRORLEVEL 1 SET "CLEAN_ERROR=1"
 ) ELSE (
   git clean -ffxd -e "*Dependencies*"
+  IF ERRORLEVEL 1 SET "CLEAN_ERROR=1"
 )
 IF EXIST "Dependencies\cache_files\aspen.txt" (
   DEL "Dependencies\cache_files\aspen.txt"
+  IF ERRORLEVEL 1 SET "CLEAN_ERROR=1"
 )
-EXIT /B 0
+EXIT /B !CLEAN_ERROR!
 
 :Configure
 IF "!CONFIG!"=="" (
   IF EXIST "CMakeFiles\config.txt" (
-    FOR /F %%i IN ('TYPE "CMakeFiles\config.txt"') DO (
-      SET CONFIG=%%i
-    )
+    SET /P CONFIG=<"CMakeFiles\config.txt"
   ) ELSE (
-    SET CONFIG=Release
+    SET "CONFIG=Release"
   )
 )
-IF /I "!CONFIG!"=="release" SET CONFIG=Release
-IF /I "!CONFIG!"=="debug" SET CONFIG=Debug
-IF /I "!CONFIG!"=="relwithdebinfo" SET CONFIG=RelWithDebInfo
-IF /I "!CONFIG!"=="minsizerel" SET CONFIG=MinSizeRel
+IF /I "!CONFIG!"=="release" (
+  SET "CONFIG=Release"
+) ELSE IF /I "!CONFIG!"=="debug" (
+  SET "CONFIG=Debug"
+) ELSE IF /I "!CONFIG!"=="relwithdebinfo" (
+  SET "CONFIG=RelWithDebInfo"
+) ELSE IF /I "!CONFIG!"=="minsizerel" (
+  SET "CONFIG=MinSizeRel"
+) ELSE (
+  ECHO Error: Invalid configuration "!CONFIG!".
+  EXIT /B 1
+)
 IF NOT "!DEPENDENCIES!"=="" (
   CALL "!DIRECTORY!configure.bat" -DD="!DEPENDENCIES!"
 ) ELSE (
