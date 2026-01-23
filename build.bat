@@ -40,6 +40,7 @@ EXIT /B 0
 
 :CleanBuild
 IF "%~1"=="reset" (
+  RD /S /Q Dependencies 2>NUL
   git clean -ffxd
 ) ELSE (
   git clean -ffxd -e "*Dependencies*"

@@ -20,7 +20,6 @@ ENDLOCAL
 EXIT /B !ERRORLEVEL!
 
 :BuildPython
-PUSHD Python-3.14.2
 PUSHD PCbuild
 CALL build.bat -c Debug
 CALL build.bat -c Release
@@ -30,7 +29,6 @@ IF EXIST "PCbuild\amd64\pyconfig.h" (
 ) ELSE (
   COPY /Y "PC\pyconfig.h" "Include\pyconfig.h"
 )
-POPD
 EXIT /B 0
 
 :CheckCache
@@ -112,12 +110,35 @@ IF /I NOT "!ACTUAL_HASH!"=="!EXPECTED_HASH!" (
 )
 SET ACTUAL_HASH=
 MD "!FOLDER!"
-tar -xf "!ARCHIVE!" -C "!FOLDER!" --strip-components=1
+tar -xf "!ARCHIVE!" -C "!FOLDER!"
 IF ERRORLEVEL 1 (
   ECHO Error: Failed to extract !ARCHIVE!.
   RD /S /Q "!FOLDER!" >NUL 2>NUL
   EXIT /B 1
 )
 DEL /F /Q "!ARCHIVE!"
-IF DEFINED BUILD_LABEL CALL %BUILD_LABEL%
+SET DIR_COUNT=0
+SET FILE_COUNT=0
+SET SINGLE_DIR=
+FOR /D %%D IN ("!FOLDER!\*") DO (
+  SET /A DIR_COUNT+=1
+  SET SINGLE_DIR=%%~nxD
+)
+FOR %%F IN ("!FOLDER!\*") DO (
+  SET /A FILE_COUNT+=1
+)
+IF "!DIR_COUNT!"=="1" IF "!FILE_COUNT!"=="0" (
+  FOR /D %%D IN ("!FOLDER!\!SINGLE_DIR!\*") DO (
+    MOVE "%%D" "!FOLDER!" >NUL
+  )
+  FOR %%F IN ("!FOLDER!\!SINGLE_DIR!\*") DO (
+    MOVE "%%F" "!FOLDER!" >NUL
+  )
+  RD "!FOLDER!\!SINGLE_DIR!"
+)
+IF DEFINED BUILD_LABEL (
+  PUSHD "!FOLDER!"
+  CALL %BUILD_LABEL%
+  POPD
+)
 EXIT /B 0
