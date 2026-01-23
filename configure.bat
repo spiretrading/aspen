@@ -4,10 +4,8 @@ SET "ROOT=%cd%"
 SET "DIRECTORY=%~dp0"
 CALL :CreateForwardingScripts
 CALL :ParseArgs %*
-CALL :SetupDependencies
-IF ERRORLEVEL 1 EXIT /B 1
-CALL :CheckHashes
-IF ERRORLEVEL 1 EXIT /B 1
+CALL :SetupDependencies || EXIT /B 1
+CALL :CheckHashes || EXIT /B 1
 CALL :RunCMake
 EXIT /B !ERRORLEVEL!
 ENDLOCAL
@@ -49,32 +47,23 @@ EXIT /B 0
 
 :SetupDependencies
 IF NOT EXIST "!DEPENDENCIES!" (
-  MD "!DEPENDENCIES!"
-  IF ERRORLEVEL 1 EXIT /B 1
+  MD "!DEPENDENCIES!" || EXIT /B 1
 )
 PUSHD "!DEPENDENCIES!"
-CALL "!DIRECTORY!setup.bat"
-IF ERRORLEVEL 1 (
-  ECHO Error: setup.bat failed.
-  POPD
-  EXIT /B 1
-)
+CALL "!DIRECTORY!setup.bat" || (POPD & EXIT /B 1)
 POPD
 IF NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
   IF EXIST Dependencies (
-    RD /S /Q Dependencies
-    IF ERRORLEVEL 1 EXIT /B 1
+    RD /S /Q Dependencies || EXIT /B 1
   )
-  mklink /j Dependencies "!DEPENDENCIES!" > NUL
-  IF ERRORLEVEL 1 EXIT /B 1
+  mklink /j Dependencies "!DEPENDENCIES!" > NUL || EXIT /B 1
 )
 EXIT /B 0
 
 :CheckHashes
 SET "RUN_CMAKE="
 IF NOT EXIST CMakeFiles (
-  MD CMakeFiles
-  IF ERRORLEVEL 1 EXIT /B 1
+  MD CMakeFiles || EXIT /B 1
   SET "RUN_CMAKE=1"
 )
 SET "TEMP_FILE=!ROOT!\temp_%RANDOM%%RANDOM%.txt"
@@ -113,10 +102,6 @@ EXIT /B 0
 
 :RunCMake
 IF "!RUN_CMAKE!"=="1" (
-  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!"
-  IF ERRORLEVEL 1 (
-    ECHO Error: CMake configuration failed.
-    EXIT /B 1
-  )
+  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" || EXIT /B 1
 )
 EXIT /B 0

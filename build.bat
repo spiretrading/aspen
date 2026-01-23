@@ -11,8 +11,7 @@ IF "!CONFIG!"=="reset" (
   CALL :CleanBuild "reset"
   EXIT /B !ERRORLEVEL!
 )
-CALL :Configure
-IF ERRORLEVEL 1 EXIT /B 1
+CALL :Configure || EXIT /B 1
 CALL :RunBuild
 EXIT /B !ERRORLEVEL!
 ENDLOCAL
@@ -45,15 +44,12 @@ EXIT /B 0
 SET "CLEAN_ERROR=0"
 IF "%~1"=="reset" (
   RD /S /Q Dependencies 2>NUL
-  git clean -ffxd
-  IF ERRORLEVEL 1 SET "CLEAN_ERROR=1"
+  git clean -ffxd || SET "CLEAN_ERROR=1"
 ) ELSE (
-  git clean -ffxd -e "*Dependencies*"
-  IF ERRORLEVEL 1 SET "CLEAN_ERROR=1"
+  git clean -ffxd -e "*Dependencies*" || SET "CLEAN_ERROR=1"
 )
 IF EXIST "Dependencies\cache_files\aspen.txt" (
-  DEL "Dependencies\cache_files\aspen.txt"
-  IF ERRORLEVEL 1 SET "CLEAN_ERROR=1"
+  DEL "Dependencies\cache_files\aspen.txt" || SET "CLEAN_ERROR=1"
 )
 EXIT /B !CLEAN_ERROR!
 
@@ -85,7 +81,7 @@ IF NOT "!DEPENDENCIES!"=="" (
 EXIT /B !ERRORLEVEL!
 
 :RunBuild
-cmake --build "!ROOT!" --target INSTALL --config "!CONFIG!" --parallel
-IF ERRORLEVEL 1 EXIT /B 1
+cmake --build "!ROOT!" --target INSTALL --config "!CONFIG!" --parallel ^
+  || EXIT /B 1
 >"CMakeFiles\config.txt" ECHO !CONFIG!
 EXIT /B 0

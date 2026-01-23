@@ -13,18 +13,15 @@ CALL :AddDependency "Python-3.14.2" ^
   "https://www.python.org/ftp/python/3.14.2/Python-3.14.2.tgz" ^
   "c609e078adab90e2c6bacb6afafacd5eaf60cd94cf670f1e159565725fcd448d" ^
   ":BuildPython"
-CALL :InstallDependencies
-IF ERRORLEVEL 1 EXIT /B 1
+CALL :InstallDependencies || EXIT /B 1
 CALL :Commit
 EXIT /B !ERRORLEVEL!
 ENDLOCAL
 
 :BuildPython
 PUSHD PCbuild
-CALL build.bat -c Debug
-IF ERRORLEVEL 1 POPD & EXIT /B 1
-CALL build.bat -c Release
-IF ERRORLEVEL 1 POPD & EXIT /B 1
+CALL build.bat -c Debug || (POPD & EXIT /B 1)
+CALL build.bat -c Release || (POPD & EXIT /B 1)
 POPD
 IF EXIST "PCbuild\amd64\pyconfig.h" (
   COPY /Y "PCbuild\amd64\pyconfig.h" "Include\pyconfig.h"
@@ -47,8 +44,7 @@ EXIT /B 0
 
 :Commit
 IF NOT EXIST cache_files (
-  MD cache_files
-  IF ERRORLEVEL 1 EXIT /B 1
+  MD cache_files || EXIT /B 1
 )
 >"cache_files\!CACHE_NAME!.txt" ECHO !SETUP_HASH!
 EXIT /B 0
@@ -77,8 +73,7 @@ SET "I=0"
 :InstallDependenciesLoop
 IF NOT DEFINED DEPENDENCIES[%I%].NAME EXIT /B 0
 CALL :DownloadAndExtract "!DEPENDENCIES[%I%].NAME!" "!DEPENDENCIES[%I%].URL!" ^
-  "!DEPENDENCIES[%I%].HASH!" "!DEPENDENCIES[%I%].BUILD!"
-IF ERRORLEVEL 1 EXIT /B 1
+  "!DEPENDENCIES[%I%].HASH!" "!DEPENDENCIES[%I%].BUILD!" || EXIT /B 1
 SET /A I+=1
 GOTO InstallDependenciesLoop
 
@@ -95,11 +90,7 @@ IF EXIST "!FOLDER!" (
   EXIT /B 0
 )
 IF NOT EXIST "!ARCHIVE!" (
-  curl -fsL -o "!ARCHIVE!" "!URL!"
-  IF ERRORLEVEL 1 (
-    ECHO Error: Failed to download !ARCHIVE!.
-    EXIT /B 1
-  )
+  curl -fsL -o "!ARCHIVE!" "!URL!" || EXIT /B 1
 )
 FOR /F "skip=1 tokens=*" %%H IN ('certutil -hashfile "!ARCHIVE!" SHA256') DO (
   IF NOT DEFINED ACTUAL_HASH SET "ACTUAL_HASH=%%H"
@@ -114,11 +105,9 @@ IF /I NOT "!ACTUAL_HASH!"=="!EXPECTED_HASH!" (
   EXIT /B 1
 )
 SET "ACTUAL_HASH="
-MD "!FOLDER!"
-IF ERRORLEVEL 1 EXIT /B 1
+MD "!FOLDER!" || EXIT /B 1
 tar -xf "!ARCHIVE!" -C "!FOLDER!"
 IF ERRORLEVEL 1 (
-  ECHO Error: Failed to extract !ARCHIVE!.
   RD /S /Q "!FOLDER!" >NUL 2>NUL
   EXIT /B 1
 )
