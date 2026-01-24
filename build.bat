@@ -3,11 +3,11 @@ SETLOCAL EnableDelayedExpansion
 SET "DIRECTORY=%~dp0"
 SET "ROOT=%cd%"
 CALL :ParseArgs %*
-IF "!CONFIG!"=="clean" (
+IF /I "!CONFIG!"=="clean" (
   CALL :CleanBuild "clean"
   EXIT /B !ERRORLEVEL!
 )
-IF "!CONFIG!"=="reset" (
+IF /I "!CONFIG!"=="reset" (
   CALL :CleanBuild "reset"
   EXIT /B !ERRORLEVEL!
 )
@@ -47,9 +47,9 @@ IF "%~1"=="reset" (
   git clean -ffxd || SET "CLEAN_ERROR=1"
 ) ELSE (
   git clean -ffxd -e "*Dependencies*" || SET "CLEAN_ERROR=1"
-)
-IF EXIST "Dependencies\cache_files\aspen.txt" (
-  DEL "Dependencies\cache_files\aspen.txt" || SET "CLEAN_ERROR=1"
+  IF EXIST "Dependencies\cache_files\aspen.txt" (
+    DEL "Dependencies\cache_files\aspen.txt" || SET "CLEAN_ERROR=1"
+  )
 )
 EXIT /B !CLEAN_ERROR!
 
