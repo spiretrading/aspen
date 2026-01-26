@@ -135,13 +135,13 @@ flatten_directory() {
   local single_dir=""
   for d in "$folder"/*/; do
     if [[ -d "$d" ]]; then
-      ((dir_count++)) || true
+      ((++dir_count))
       single_dir="$d"
     fi
   done
   for f in "$folder"/*; do
     if [[ -f "$f" ]]; then
-      ((file_count++)) || true
+      ((++file_count))
     fi
   done
   if [[ "$dir_count" -eq 1 ]] && [[ "$file_count" -eq 0 ]]; then
