@@ -62,7 +62,7 @@ check_cache() {
   SETUP_HASH=$(sha256 "$DIRECTORY/setup.sh")
   if [[ -f "cache_files/$CACHE_NAME.txt" ]]; then
     local cached_hash
-    cached_hash=$(cat "cache_files/$CACHE_NAME.txt")
+    cached_hash=$(< "cache_files/$CACHE_NAME.txt")
     if [[ "$SETUP_HASH" == "$cached_hash" ]]; then
       return 1
     fi

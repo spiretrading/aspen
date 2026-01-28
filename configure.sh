@@ -14,7 +14,7 @@ main() {
   setup_dependencies || return 1
   check_hashes || return 1
   run_cmake
-  return $?
+  return "$?"
 }
 
 resolve_paths() {
@@ -46,6 +46,10 @@ parse_args() {
       is_dependency=""
     elif [[ "${arg:0:4}" == "-DD=" ]]; then
       DEPENDENCIES="${arg:4}"
+      if [[ -z "$DEPENDENCIES" ]]; then
+        echo "Error: -DD requires a path argument."
+        return 1
+      fi
     elif [[ "$arg" == "-DD" ]]; then
       is_dependency="1"
     else
@@ -53,6 +57,10 @@ parse_args() {
     fi
     shift
   done
+  if [[ "$is_dependency" == "1" ]]; then
+    echo "Error: -DD requires a path argument."
+    return 1
+  fi
   if [[ -z "$CONFIG" ]]; then
     CONFIG="Release"
   fi
@@ -111,7 +119,7 @@ check_file_hash() {
   local hash_file="$2"
   if [[ -f "$hash_file" ]]; then
     local cached_hash
-    cached_hash=$(cat "$hash_file")
+    cached_hash=$(< "$hash_file")
     if [[ "$current_hash" != "$cached_hash" ]]; then
       RUN_CMAKE=1
     fi

@@ -57,6 +57,10 @@ parse_args() {
       is_dependency=""
     elif [[ "${arg:0:4}" == "-DD=" ]]; then
       DEPENDENCIES="${arg:4}"
+      if [[ -z "$DEPENDENCIES" ]]; then
+        echo "Error: -DD requires a path argument."
+        return 1
+      fi
     elif [[ "$arg" == "-DD" ]]; then
       is_dependency="1"
     else
@@ -64,13 +68,17 @@ parse_args() {
     fi
     shift
   done
+  if [[ "$is_dependency" == "1" ]]; then
+    echo "Error: -DD requires a path argument."
+    return 1
+  fi
 }
 
 clean_build() {
   local clean_type="$1"
   local clean_error=0
   if [[ "$clean_type" == "reset" ]]; then
-    rm -rf Dependencies 2>/dev/null || true
+    rm -rf Dependencies
     git clean -ffxd || clean_error=1
   else
     git clean -ffxd -e "*Dependencies*" || clean_error=1
@@ -78,13 +86,13 @@ clean_build() {
       rm "Dependencies/cache_files/aspen.txt" || clean_error=1
     fi
   fi
-  return $clean_error
+  return "$clean_error"
 }
 
 configure() {
   if [[ -z "$CONFIG" ]]; then
     if [[ -f "CMakeFiles/config.txt" ]]; then
-      CONFIG=$(cat "CMakeFiles/config.txt")
+      CONFIG=$(< "CMakeFiles/config.txt")
     else
       CONFIG="Release"
     fi
@@ -117,8 +125,8 @@ configure() {
 run_build() {
   local jobs
   jobs=$(get_job_count)
-  cmake --build "$ROOT" --target install --config "$CONFIG" -- -j"$jobs" ||
-    return 1
+  cmake --build "$ROOT" --target install --config "$CONFIG" \
+    --parallel "$jobs" || return 1
   echo "$CONFIG" > "CMakeFiles/config.txt"
 }
 
