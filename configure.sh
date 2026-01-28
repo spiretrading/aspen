@@ -107,8 +107,11 @@ check_cmake_hash() {
   current_hash=$( (
     cat "$DIRECTORY/CMakeLists.txt"
     if [[ -d "$DIRECTORY/Config" ]]; then
-      find "$DIRECTORY/Config" -type f \
-        \( -name "CMakeLists.txt" -o -name "*.cmake" \) -exec cat {} \;
+      for f in "$DIRECTORY/Config"/*.cmake; do
+        [[ -f "$f" ]] && cat "$f"
+      done
+      find "$DIRECTORY/Config" -type f -name "CMakeLists.txt" -print0 |
+        sort -z | xargs -0 cat
     fi
   ) | md5hash)
   check_file_hash "$current_hash" "CMakeFiles/cmake_hash.txt"
