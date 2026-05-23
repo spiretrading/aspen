@@ -20,8 +20,8 @@ ENDLOCAL
 
 :BuildPython
 PUSHD PCbuild
-CALL build.bat -c Debug || (POPD & EXIT /B 1)
-CALL build.bat -c Release || (POPD & EXIT /B 1)
+CALL build.bat -c Debug "/p:PlatformToolset=v145" || (POPD & EXIT /B 1)
+CALL build.bat -c Release "/p:PlatformToolset=v145" || (POPD & EXIT /B 1)
 POPD
 IF EXIST "PCbuild\amd64\pyconfig.h" (
   COPY /Y "PCbuild\amd64\pyconfig.h" "Include\pyconfig.h"
