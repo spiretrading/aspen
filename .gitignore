@@ -45,6 +45,7 @@ CTestTestfile.cmake
 *.userosscache
 *.sln.docstates
 *.sln
+*.slnx
 *.vcxproj
 *.vcxproj.filters
 
