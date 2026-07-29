@@ -1,7 +1,10 @@
+#include <utility>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
+#include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 
 using namespace Aspen;
@@ -32,6 +35,73 @@ TEST_SUITE("Shared") {
     auto b = Shared<Box<int>>(c);
     REQUIRE(b.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(b.eval() == 123);
+  }
+
+  TEST_CASE("shared_move_construction") {
+    auto queue = Shared(Queue<int>());
+    queue->push(1);
+    auto moved = Shared(std::move(queue));
+    REQUIRE(moved.commit(0) == State::EVALUATED);
+    REQUIRE(moved.eval() == 1);
+    moved->push(2);
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 2);
+  }
+
+  TEST_CASE("shared_copy_assignment") {
+    auto left = Shared(Queue<int>());
+    auto right = Shared(Queue<int>());
+    left->push(1);
+    right->push(2);
+    REQUIRE(left.commit(0) == State::EVALUATED);
+    REQUIRE(left.eval() == 1);
+    left = right;
+    REQUIRE(left.commit(1) == State::EVALUATED);
+    REQUIRE(left.eval() == 2);
+    right->push(3);
+    REQUIRE(left.commit(2) == State::EVALUATED);
+    REQUIRE(left.eval() == 3);
+  }
+
+  TEST_CASE("shared_move_assignment") {
+    auto left = Shared(Queue<int>());
+    auto right = Shared(Queue<int>());
+    left->push(1);
+    right->push(2);
+    REQUIRE(left.commit(0) == State::EVALUATED);
+    REQUIRE(left.eval() == 1);
+    left = std::move(right);
+    REQUIRE(left.commit(1) == State::EVALUATED);
+    REQUIRE(left.eval() == 2);
+  }
+
+  TEST_CASE("shared_self_assignment") {
+    auto queue = Shared(Queue<int>());
+    queue->push(1);
+    REQUIRE(queue.commit(0) == State::EVALUATED);
+    REQUIRE(queue.eval() == 1);
+    auto& alias = queue;
+    queue = alias;
+    queue = std::move(alias);
+    queue->push(2);
+    REQUIRE(queue.commit(1) == State::EVALUATED);
+    REQUIRE(queue.eval() == 2);
+  }
+
+  TEST_CASE("shared_is_noexcept") {
+    auto cell = Shared(Cell(1));
+    REQUIRE(decltype(cell)::is_noexcept);
+    auto queue = Shared(Queue<int>());
+    REQUIRE(!decltype(queue)::is_noexcept);
+    static_assert(IsReactorOf<Shared<Cell<int>>, int>);
+    static_assert(std::is_same_v<collapse_shared_t<Shared<Shared<Cell<int>>>>,
+      Shared<Cell<int>>>);
+  }
+
+  TEST_CASE("shared_emplaced_from_several_arguments") {
+    auto reactor = Shared<Cell<int>>(std::in_place, 7);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 7);
   }
 
   TEST_CASE("shared_with_none") {

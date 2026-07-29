@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -52,7 +53,7 @@ namespace Aspen {
       Result eval() const noexcept(is_noexcept);
 
     private:
-      template<typename> friend class Shared;
+      template<IsReactor> friend class Shared;
       std::unique_ptr<Reactor> m_reactor;
   };
 

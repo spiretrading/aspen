@@ -1,32 +1,30 @@
 #ifndef ASPEN_SHARED_HPP
 #define ASPEN_SHARED_HPP
+#include <concepts>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <type_traits>
 #include <utility>
 #include "Aspen/Box.hpp"
 #include "Aspen/CommitFlag.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Unique.hpp"
 
 namespace Aspen {
 namespace Details {
-
-  /** Records the sequence at which an event last took place. */
   struct Sequence {
     std::uint64_t m_value;
     bool m_is_set;
 
     Sequence() noexcept;
 
-    /** Records that the event took place at a given sequence. */
     void set(std::uint64_t value) noexcept;
-
-    /** Returns true iff the event took place at a given sequence. */
     bool is_at(std::uint64_t value) const noexcept;
   };
 
-  /** Returns true iff the left sequence precedes the right. */
   bool operator <(Sequence left, Sequence right) noexcept;
 
   struct SharedState {
@@ -42,8 +40,8 @@ namespace Details {
   struct SharedEvaluator {
     std::shared_ptr<SharedState> m_state;
     std::weak_ptr<R> m_reactor;
-    std::optional<try_maybe_t<reactor_result_t<R>,
-      !is_noexcept_reactor_v<R>>> m_evaluation;
+    std::optional<try_maybe_t<reactor_result_t<R>, !is_noexcept_reactor_v<R>>>
+      m_evaluation;
 
     SharedEvaluator(std::shared_ptr<SharedState> state);
   };
@@ -77,12 +75,20 @@ namespace Details {
    * Used to share a reactor as a child among multiple reactors.
    * @param <R> The type of reactor being shared.
    */
-  template<typename R>
+  template<IsReactor R>
   class Shared {
     public:
+
+      /** The type of reactor being shared. */
       using Reactor = R;
+
+      /** The type to evaluate to. */
       using Type = reactor_result_t<Reactor>;
-      using Result = decltype(std::declval<Reactor>().eval());
+
+      /** The type returned by an evaluation. */
+      using Result = decltype(std::declval<Reactor&>().eval());
+
+      /** Whether this reactor's eval is noexcept. */
       static constexpr auto is_noexcept = is_noexcept_reactor_v<Reactor>;
 
       /** Constructs a Shared reactor. */
@@ -90,18 +96,10 @@ namespace Details {
 
       /**
        * Constructs a Shared reactor.
-       * @param args The argument used to emplace the shared reactor.
-       */
-      template<typename A, typename = std::enable_if_t<
-        !std::is_base_of_v<Shared, std::decay_t<A>>>>
-      explicit Shared(A&& args);
-
-      /**
-       * Constructs a Shared reactor.
        * @param args The arguments used to emplace the shared reactor.
        */
-      template<typename A, typename... B, typename = std::enable_if_t<
-        !std::is_base_of_v<Shared, std::decay_t<A>>>>
+      template<typename A, typename... B> requires(
+        !std::derived_from<std::remove_cvref_t<A>, Shared<R>>)
       explicit Shared(A&& a, B&&... args);
 
       /**
@@ -118,33 +116,20 @@ namespace Details {
       Shared(Shared<U> reactor);
 
       Shared(const Shared& shared) noexcept;
-
       Shared(Shared&& shared) noexcept;
-
       ~Shared();
 
-      //! Returns a reference to the reactor.
       const Reactor& operator *() const noexcept;
-
-      //! Returns a pointer to the reactor.
       const Reactor* operator ->() const noexcept;
-
-      //! Returns a reference to the reactor.
       Reactor& operator *() noexcept;
-
-      //! Returns a pointer to the reactor.
       Reactor* operator ->() noexcept;
-
       State commit(std::uint64_t sequence) noexcept;
-
       Result eval() const noexcept(is_noexcept);
-
       Shared& operator =(const Shared& shared) noexcept;
-
       Shared& operator =(Shared&& shared) noexcept;
 
     private:
-      template<typename> friend class Shared;
+      template<IsReactor> friend class Shared;
       template<typename> friend class Weak;
       std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
       std::shared_ptr<Reactor> m_reactor;
@@ -167,15 +152,17 @@ namespace Details {
   /**
    * Boxes a reactor into a copyable generic interface.
    * @param reactor The reactor to wrap.
+   * @return A SharedBox wrapping the <i>reactor</i>.
    */
-  template<typename R>
+  template<typename R> requires IsReactor<to_reactor_t<R>>
   auto shared_box(R&& reactor) {
     return SharedBox<reactor_result_t<R>>(std::forward<R>(reactor));
   }
 
   /**
-   * A type trait that provides the type Shared<T> if T is not already wrapped
-   * in a Shared, otherwise provides the type T.
+   * A type trait that wraps a type in a Shared, collapsing any Shared it is
+   * already wrapped in.
+   * @param <T> The type to wrap.
    */
   template<typename T>
   struct collapse_shared {
@@ -190,11 +177,11 @@ namespace Details {
   template<typename T>
   using collapse_shared_t = typename collapse_shared<T>::type;
 
-  template<typename A, typename = std::enable_if_t<
-    !std::is_base_of_v<Shared<to_reactor_t<A>>, std::decay_t<A>>>>
+  template<typename A> requires(
+    !std::derived_from<std::remove_cvref_t<A>, Shared<to_reactor_t<A>>>)
   Shared(A&&) -> Shared<to_reactor_t<A>>;
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>::Shared()
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         std::make_shared<Details::SharedState>()),
@@ -202,17 +189,9 @@ namespace Details {
     m_evaluator->m_reactor = m_reactor;
   }
 
-  template<typename R>
-  template<typename A, typename>
-  Shared<R>::Shared(A&& args)
-    : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
-        std::make_shared<Details::SharedState>()),
-        std::make_shared<Reactor>(std::forward<A>(args))) {
-    m_evaluator->m_reactor = m_reactor;
-  }
-
-  template<typename R>
-  template<typename A, typename... B, typename>
+  template<IsReactor R>
+  template<typename A, typename... B> requires(
+    !std::derived_from<std::remove_cvref_t<A>, Shared<R>>)
   Shared<R>::Shared(A&& a, B&&... args)
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         std::make_shared<Details::SharedState>()),
@@ -221,7 +200,7 @@ namespace Details {
     m_evaluator->m_reactor = m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>::Shared(Unique<Reactor> reactor)
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         std::make_shared<Details::SharedState>()),
@@ -229,7 +208,7 @@ namespace Details {
     m_evaluator->m_reactor = m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   template<typename U>
   Shared<R>::Shared(Shared<U> reactor)
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
@@ -237,11 +216,11 @@ namespace Details {
     m_evaluator->m_reactor = m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>::Shared(const Shared& shared) noexcept
     : Shared(shared.m_evaluator, shared.m_reactor) {}
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>::Shared(Shared&& shared) noexcept
       : m_evaluator(std::move(shared.m_evaluator)),
         m_reactor(std::move(shared.m_reactor)),
@@ -250,9 +229,9 @@ namespace Details {
     shared.m_parent = nullptr;
   }
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>::~Shared() {
-    if(m_evaluator == nullptr) {
+    if(!m_evaluator) {
       return;
     }
     set_parent(nullptr);
@@ -262,27 +241,27 @@ namespace Details {
     }
   }
 
-  template<typename R>
+  template<IsReactor R>
   const typename Shared<R>::Reactor& Shared<R>::operator *() const noexcept {
     return *m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   const typename Shared<R>::Reactor* Shared<R>::operator ->() const noexcept {
     return &*m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Shared<R>::Reactor& Shared<R>::operator *() noexcept {
     return *m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Shared<R>::Reactor* Shared<R>::operator ->() noexcept {
     return &*m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   State Shared<R>::commit(std::uint64_t sequence) noexcept {
     auto current = CommitFlag::get_current();
     auto state = commit_state(
@@ -293,13 +272,16 @@ namespace Details {
     return state;
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Shared<R>::Result Shared<R>::eval() const noexcept(is_noexcept) {
     return m_reactor->eval();
   }
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>& Shared<R>::operator =(const Shared& shared) noexcept {
+    if(this == &shared) {
+      return *this;
+    }
     set_parent(nullptr);
     m_evaluator = shared.m_evaluator;
     m_reactor = shared.m_reactor;
@@ -307,8 +289,11 @@ namespace Details {
     return *this;
   }
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>& Shared<R>::operator =(Shared&& shared) noexcept {
+    if(this == &shared) {
+      return *this;
+    }
     set_parent(nullptr);
     m_evaluator = std::move(shared.m_evaluator);
     m_reactor = std::move(shared.m_reactor);
@@ -318,7 +303,7 @@ namespace Details {
     return *this;
   }
 
-  template<typename R>
+  template<IsReactor R>
   State Shared<R>::commit_state(std::uint64_t sequence, Reactor& reactor,
       Details::SharedEvaluator<Reactor>& evaluator,
       Details::Sequence& last_evaluation, CommitFlag* current) {
@@ -370,7 +355,7 @@ namespace Details {
     return reactor_state;
   }
 
-  template<typename R>
+  template<IsReactor R>
   Shared<R>::Shared(
     std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
     std::shared_ptr<Reactor> reactor)
@@ -378,7 +363,7 @@ namespace Details {
       m_reactor(std::move(reactor)),
       m_parent(nullptr) {}
 
-  template<typename R>
+  template<IsReactor R>
   void Shared<R>::set_parent(CommitFlag* parent) noexcept {
     auto& flag = m_evaluator->m_state->m_flag;
     if(parent == &flag) {
@@ -387,11 +372,11 @@ namespace Details {
     if(parent == m_parent) {
       return;
     }
-    if(m_parent != nullptr) {
+    if(m_parent) {
       flag.remove_parent(*m_parent);
     }
     m_parent = parent;
-    if(m_parent != nullptr) {
+    if(m_parent) {
       flag.add_parent(*m_parent);
     }
   }
