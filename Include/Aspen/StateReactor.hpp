@@ -1,7 +1,10 @@
 #ifndef ASPEN_STATE_REACTOR_HPP
 #define ASPEN_STATE_REACTOR_HPP
+#include <concepts>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -11,21 +14,23 @@ namespace Aspen {
    * A reactor that evaluates to another reactor's State.
    * @param <R> The type of reactor to monitor.
    */
-  template<typename R>
+  template<IsReactor R>
   class StateReactor {
     public:
+
+      /** The type to evaluate to. */
       using Type = State;
 
       /**
        * Constructs a StateReactor.
        * @param reactor The reactor to monitor.
        */
-      template<typename RF, typename = std::enable_if_t<
-        !std::is_base_of_v<StateReactor, std::decay_t<RF>>>>
+      template<typename RF> requires(
+        !std::derived_from<std::remove_cvref_t<RF>, StateReactor<R>>) &&
+        std::constructible_from<R, RF>
       explicit StateReactor(RF&& reactor);
 
       State commit(std::uint64_t sequence) noexcept;
-
       Type eval() const noexcept;
 
     private:
@@ -33,17 +38,19 @@ namespace Aspen {
       State m_value;
   };
 
-  template<typename R, typename = std::enable_if_t<
-    !std::is_base_of_v<StateReactor<to_reactor_t<R>>, std::decay_t<R>>>>
+  template<typename R> requires(!std::derived_from<std::remove_cvref_t<R>,
+    StateReactor<to_reactor_t<R>>>)
   StateReactor(R&&) -> StateReactor<to_reactor_t<R>>;
 
-  template<typename R>
-  template<typename RF, typename>
+  template<IsReactor R>
+  template<typename RF> requires(
+    !std::derived_from<std::remove_cvref_t<RF>, StateReactor<R>>) &&
+    std::constructible_from<R, RF>
   StateReactor<R>::StateReactor(RF&& reactor)
     : m_reactor(std::forward<RF>(reactor)),
       m_value(State::EVALUATED) {}
 
-  template<typename R>
+  template<IsReactor R>
   State StateReactor<R>::commit(std::uint64_t sequence) noexcept {
     auto value = m_reactor.commit(sequence);
     auto state = [&] {
@@ -62,7 +69,7 @@ namespace Aspen {
     return state;
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename StateReactor<R>::Type StateReactor<R>::eval() const noexcept {
     return m_value;
   }

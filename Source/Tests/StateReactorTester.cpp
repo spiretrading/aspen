@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
@@ -17,6 +18,23 @@ TEST_SUITE("StateReactor") {
   TEST_CASE("immediate_completion") {
     auto reactor = StateReactor(constant(10));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
+  }
+
+  TEST_CASE("monitoring_a_value") {
+    auto reactor = StateReactor(10);
+    REQUIRE(is_noexcept_reactor_v<decltype(reactor)>);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
+  }
+
+  TEST_CASE("a_source_that_fails") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = StateReactor(queue);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == State::NONE);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
   }
 
