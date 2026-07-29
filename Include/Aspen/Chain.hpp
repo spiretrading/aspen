@@ -1,7 +1,9 @@
 #ifndef ASPEN_CHAIN_HPP
 #define ASPEN_CHAIN_HPP
+#include <concepts>
 #include <cstdint>
 #include <utility>
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -13,10 +15,14 @@ namespace Aspen {
    * @param <A> The first reactor's type.
    * @param <B> The second reactor's type.
    */
-  template<typename A, typename B>
+  template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   class Chain {
     public:
+
+      /** The type to evaluate to. */
       using Type = reactor_result_t<A>;
+
+      /** Whether an evaluation is noexcept. */
       static constexpr auto is_noexcept = is_noexcept_reactor_v<A> &&
         is_noexcept_reactor_v<B>;
 
@@ -25,11 +31,11 @@ namespace Aspen {
        * @param initial The reactor to initially evaluate to.
        * @param continuation The reactor to evaluate to thereafter.
        */
-      template<typename AF, typename BF>
+      template<typename AF, typename BF> requires
+        std::constructible_from<A, AF> && std::constructible_from<B, BF>
       Chain(AF&& initial, BF&& continuation);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
@@ -39,10 +45,11 @@ namespace Aspen {
         TRANSITIONING,
         CONTINUATION
       };
+      [[no_unique_address]]
       A m_initial;
+      [[no_unique_address]]
       B m_continuation;
       Status m_status;
-      std::uint8_t m_which;
   };
 
   template<typename A, typename B>
@@ -52,32 +59,35 @@ namespace Aspen {
    * Chains two reactors together so that one runs after the other.
    * @param initial The reactor to initially evaluate to.
    * @param continuation The reactor to evaluate to thereafter.
+   * @return A reactor evaluating to one and then the other.
    */
-  template<typename A, typename B>
-  auto chain(A&& initial, B&& continuation) {
-    return Chain(std::forward<A>(initial), std::forward<B>(continuation));
+  auto chain(auto&& initial, auto&& continuation) {
+    return Chain(std::forward<decltype(initial)>(initial),
+      std::forward<decltype(continuation)>(continuation));
   }
 
   /**
    * Chains a series of reactors together.
    * @param initial The reactor to initially evaluate to.
    * @param continuation The reactor to evaluate to thereafter.
+   * @param remainder The reactors to evaluate to in turn.
+   * @return A reactor evaluating to each of them in turn.
    */
-  template<typename A, typename B, typename... C>
-  auto chain(A&& initial, B&& continuation, C&&... remainder) {
-    return Chain(std::forward<A>(initial),
-      chain(std::forward<B>(continuation), std::forward<C>(remainder)...));
+  auto chain(auto&& initial, auto&& continuation, auto&&... remainder) {
+    return Chain(std::forward<decltype(initial)>(initial),
+      chain(std::forward<decltype(continuation)>(continuation),
+        std::forward<decltype(remainder)>(remainder)...));
   }
 
-  template<typename A, typename B>
-  template<typename AF, typename BF>
+  template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
+  template<typename AF, typename BF> requires
+    std::constructible_from<A, AF> && std::constructible_from<B, BF>
   Chain<A, B>::Chain(AF&& initial, BF&& continuation)
     : m_initial(std::forward<AF>(initial)),
       m_continuation(std::forward<BF>(continuation)),
-      m_status(Status::START),
-      m_which(0) {}
+      m_status(Status::START) {}
 
-  template<typename A, typename B>
+  template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   State Chain<A, B>::commit(std::uint64_t sequence) noexcept {
     if(m_status == Status::START) {
       auto state = m_initial.commit(sequence);
@@ -90,7 +100,6 @@ namespace Aspen {
         return state;
       } else if(is_complete(state)) {
         m_status = Status::CONTINUATION;
-        m_which = 1;
         return m_continuation.commit(sequence);
       } else {
         return state;
@@ -111,19 +120,17 @@ namespace Aspen {
     auto state = m_continuation.commit(sequence);
     if(has_evaluation(state)) {
       m_status = Status::CONTINUATION;
-      m_which = 1;
     }
     return state;
   }
 
-  template<typename A, typename B>
+  template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   eval_result_t<typename Chain<A, B>::Type> Chain<A, B>::eval()
-      const noexcept(is_noexcept){
-    if(m_which == 0) {
-      return m_initial.eval();
-    } else {
+      const noexcept(is_noexcept) {
+    if(m_status == Status::CONTINUATION) {
       return m_continuation.eval();
     }
+    return m_initial.eval();
   }
 }
 

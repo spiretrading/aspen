@@ -70,6 +70,33 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 21);
   }
 
+  TEST_CASE("chaining_an_initial_that_produces_then_completes") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Chain(queue, Constant(9));
+    REQUIRE(reactor.commit(0) == State::NONE);
+    queue->push(1);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    queue->push(2);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    queue->set_complete(3);
+    REQUIRE(reactor.commit(3) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+    REQUIRE(reactor.commit(4) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 9);
+  }
+
+  TEST_CASE("chaining_a_series") {
+    auto reactor = chain(Constant(1), Constant(2), Constant(3));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+  }
+
   TEST_CASE("chain_initial_complete") {
     auto queue = Shared(Queue<int>());
     queue->push(5);
