@@ -1,42 +1,40 @@
 #ifndef ASPEN_UNCONSECUTIVE_HPP
 #define ASPEN_UNCONSECUTIVE_HPP
+#include <concepts>
 #include <optional>
 #include <utility>
 #include "Aspen/Lift.hpp"
+#include "Aspen/Maybe.hpp"
+#include "Aspen/Reactor.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
-namespace Details {
-  template<typename Type>
-  struct UnconsecutiveCore {
-    std::optional<Type> m_previous;
-
-    template<typename T>
-    std::optional<Type> operator ()(Maybe<T>&& series) {
-      return (*this)(std::move(*series));
-    }
-
-    template<typename T>
-    std::optional<Type> operator ()(T&& series) {
-      if(m_previous == series) {
-        return std::nullopt;
-      } else {
-        m_previous.emplace(std::forward<T>(series));
-        return *m_previous;
-      }
-    }
-  };
-}
 
   /**
    * Implements a reactor that only evaluates when unconsecutive values are
    * produced.
    * @param series The series producing the values.
+   * @return A reactor evaluating to the <i>series</i> whenever it produces a
+   *         value differing from the one before it.
    */
-  template<typename Series>
+  template<typename Series> requires IsReactor<to_reactor_t<Series>> &&
+    std::equality_comparable<reactor_result_t<Series>>
   auto unconsecutive(Series&& series) {
     using Type = reactor_result_t<Series>;
-    return Lift(Details::UnconsecutiveCore<Type>(),
-      std::forward<Series>(series));
+    using Source = to_reactor_t<Series>;
+    return lift([previous = std::optional<Type>()] (const auto& value) mutable
+        noexcept -> FunctionEvaluation<Type> {
+      if constexpr(!is_noexcept_reactor_v<Source>) {
+        if(value.has_exception()) {
+          return Maybe<Type>(value.get_exception());
+        }
+      }
+      if(previous == value) {
+        return State::NONE;
+      }
+      previous = value;
+      return *previous;
+    }, std::forward<Series>(series));
   }
 }
 
