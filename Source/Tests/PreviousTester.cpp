@@ -1,4 +1,6 @@
+#include <stdexcept>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Previous.hpp"
 #include "Aspen/Queue.hpp"
@@ -6,7 +8,7 @@
 
 using namespace Aspen;
 
-TEST_SUITE("Distinct") {
+TEST_SUITE("Previous") {
   TEST_CASE("empty") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
@@ -48,5 +50,40 @@ TEST_SUITE("Distinct") {
     queue->set_complete();
     REQUIRE(reactor.commit(4) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 30);
+  }
+
+  TEST_CASE("a_source_that_cannot_throw") {
+    auto cell = Shared(Cell(1));
+    auto reactor = previous(cell);
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    cell->set(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    cell->set(3);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("a_source_that_fails_before_producing") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = previous(queue);
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("a_source_that_fails_after_producing") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = previous(queue);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    queue->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 }

@@ -3,6 +3,8 @@
 #include <optional>
 #include <utility>
 #include "Aspen/Lift.hpp"
+#include "Aspen/Maybe.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/Traits.hpp"
@@ -12,31 +14,36 @@ namespace Aspen {
   /**
    * Implements a reactor that evaluates to its previous value.
    * @param source The source to evaluate.
+   * @return A reactor evaluating to the <i>source</i>'s previous value.
    */
-  template<typename Reactor>
-  auto previous(Reactor&& source) {
-    using Type = reactor_result_t<Reactor>;
-    auto source_reactor = Shared(std::forward<Reactor>(source));
-    return Lift([previous = std::optional<Type>()]
-        (auto&& value, State state) mutable noexcept ->
-          FunctionEvaluation<Type> {
+  template<typename Source> requires IsReactor<to_reactor_t<Source>>
+  auto previous(Source&& source) {
+    using Type = reactor_result_t<Source>;
+    using Series = to_reactor_t<Source>;
+    auto source_reactor = Shared(std::forward<Source>(source));
+    return lift([previous = std::optional<Type>()] (const auto& value,
+        State state) mutable noexcept -> FunctionEvaluation<Type> {
+      if constexpr(!is_noexcept_reactor_v<Series>) {
+        if(value.has_exception()) {
+          return Maybe<Type>(value.get_exception());
+        }
+      }
       if(is_complete(state)) {
         if(!previous) {
           if(has_evaluation(state)) {
-            previous.emplace(std::forward<decltype(value)>(value));
+            previous.emplace(value);
             return State::CONTINUE;
           }
           return State::NONE;
-        } else {
-          return std::move(*previous);
         }
+        return std::move(*previous);
       }
       if(!previous) {
-        previous.emplace(std::forward<decltype(value)>(value));
+        previous.emplace(value);
         return State::NONE;
       }
       auto result = std::move(*previous);
-      *previous = std::forward<decltype(value)>(value);
+      *previous = value;
       return result;
     }, source_reactor, StateReactor(source_reactor));
   }
