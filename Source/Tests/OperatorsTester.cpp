@@ -1,6 +1,10 @@
+#include <stdexcept>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Operators.hpp"
+#include "Aspen/Queue.hpp"
+#include "Aspen/Shared.hpp"
 
 using namespace Aspen;
 
@@ -48,5 +52,50 @@ TEST_SUITE("Operators") {
     require(Constant<bool>(false) && constant(true), false);
     require(Constant<bool>(true) || constant(false), true);
     require(Constant<bool>(false) || constant(false), false);
+  }
+
+  TEST_CASE("operating_on_a_plain_value") {
+    require(constant(10) + 5, 15);
+    require(5 + constant(10), 15);
+    require(constant(10) - 5, 5);
+    require(5 - constant(10), -5);
+    require(constant(10) * 2, 20);
+    require(constant(10) % 3, 1);
+    require(constant(10) == 10, true);
+    require(10 == constant(10), true);
+    require(constant(10) != 10, false);
+    require(constant(10) < 20, true);
+    require(20 < constant(10), false);
+    require(constant(10) >= 10, true);
+    require(constant(4) << 2, 16);
+    require(constant(32) >> 3, 4);
+    require(constant(true) && false, false);
+    require(false || constant(true), true);
+  }
+
+  TEST_CASE("operating_on_reactors_that_cannot_throw") {
+    auto left = Shared(Cell(10));
+    auto right = Shared(Cell(20));
+    auto reactor = left + right;
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 30);
+    left->set(5);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 25);
+  }
+
+  TEST_CASE("operating_on_a_reactor_that_fails") {
+    auto left = Shared(Queue<int>());
+    auto right = Shared(Queue<int>());
+    auto reactor = left + right;
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    left->push(1);
+    right->push(2);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+    left->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 }
