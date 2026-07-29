@@ -4,8 +4,8 @@
 #include <deque>
 #include <exception>
 #include <mutex>
+#include <utility>
 #include "Aspen/CommitFlag.hpp"
-#include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -18,6 +18,8 @@ namespace Aspen {
   template<typename T>
   class Queue {
     public:
+
+      /** The type of values to queue. */
       using Type = T;
 
       /** Constructs an empty Queue. */
@@ -54,9 +56,7 @@ namespace Aspen {
       void set_complete(const E& exception);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const;
-
       Queue& operator =(Queue&& queue);
 
     private:
@@ -67,7 +67,7 @@ namespace Aspen {
       std::exception_ptr m_exception;
       CommitFlag* m_flag;
 
-      void notify();
+      void update(auto&& f);
   };
 
   template<typename T>
@@ -79,8 +79,8 @@ namespace Aspen {
   template<typename T>
   Queue<T>::Queue(Queue&& queue) {
     auto lock = std::lock_guard(queue.m_mutex);
-    m_is_complete = std::move(queue.m_is_complete);
-    m_has_commit = std::move(queue.m_has_commit);
+    m_is_complete = queue.m_is_complete;
+    m_has_commit = queue.m_has_commit;
     m_entries = std::move(queue.m_entries);
     m_exception = std::move(queue.m_exception);
     m_flag = nullptr;
@@ -88,31 +88,31 @@ namespace Aspen {
 
   template<typename T>
   void Queue<T>::push(Type value) {
-    auto lock = std::lock_guard(m_mutex);
-    m_entries.emplace_back(std::move(value));
-    notify();
+    update([&] {
+      m_entries.emplace_back(std::move(value));
+    });
   }
 
   template<typename T>
   void Queue<T>::set_complete() {
-    auto lock = std::lock_guard(m_mutex);
-    m_is_complete = true;
-    notify();
+    update([&] {
+      m_is_complete = true;
+    });
   }
 
   template<typename T>
   void Queue<T>::set_complete(Type value) {
-    auto lock = std::lock_guard(m_mutex);
-    m_is_complete = true;
-    m_entries.emplace_back(std::move(value));
-    notify();
+    update([&] {
+      m_is_complete = true;
+      m_entries.emplace_back(std::move(value));
+    });
   }
 
   template<typename T>
   void Queue<T>::set_complete(std::exception_ptr exception) {
-    auto lock = std::lock_guard(m_mutex);
-    m_exception = std::move(exception);
-    notify();
+    update([&] {
+      m_exception = std::move(exception);
+    });
   }
 
   template<typename T>
@@ -125,37 +125,25 @@ namespace Aspen {
   State Queue<T>::commit(std::uint64_t sequence) noexcept {
     auto lock = std::lock_guard(m_mutex);
     m_flag = CommitFlag::get_current();
-    auto state = [&] {
-      if(m_entries.size() > 1 || m_entries.size() == 1 && !m_has_commit) {
-        if(m_has_commit) {
-          m_entries.pop_front();
-        } else {
-          m_has_commit = true;
-        }
-        if(m_entries.size() > 1 || m_exception != nullptr) {
-          return State::CONTINUE_EVALUATED;
-        } else if(m_is_complete) {
-          return State::COMPLETE_EVALUATED;
-        } else {
-          return State::EVALUATED;
-        }
-      } else if(m_exception != nullptr) {
-        m_entries.clear();
-        return State::COMPLETE_EVALUATED;
-      } else if(m_is_complete) {
-        return State::COMPLETE;
+    if(m_entries.size() > 1 || (m_entries.size() == 1 && !m_has_commit)) {
+      if(m_has_commit) {
+        m_entries.pop_front();
       } else {
-        return State::NONE;
+        m_has_commit = true;
       }
-    }();
-    return state;
-  }
-
-  template<typename T>
-  void Queue<T>::notify() {
-    if(m_flag != nullptr) {
-      m_flag->raise();
+      if(m_entries.size() > 1 || m_exception) {
+        return State::CONTINUE_EVALUATED;
+      } else if(m_is_complete) {
+        return State::COMPLETE_EVALUATED;
+      }
+      return State::EVALUATED;
+    } else if(m_exception) {
+      m_entries.clear();
+      return State::COMPLETE_EVALUATED;
+    } else if(m_is_complete) {
+      return State::COMPLETE;
     }
+    return State::NONE;
   }
 
   template<typename T>
@@ -169,15 +157,30 @@ namespace Aspen {
 
   template<typename T>
   Queue<T>& Queue<T>::operator =(Queue&& queue) {
+    if(this == &queue) {
+      return *this;
+    }
     {
-      auto lock = std::lock_guard(queue.m_mutex);
-      m_is_complete = std::move(queue.m_is_complete);
-      m_has_commit = std::move(queue.m_has_commit);
+      auto lock = std::scoped_lock(m_mutex, queue.m_mutex);
+      m_is_complete = queue.m_is_complete;
+      m_has_commit = queue.m_has_commit;
       m_entries = std::move(queue.m_entries);
       m_exception = std::move(queue.m_exception);
       m_flag = nullptr;
     }
     return *this;
+  }
+
+  template<typename T>
+  void Queue<T>::update(auto&& f) {
+    auto flag = [&] {
+      auto lock = std::lock_guard(m_mutex);
+      f();
+      return m_flag;
+    }();
+    if(flag) {
+      flag->raise();
+    }
   }
 }
 
