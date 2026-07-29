@@ -11,10 +11,11 @@ namespace Aspen {
    */
   class Perpetual {
     public:
+
+      /** The type to evaluate to. */
       using Type = void;
 
       constexpr State commit(std::uint64_t sequence) noexcept;
-
       constexpr void eval() const noexcept;
   };
 
