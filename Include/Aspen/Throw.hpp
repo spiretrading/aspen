@@ -2,7 +2,6 @@
 #define ASPEN_THROW_HPP
 #include <cstdint>
 #include <exception>
-#include <type_traits>
 #include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -16,6 +15,8 @@ namespace Aspen {
   template<typename T>
   class Throw {
     public:
+
+      /** The type to evaluate to. */
       using Type = T;
 
       /**
@@ -29,10 +30,9 @@ namespace Aspen {
        * @param exception The exception to throw.
        */
       template<typename E>
-      Throw(E exception);
+      explicit Throw(E exception);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const;
 
     private:
@@ -41,16 +41,9 @@ namespace Aspen {
 
   /**
    * Returns a reactor that always throws an exception.
+   * @param <T> The type of reactor to evaluate to.
    * @param exception The exception to throw.
-   */
-  template<typename T>
-  auto throws(std::exception_ptr exception) {
-    return Throw<T>(std::move(exception));
-  }
-
-  /**
-   * Returns a reactor that always throws an exception.
-   * @param exception The exception to throw.
+   * @return A reactor that throws the <i>exception</i>.
    */
   template<typename T, typename E>
   auto throws(E exception) {
@@ -74,9 +67,6 @@ namespace Aspen {
   template<typename T>
   eval_result_t<typename Throw<T>::Type> Throw<T>::eval() const {
     std::rethrow_exception(m_exception);
-    if constexpr(!std::is_same_v<Type, void>) {
-      return *static_cast<const Type*>(nullptr);
-    }
   }
 }
 
