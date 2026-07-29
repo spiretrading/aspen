@@ -1,10 +1,14 @@
 #ifndef ASPEN_CONCUR_HPP
 #define ASPEN_CONCUR_HPP
+#include <concepts>
 #include <cstdint>
 #include <list>
+#include <memory>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include "Aspen/Branch.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -15,10 +19,14 @@ namespace Aspen {
    * children.
    * @param <T> The type of reactor producing the reactors to evaluate to.
    */
-  template<typename T>
+  template<IsReactor T> requires IsReactor<reactor_result_t<T>>
   class Concur {
     public:
+
+      /** The type to evaluate to. */
       using Type = reactor_result_t<reactor_result_t<T>>;
+
+      /** Whether an evaluation is noexcept. */
       static constexpr auto is_noexcept =
         is_noexcept_reactor_v<reactor_result_t<T>>;
 
@@ -26,12 +34,10 @@ namespace Aspen {
        * Constructs a Concur.
        * @param producer The reactor producing the reactors to evaluate to.
        */
-      template<typename TF, typename = std::enable_if_t<
-        !std::is_base_of_v<Concur, std::decay_t<TF>>>>
-      Concur(TF&& producer);
+      template<typename TF> requires std::constructible_from<T, TF>
+      explicit Concur(TF&& producer);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
@@ -39,8 +45,9 @@ namespace Aspen {
         Branch<reactor_result_t<T>> m_reactor;
         bool m_is_complete;
 
-        template<typename U>
-        Child(U&& reactor);
+        template<typename U> requires
+          std::constructible_from<reactor_result_t<T>, U>
+        explicit Child(U&& reactor);
       };
       std::optional<Branch<T>> m_producer;
       std::unique_ptr<std::list<Child>> m_children;
@@ -50,37 +57,38 @@ namespace Aspen {
       void increment();
   };
 
-  template<typename T, typename = std::enable_if_t<
-    !std::is_base_of_v<Concur<to_reactor_t<T>>, std::decay_t<T>>>>
+  template<typename T> requires(
+    !std::derived_from<std::remove_cvref_t<T>, Concur<to_reactor_t<T>>>)
   Concur(T&&) -> Concur<to_reactor_t<T>>;
 
   /**
    * Builds a Concur reactor to evaluate the reactors produced by its child.
    * @param producer The reactor producing the reactors to evaluate to.
+   * @return A reactor evaluating to every value its children produce.
    */
-  template<typename T>
+  template<typename T> requires IsReactor<std::remove_cvref_t<T>>
   auto concur(T&& producer) {
     return Concur(std::forward<T>(producer));
   }
 
-  template<typename T>
-  template<typename U>
+  template<IsReactor T> requires IsReactor<reactor_result_t<T>>
+  template<typename U> requires std::constructible_from<reactor_result_t<T>, U>
   Concur<T>::Child::Child(U&& reactor)
     : m_reactor(std::forward<U>(reactor)),
       m_is_complete(false) {}
 
-  template<typename T>
-  template<typename TF, typename>
+  template<IsReactor T> requires IsReactor<reactor_result_t<T>>
+  template<typename TF> requires std::constructible_from<T, TF>
   Concur<T>::Concur(TF&& producer)
     : m_producer(std::forward<TF>(producer)),
       m_children(std::make_unique<std::list<Child>>()),
       m_current(m_children->end()),
       m_position(m_children->end()) {}
 
-  template<typename T>
+  template<IsReactor T> requires IsReactor<reactor_result_t<T>>
   State Concur<T>::commit(std::uint64_t sequence) noexcept {
     auto state = [&] {
-      if(m_producer.has_value()) {
+      if(m_producer) {
         auto producer_state = m_producer->commit(sequence);
         if(has_evaluation(producer_state)) {
           try {
@@ -144,19 +152,19 @@ namespace Aspen {
     }
     if((m_children->empty() ||
         m_children->size() == 1 && m_children->front().m_is_complete) &&
-        !m_producer.has_value()) {
+          !m_producer) {
       state = combine(state, State::COMPLETE);
     }
     return state;
   }
 
-  template<typename T>
+  template<IsReactor T> requires IsReactor<reactor_result_t<T>>
   eval_result_t<typename Concur<T>::Type> Concur<T>::eval()
       const noexcept(is_noexcept) {
     return m_current->m_reactor->eval();
   }
 
-  template<typename T>
+  template<IsReactor T> requires IsReactor<reactor_result_t<T>>
   void Concur<T>::increment() {
     ++m_position;
     if(m_position == m_children->end()) {

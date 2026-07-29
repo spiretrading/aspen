@@ -173,6 +173,25 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::COMPLETE);
   }
 
+  TEST_CASE("moving_a_concur_resumes_where_it_left_off") {
+    auto producer = Producer();
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    producer->push(shared_box(first));
+    producer->push(shared_box(second));
+    producer->set_complete();
+    auto reactor = concur(producer);
+    auto sequence = std::uint64_t(0);
+    absorb(reactor, sequence, 2);
+    first->push(1);
+    second->push(2);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    auto moved = std::move(reactor);
+    REQUIRE(moved.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(moved.eval() == 2);
+  }
+
   TEST_CASE("a_child_produced_later_is_evaluated") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
