@@ -13,12 +13,20 @@ namespace Aspen {
    * Used to hold a unique reactor, can not be shared with multiple reactors.
    * @param <R> The type of reactor to own.
    */
-  template<typename R>
+  template<IsReactor R>
   class Unique {
     public:
+
+      /** The type of reactor being owned. */
       using Reactor = R;
+
+      /** The type to evaluate to. */
       using Type = reactor_result_t<Reactor>;
-      using Result = decltype(std::declval<Reactor>().eval());
+
+      /** The type returned by an evaluation. */
+      using Result = decltype(std::declval<Reactor&>().eval());
+
+      /** Whether this reactor's eval is noexcept. */
       static constexpr auto is_noexcept = is_noexcept_reactor_v<Reactor>;
 
       /** Constructs an uninitialized reactor. */
@@ -36,20 +44,11 @@ namespace Aspen {
        */
       explicit Unique(std::unique_ptr<Reactor> reactor) noexcept;
 
-      //! Returns a reference to the reactor.
       const Reactor& operator *() const noexcept;
-
-      //! Returns a pointer to the reactor.
       const Reactor* operator ->() const noexcept;
-
-      //! Returns a reference to the reactor.
       Reactor& operator *() noexcept;
-
-      //! Returns a pointer to the reactor.
       Reactor* operator ->() noexcept;
-
       State commit(std::uint64_t sequence) noexcept;
-
       Result eval() const noexcept(is_noexcept);
 
     private:
@@ -57,40 +56,40 @@ namespace Aspen {
       std::unique_ptr<Reactor> m_reactor;
   };
 
-  template<typename R>
+  template<IsReactor R>
   Unique<R>::Unique(Reactor* reactor) noexcept
     : Unique(std::unique_ptr<Reactor>(reactor)) {}
 
-  template<typename R>
+  template<IsReactor R>
   Unique<R>::Unique(std::unique_ptr<Reactor> reactor) noexcept
     : m_reactor(std::move(reactor)) {}
 
-  template<typename R>
+  template<IsReactor R>
   const typename Unique<R>::Reactor& Unique<R>::operator *() const noexcept {
     return *m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   const typename Unique<R>::Reactor* Unique<R>::operator ->() const noexcept {
     return m_reactor.get();
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Unique<R>::Reactor& Unique<R>::operator *() noexcept {
     return *m_reactor;
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Unique<R>::Reactor* Unique<R>::operator ->() noexcept {
     return m_reactor.get();
   }
 
-  template<typename R>
+  template<IsReactor R>
   State Unique<R>::commit(std::uint64_t sequence) noexcept {
     return m_reactor->commit(sequence);
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Unique<R>::Result Unique<R>::eval() const noexcept(is_noexcept) {
     return m_reactor->eval();
   }
