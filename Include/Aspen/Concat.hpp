@@ -1,10 +1,12 @@
 #ifndef ASPEN_CONCAT_HPP
 #define ASPEN_CONCAT_HPP
+#include <concepts>
 #include <cstdint>
 #include <list>
 #include <type_traits>
 #include <utility>
 #include "Aspen/Branch.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -15,11 +17,17 @@ namespace Aspen {
    * children.
    * @param <R> The type of reactor producing the reactors to evaluate to.
    */
-  template<typename R>
+  template<IsReactor R> requires IsReactor<reactor_result_t<R>>
   class Concat {
     public:
+
+      /** The type of reactor producing the reactors to evaluate to. */
       using Reactor = R;
+
+      /** The type to evaluate to. */
       using Type = reactor_result_t<reactor_result_t<Reactor>>;
+
+      /** Whether an evaluation is noexcept. */
       static constexpr auto is_noexcept =
         is_noexcept_reactor_v<reactor_result_t<Reactor>>;
 
@@ -27,43 +35,41 @@ namespace Aspen {
        * Constructs a Concat.
        * @param producer The reactor producing the reactors to evaluate to.
        */
-      template<typename RF, typename = std::enable_if_t<
-        !std::is_base_of_v<Concat, std::decay_t<RF>>>>
+      template<typename RF> requires std::constructible_from<R, RF>
       explicit Concat(RF&& producer);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
       Branch<Reactor> m_producer;
       bool m_is_producer_complete;
-      State m_producer_state;
       std::list<Branch<reactor_result_t<Reactor>>> m_children;
       bool m_is_child_complete;
   };
 
-  template<typename R, typename = std::enable_if_t<
-    !std::is_base_of_v<Concat<to_reactor_t<R>>, std::decay_t<R>>>>
+  template<typename R> requires(!std::derived_from<std::remove_cvref_t<R>,
+    Concat<to_reactor_t<R>>>)
   Concat(R&&) -> Concat<to_reactor_t<R>>;
 
   /**
    * Concats the reactors produced by its child.
    * @param producer The reactor producing the reactors to evaluate to.
+   * @return A reactor evaluating to every value the <i>producer</i> produces.
    */
-  template<typename R, std::enable_if_t<is_reactor_v<R>>* = nullptr>
+  template<typename R> requires IsReactor<std::remove_cvref_t<R>>
   auto concat(R&& producer) {
     return Concat(std::forward<R>(producer));
   }
 
-  template<typename R>
-  template<typename RF, typename>
+  template<IsReactor R> requires IsReactor<reactor_result_t<R>>
+  template<typename RF> requires std::constructible_from<R, RF>
   Concat<R>::Concat(RF&& producer)
     : m_producer(std::forward<RF>(producer)),
       m_is_producer_complete(false),
       m_is_child_complete(false) {}
 
-  template<typename R>
+  template<IsReactor R> requires IsReactor<reactor_result_t<R>>
   State Concat<R>::commit(std::uint64_t sequence) noexcept {
     auto state = [&] {
       if(!m_is_producer_complete) {
@@ -129,8 +135,8 @@ namespace Aspen {
     return state;
   }
 
-  template<typename T>
-  eval_result_t<typename Concat<T>::Type> Concat<T>::eval()
+  template<IsReactor R> requires IsReactor<reactor_result_t<R>>
+  eval_result_t<typename Concat<R>::Type> Concat<R>::eval()
       const noexcept(is_noexcept) {
     return m_children.front()->eval();
   }
