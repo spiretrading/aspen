@@ -2,6 +2,7 @@
 #define ASPEN_CONVERSIONS_HPP
 #include <type_traits>
 #include <utility>
+#include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -30,11 +31,12 @@ namespace Aspen {
 
       State commit(int sequence) noexcept;
 
-      Type eval() const noexcept(is_noexcept);
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
       R m_reactor;
       F m_conversion;
+      try_maybe_t<Type, !is_noexcept> m_value;
   };
 
   template<typename R, typename F>
@@ -62,13 +64,23 @@ namespace Aspen {
 
   template<typename R, typename F>
   State ConversionReactor<R, F>::commit(int sequence) noexcept {
-    return m_reactor.commit(sequence);
+    auto state = m_reactor.commit(sequence);
+    if(has_evaluation(state)) {
+      if constexpr(is_noexcept && !std::is_same_v<Type, void>) {
+        *m_value = m_conversion(m_reactor.eval());
+      } else {
+        m_value = try_call([&] () noexcept(is_noexcept) {
+          return m_conversion(m_reactor.eval());
+        });
+      }
+    }
+    return state;
   }
 
   template<typename R, typename F>
-  typename ConversionReactor<R, F>::Type
+  eval_result_t<typename ConversionReactor<R, F>::Type>
       ConversionReactor<R, F>::eval() const noexcept(is_noexcept) {
-    return m_conversion(m_reactor.eval());
+    return *m_value;
   }
 }
 
