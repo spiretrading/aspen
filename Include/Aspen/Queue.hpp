@@ -3,10 +3,10 @@
 #include <deque>
 #include <exception>
 #include <mutex>
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
-#include "Aspen/Trigger.hpp"
 
 namespace Aspen {
 
@@ -64,14 +64,16 @@ namespace Aspen {
       bool m_has_commit;
       std::deque<Type> m_entries;
       std::exception_ptr m_exception;
-      Trigger* m_trigger;
+      CommitFlag* m_flag;
+
+      void notify();
   };
 
   template<typename T>
   Queue<T>::Queue()
     : m_is_complete(false),
       m_has_commit(false),
-      m_trigger(nullptr) {}
+      m_flag(nullptr) {}
 
   template<typename T>
   Queue<T>::Queue(Queue&& queue) {
@@ -80,25 +82,21 @@ namespace Aspen {
     m_has_commit = std::move(queue.m_has_commit);
     m_entries = std::move(queue.m_entries);
     m_exception = std::move(queue.m_exception);
-    m_trigger = std::move(queue.m_trigger);
+    m_flag = nullptr;
   }
 
   template<typename T>
   void Queue<T>::push(Type value) {
     auto lock = std::lock_guard(m_mutex);
     m_entries.emplace_back(std::move(value));
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
   void Queue<T>::set_complete() {
     auto lock = std::lock_guard(m_mutex);
     m_is_complete = true;
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
@@ -106,18 +104,14 @@ namespace Aspen {
     auto lock = std::lock_guard(m_mutex);
     m_is_complete = true;
     m_entries.emplace_back(std::move(value));
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
   void Queue<T>::set_complete(std::exception_ptr exception) {
     auto lock = std::lock_guard(m_mutex);
     m_exception = std::move(exception);
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
@@ -129,9 +123,7 @@ namespace Aspen {
   template<typename T>
   State Queue<T>::commit(int sequence) noexcept {
     auto lock = std::lock_guard(m_mutex);
-    if(m_trigger == nullptr) {
-      m_trigger = Trigger::get_trigger();
-    }
+    m_flag = CommitFlag::get_current();
     auto state = [&] {
       if(m_entries.size() > 1 || m_entries.size() == 1 && !m_has_commit) {
         if(m_has_commit) {
@@ -159,6 +151,13 @@ namespace Aspen {
   }
 
   template<typename T>
+  void Queue<T>::notify() {
+    if(m_flag != nullptr) {
+      m_flag->raise();
+    }
+  }
+
+  template<typename T>
   eval_result_t<typename Queue<T>::Type> Queue<T>::eval() const {
     auto lock = std::lock_guard(m_mutex);
     if(m_entries.empty()) {
@@ -175,7 +174,7 @@ namespace Aspen {
       m_has_commit = std::move(queue.m_has_commit);
       m_entries = std::move(queue.m_entries);
       m_exception = std::move(queue.m_exception);
-      m_trigger = std::move(queue.m_trigger);
+      m_flag = nullptr;
     }
     return *this;
   }

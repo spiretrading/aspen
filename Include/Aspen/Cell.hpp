@@ -3,9 +3,9 @@
 #include <mutex>
 #include <optional>
 #include <utility>
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
-#include "Aspen/Trigger.hpp"
 
 namespace Aspen {
 
@@ -82,30 +82,32 @@ namespace Aspen {
       bool m_is_complete;
       std::optional<Type> m_current;
       std::optional<Type> m_next;
-      Trigger* m_trigger;
+      CommitFlag* m_flag;
+
+      void notify();
   };
 
   template<typename T>
   Cell<T>::Cell()
     : m_is_complete(false),
-      m_trigger(nullptr) {}
+      m_flag(nullptr) {}
 
   template<typename T>
   Cell<T>::Cell(Type value)
     : m_is_complete(false),
       m_next(std::move(value)),
-      m_trigger(nullptr) {}
+      m_flag(nullptr) {}
 
   template<typename T>
   template<typename... A>
   Cell<T>::Cell(std::in_place_t, A&&... args)
     : m_is_complete(false),
       m_next(std::in_place, std::forward<A>(args)...),
-      m_trigger(nullptr) {}
+      m_flag(nullptr) {}
 
   template<typename T>
   Cell<T>::Cell(const Cell& cell)
-      : m_trigger(nullptr) {
+      : m_flag(nullptr) {
     auto lock = std::lock_guard(cell.m_mutex);
     m_is_complete = cell.m_is_complete;
     m_current = cell.m_current;
@@ -114,7 +116,7 @@ namespace Aspen {
 
   template<typename T>
   Cell<T>::Cell(Cell&& cell)
-      : m_trigger(nullptr) {
+      : m_flag(nullptr) {
     auto lock = std::lock_guard(cell.m_mutex);
     m_is_complete = cell.m_is_complete;
     m_current = std::move(cell.m_current);
@@ -125,9 +127,7 @@ namespace Aspen {
   void Cell<T>::set(Type value) {
     auto lock = std::lock_guard(m_mutex);
     m_next = std::move(value);
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
@@ -135,18 +135,14 @@ namespace Aspen {
   void Cell<T>::emplace(A&&... args) {
     auto lock = std::lock_guard(m_mutex);
     m_next.emplace(std::forward<A>(args)...);
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
   void Cell<T>::set_complete() {
     auto lock = std::lock_guard(m_mutex);
     m_is_complete = true;
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
@@ -154,9 +150,7 @@ namespace Aspen {
     auto lock = std::lock_guard(m_mutex);
     m_is_complete = true;
     m_next = std::move(value);
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
@@ -165,17 +159,13 @@ namespace Aspen {
     auto lock = std::lock_guard(m_mutex);
     m_is_complete = true;
     m_next.emplace(std::forward<A>(args)...);
-    if(m_trigger != nullptr) {
-      m_trigger->signal();
-    }
+    notify();
   }
 
   template<typename T>
   State Cell<T>::commit(int sequence) noexcept {
     auto lock = std::lock_guard(m_mutex);
-    if(m_trigger == nullptr) {
-      m_trigger = Trigger::get_trigger();
-    }
+    m_flag = CommitFlag::get_current();
     auto state = State::NONE;
     if(m_next.has_value()) {
       m_current = std::move(m_next);
@@ -186,6 +176,13 @@ namespace Aspen {
       state = combine(state, State::COMPLETE);
     }
     return state;
+  }
+
+  template<typename T>
+  void Cell<T>::notify() {
+    if(m_flag != nullptr) {
+      m_flag->raise();
+    }
   }
 
   template<typename T>

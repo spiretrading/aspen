@@ -3,6 +3,7 @@
 #include "Aspen/Box.hpp"
 #include "Aspen/Cell.hpp"
 #include "Aspen/Chain.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Concat.hpp"
 #include "Aspen/Concur.hpp"

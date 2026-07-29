@@ -1,7 +1,12 @@
 #ifndef ASPEN_COMMIT_HANDLER_HPP
 #define ASPEN_COMMIT_HANDLER_HPP
+#include <atomic>
+#include <bit>
+#include <cstdint>
+#include <memory>
 #include <utility>
 #include <vector>
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"
 
 namespace Aspen {
@@ -21,6 +26,12 @@ namespace Aspen {
       template<typename A = std::allocator<R>>
       explicit CommitHandler(std::vector<R, A> children);
 
+      /** Moves a CommitHandler. */
+      CommitHandler(CommitHandler&& handler) noexcept;
+
+      /** Moves a CommitHandler. */
+      CommitHandler& operator =(CommitHandler&& handler) noexcept;
+
       /**
        * Commits all children and returns their aggregate State.
        * @param sequence The commit's sequence.
@@ -38,15 +49,25 @@ namespace Aspen {
       R& get(std::size_t i) noexcept;
 
     private:
+      static constexpr auto BITS = std::size_t(64);
       struct Child {
+        CommitFlag m_flag;
         R m_reactor;
         State m_state;
         bool m_has_evaluation;
 
         Child(R reactor);
+        Child(Child&& child) noexcept;
       };
       std::vector<Child> m_children;
+      std::unique_ptr<std::atomic_uint64_t[]> m_raised;
+      std::size_t m_word_count;
+      std::size_t m_completion_count;
+      std::size_t m_evaluation_count;
       bool m_is_initializing;
+      bool m_is_linked;
+
+      void link() noexcept;
   };
 
   template<typename R>
@@ -56,11 +77,57 @@ namespace Aspen {
       m_has_evaluation(false) {}
 
   template<typename R>
+  CommitHandler<R>::Child::Child(Child&& child) noexcept
+    : m_reactor(std::move(child.m_reactor)),
+      m_state(child.m_state),
+      m_has_evaluation(child.m_has_evaluation) {}
+
+  template<typename R>
   template<typename A>
   CommitHandler<R>::CommitHandler(std::vector<R, A> children)
-      : m_is_initializing(true) {
+      : m_word_count((children.size() + BITS - 1) / BITS),
+        m_completion_count(0),
+        m_evaluation_count(0),
+        m_is_initializing(true),
+        m_is_linked(false) {
+    m_children.reserve(children.size());
     for(auto& child : children) {
       m_children.push_back(std::move(child));
+    }
+    m_raised = std::make_unique<std::atomic_uint64_t[]>(m_word_count);
+  }
+
+  template<typename R>
+  CommitHandler<R>::CommitHandler(CommitHandler&& handler) noexcept
+    : m_children(std::move(handler.m_children)),
+      m_raised(std::move(handler.m_raised)),
+      m_word_count(handler.m_word_count),
+      m_completion_count(handler.m_completion_count),
+      m_evaluation_count(handler.m_evaluation_count),
+      m_is_initializing(handler.m_is_initializing),
+      m_is_linked(false) {}
+
+  template<typename R>
+  CommitHandler<R>& CommitHandler<R>::operator =(
+      CommitHandler&& handler) noexcept {
+    m_children = std::move(handler.m_children);
+    m_raised = std::move(handler.m_raised);
+    m_word_count = handler.m_word_count;
+    m_completion_count = handler.m_completion_count;
+    m_evaluation_count = handler.m_evaluation_count;
+    m_is_initializing = handler.m_is_initializing;
+    m_is_linked = false;
+    return *this;
+  }
+
+  template<typename R>
+  void CommitHandler<R>::link() noexcept {
+    m_is_linked = true;
+    auto parent = CommitFlag::get_current();
+    for(auto i = std::size_t(0); i != m_children.size(); ++i) {
+      auto& flag = m_children[i].m_flag;
+      flag.set_parent(parent);
+      flag.set_slot(&m_raised[i / BITS], static_cast<std::uint8_t>(i % BITS));
     }
   }
 
@@ -69,49 +136,56 @@ namespace Aspen {
     if(m_children.empty()) {
       return State::COMPLETE;
     }
-    auto state = State::NONE;
+    if(!m_is_linked) {
+      link();
+    }
     auto evaluation_count = std::size_t(0);
-    auto completion_count = std::size_t(0);
     auto has_continue = false;
-    for(auto& child : m_children) {
-      if(is_complete(child.m_state)) {
-        ++completion_count;
-        if(m_is_initializing && child.m_has_evaluation) {
-          ++evaluation_count;
+    for(auto word = std::size_t(0); word != m_word_count; ++word) {
+      if(m_raised[word].load(std::memory_order_acquire) == 0) {
+        continue;
+      }
+      auto bits = m_raised[word].exchange(0, std::memory_order_acq_rel);
+      while(bits != 0) {
+        auto index = word * BITS + std::countr_zero(bits);
+        bits &= bits - 1;
+        auto& child = m_children[index];
+        if(is_complete(child.m_state) || !child.m_flag.is_raised()) {
+          continue;
         }
-      } else {
-        child.m_state = child.m_reactor.commit(sequence);
-        if(m_is_initializing) {
-          child.m_has_evaluation |= has_evaluation(child.m_state);
-          if(child.m_has_evaluation) {
-            ++evaluation_count;
-          }
-        } else if(has_evaluation(child.m_state)) {
+        child.m_flag.clear();
+        {
+          auto scope = CommitFlagScope(child.m_flag);
+          child.m_state = child.m_reactor.commit(sequence);
+        }
+        if(has_evaluation(child.m_state)) {
           ++evaluation_count;
+          if(!child.m_has_evaluation) {
+            child.m_has_evaluation = true;
+            ++m_evaluation_count;
+          }
         }
         if(is_complete(child.m_state)) {
-          ++completion_count;
+          ++m_completion_count;
           if(!child.m_has_evaluation) {
-            state = State::COMPLETE;
-            break;
+            return State::COMPLETE;
           }
-        } else {
-          has_continue |= has_continuation(child.m_state);
+        } else if(has_continuation(child.m_state)) {
+          has_continue = true;
+          child.m_flag.raise();
         }
       }
     }
-    if(state == State::COMPLETE) {
-      return State::COMPLETE;
-    }
+    auto state = State::NONE;
     if(m_is_initializing) {
-      if(evaluation_count == m_children.size()) {
+      if(m_evaluation_count == m_children.size()) {
         m_is_initializing = false;
         state = combine(state, State::EVALUATED);
       }
     } else if(evaluation_count != 0) {
       state = combine(state, State::EVALUATED);
     }
-    if(completion_count == m_children.size()) {
+    if(m_completion_count == m_children.size()) {
       state = combine(state, State::COMPLETE);
     } else if(has_continue) {
       state = combine(state, State::CONTINUE);

@@ -3,6 +3,7 @@
 #include "Aspen/Python/Box.hpp"
 #include "Aspen/Python/Cell.hpp"
 #include "Aspen/Python/Chain.hpp"
+#include "Aspen/Python/CommitFlag.hpp"
 #include "Aspen/Python/CommitHandler.hpp"
 #include "Aspen/Python/Concat.hpp"
 #include "Aspen/Python/Concur.hpp"

@@ -5,6 +5,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -45,10 +46,10 @@ namespace Details {
       explicit StaticCommitHandler(A&&... children);
 
       /** Copies a StaticCommitHandler. */
-      StaticCommitHandler(const StaticCommitHandler&) = default;
+      StaticCommitHandler(const StaticCommitHandler& handler);
 
       /** Moves a StaticCommitHandler. */
-      StaticCommitHandler(StaticCommitHandler&&) = default;
+      StaticCommitHandler(StaticCommitHandler&& handler) noexcept;
 
       /**
        * Commits all children and returns their aggregate State.
@@ -66,23 +67,30 @@ namespace Details {
       std::tuple_element_t<I, std::tuple<R...>>& get() noexcept;
 
       /** Copies a StaticCommitHandler. */
-      StaticCommitHandler& operator =(const StaticCommitHandler&) = default;
+      StaticCommitHandler& operator =(const StaticCommitHandler& handler);
 
       /** Moves a StaticCommitHandler. */
-      StaticCommitHandler& operator =(StaticCommitHandler&&) = default;
+      StaticCommitHandler& operator =(StaticCommitHandler&& handler) noexcept;
 
     private:
       template<typename C>
       struct Child {
+        CommitFlag m_flag;
         C m_reactor;
         State m_state;
         bool m_has_evaluation;
 
-        template<typename CF>
+        template<typename CF, typename = std::enable_if_t<
+          !std::is_base_of_v<Child, std::decay_t<CF>>>>
         Child(CF&& reactor);
+        Child(const Child& child);
+        Child(Child&& child) noexcept;
+        Child& operator =(const Child& child);
+        Child& operator =(Child&& child) noexcept;
       };
       std::tuple<Child<R>...> m_children;
       bool m_is_initializing;
+      bool m_is_linked;
 
       template<typename CF>
       static auto make_child(CF&& reactor);
@@ -122,27 +130,104 @@ namespace Details {
 
   template<typename... R>
   template<typename C>
-  template<typename CF>
+  template<typename CF, typename>
   StaticCommitHandler<R...>::Child<C>::Child(CF&& reactor)
     : m_reactor(std::forward<CF>(reactor)),
       m_state(State::NONE),
       m_has_evaluation(false) {}
 
   template<typename... R>
+  template<typename C>
+  StaticCommitHandler<R...>::Child<C>::Child(const Child& child)
+    : m_reactor(child.m_reactor),
+      m_state(child.m_state),
+      m_has_evaluation(child.m_has_evaluation) {}
+
+  template<typename... R>
+  template<typename C>
+  StaticCommitHandler<R...>::Child<C>::Child(Child&& child) noexcept
+    : m_reactor(std::move(child.m_reactor)),
+      m_state(child.m_state),
+      m_has_evaluation(child.m_has_evaluation) {}
+
+  template<typename... R>
+  template<typename C>
+  typename StaticCommitHandler<R...>::template Child<C>&
+      StaticCommitHandler<R...>::Child<C>::operator =(const Child& child) {
+    m_reactor = child.m_reactor;
+    m_state = child.m_state;
+    m_has_evaluation = child.m_has_evaluation;
+    m_flag.raise();
+    return *this;
+  }
+
+  template<typename... R>
+  template<typename C>
+  typename StaticCommitHandler<R...>::template Child<C>&
+      StaticCommitHandler<R...>::Child<C>::operator =(Child&& child) noexcept {
+    m_reactor = std::move(child.m_reactor);
+    m_state = child.m_state;
+    m_has_evaluation = child.m_has_evaluation;
+    m_flag.raise();
+    return *this;
+  }
+
+  template<typename... R>
   StaticCommitHandler<R...>::StaticCommitHandler(const R&... children)
     : m_children(children...),
-      m_is_initializing(true) {}
+      m_is_initializing(true),
+      m_is_linked(false) {}
 
   template<typename... R>
   template<typename... A>
   StaticCommitHandler<R...>::StaticCommitHandler(A&&... children)
     : m_children(std::forward<A>(children)...),
-      m_is_initializing(true) {}
+      m_is_initializing(true),
+      m_is_linked(false) {}
+
+  template<typename... R>
+  StaticCommitHandler<R...>::StaticCommitHandler(
+    const StaticCommitHandler& handler)
+    : m_children(handler.m_children),
+      m_is_initializing(handler.m_is_initializing),
+      m_is_linked(false) {}
+
+  template<typename... R>
+  StaticCommitHandler<R...>::StaticCommitHandler(
+    StaticCommitHandler&& handler) noexcept
+    : m_children(std::move(handler.m_children)),
+      m_is_initializing(handler.m_is_initializing),
+      m_is_linked(false) {}
+
+  template<typename... R>
+  StaticCommitHandler<R...>& StaticCommitHandler<R...>::operator =(
+      const StaticCommitHandler& handler) {
+    m_children = handler.m_children;
+    m_is_initializing = handler.m_is_initializing;
+    m_is_linked = false;
+    return *this;
+  }
+
+  template<typename... R>
+  StaticCommitHandler<R...>& StaticCommitHandler<R...>::operator =(
+      StaticCommitHandler&& handler) noexcept {
+    m_children = std::move(handler.m_children);
+    m_is_initializing = handler.m_is_initializing;
+    m_is_linked = false;
+    return *this;
+  }
 
   template<typename... R>
   State StaticCommitHandler<R...>::commit(int sequence) noexcept {
     if(sizeof...(R) == 0) {
       return State::COMPLETE;
+    }
+    if(!m_is_linked) {
+      m_is_linked = true;
+      auto parent = CommitFlag::get_current();
+      for_each(m_children, [&] (auto& child) noexcept {
+        child.m_flag.set_parent(parent);
+      });
     }
     auto state = State::NONE;
     auto evaluation_count = std::size_t(0);
@@ -157,8 +242,17 @@ namespace Details {
         if(m_is_initializing && child.m_has_evaluation) {
           ++evaluation_count;
         }
+      } else if(!child.m_flag.is_raised()) {
+        child.m_state = State::NONE;
+        if(m_is_initializing && child.m_has_evaluation) {
+          ++evaluation_count;
+        }
       } else {
-        child.m_state = child.m_reactor.commit(sequence);
+        child.m_flag.clear();
+        {
+          auto scope = CommitFlagScope(child.m_flag);
+          child.m_state = child.m_reactor.commit(sequence);
+        }
         if(m_is_initializing) {
           child.m_has_evaluation |= has_evaluation(child.m_state);
           if(child.m_has_evaluation) {
@@ -174,6 +268,9 @@ namespace Details {
           }
         } else {
           has_continue |= has_continuation(child.m_state);
+          if(has_continuation(child.m_state)) {
+            child.m_flag.raise();
+          }
         }
       }
     });

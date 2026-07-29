@@ -7,27 +7,15 @@
 namespace Aspen {
   class Trigger;
 namespace Details {
-#if !defined(ASPEN_BUILD_DLL) && !defined(ASPEN_USE_DLL)
-  template<typename T>
-  struct StaticTrigger {
-    static thread_local Trigger* m_value;
-
-    static Trigger*& get() {
-      return m_value;
-    }
-  };
-
-  template<typename T>
-  thread_local Trigger* StaticTrigger<T>::m_value;
-#else
-  template<typename T>
   struct ASPEN_EXPORT_DLL StaticTrigger {
-    static Trigger*& get() {
-      static thread_local Trigger* value;
-      return value;
-    }
+    static Trigger*& get() noexcept;
   };
-  ASPEN_EXTERN template struct ASPEN_EXPORT_DLL StaticTrigger<void>;
+
+#ifndef ASPEN_USE_DLL
+  ASPEN_EMIT_DLL inline Trigger*& StaticTrigger::get() noexcept {
+    static thread_local auto current_trigger = static_cast<Trigger*>(nullptr);
+    return current_trigger;
+  }
 #endif
 }
 
@@ -75,11 +63,11 @@ namespace Details {
   };
 
   inline Trigger* Trigger::get_trigger() {
-    return Details::StaticTrigger<void>::get();
+    return Details::StaticTrigger::get();
   }
 
   inline void Trigger::set_trigger(Trigger* trigger) {
-    Details::StaticTrigger<void>::get() = trigger;
+    Details::StaticTrigger::get() = trigger;
   }
 
   inline void Trigger::set_trigger(Trigger& trigger) {

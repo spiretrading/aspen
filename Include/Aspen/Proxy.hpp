@@ -1,6 +1,7 @@
 #ifndef ASPEN_PROXY_HPP
 #define ASPEN_PROXY_HPP
 #include <optional>
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -31,6 +32,7 @@ namespace Aspen {
       std::optional<T> m_reactor;
       bool m_has_cycle;
       State m_state;
+      CommitFlag* m_flag;
   };
 
   /**
@@ -44,16 +46,21 @@ namespace Aspen {
   template<typename T>
   Proxy<T>::Proxy() noexcept
     : m_has_cycle(false),
-      m_state(State::NONE) {}
+      m_state(State::NONE),
+      m_flag(nullptr) {}
 
   template<typename T>
   template<typename U>
   void Proxy<T>::set_reactor(U&& reactor) {
     m_reactor.emplace(std::forward<U>(reactor));
+    if(m_flag != nullptr) {
+      m_flag->raise();
+    }
   }
 
   template<typename T>
   State Proxy<T>::commit(int sequence) noexcept {
+    m_flag = CommitFlag::get_current();
     if(is_complete(m_state) || m_has_cycle || !m_reactor.has_value()) {
       return m_state;
     }

@@ -4,12 +4,11 @@
 using namespace Aspen;
 using namespace pybind11;
 
-template struct Aspen::Details::StaticTrigger<void>;
-
 PYBIND11_MODULE(aspen, m) {
   export_box(m);
   export_cell(m);
   export_chain(m);
+  export_commit_flag(m);
   export_commit_handler(m);
   export_concat(m);
   export_concur(m);

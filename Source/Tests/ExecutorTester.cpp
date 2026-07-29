@@ -1,3 +1,5 @@
+#include <condition_variable>
+#include <mutex>
 #include <optional>
 #include <thread>
 #include <vector>
@@ -51,5 +53,36 @@ TEST_SUITE("Executor") {
     executor_thread.join();
     REQUIRE(results.size() == 5);
     REQUIRE(results == std::vector{10, 20, 30, 40, 100});
+  }
+
+  TEST_CASE("run_until_complete_wakes_on_every_push") {
+    auto queue = Shared(Queue<int>());
+    auto mutex = std::mutex();
+    auto condition = std::condition_variable();
+    auto results = std::vector<int>();
+    auto executor = Executor(
+      lift([&] (const auto& value) {
+        auto lock = std::lock_guard(mutex);
+        results.push_back(value);
+        condition.notify_all();
+      }, queue));
+    auto executor_thread = std::thread([&] {
+      executor.run_until_complete();
+    });
+    auto wait_for = [&] (std::size_t count) {
+      auto lock = std::unique_lock(mutex);
+      condition.wait(lock, [&] {
+        return results.size() >= count;
+      });
+    };
+    queue->push(10);
+    wait_for(1);
+    queue->push(20);
+    wait_for(2);
+    queue->push(30);
+    wait_for(3);
+    queue->set_complete(40);
+    executor_thread.join();
+    REQUIRE(results == std::vector{10, 20, 30, 40});
   }
 }

@@ -9,6 +9,7 @@
 #endif
 #include <set>
 #include "Aspen/Box.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Trigger.hpp"
 
 namespace Aspen {
@@ -43,12 +44,14 @@ namespace Aspen {
       std::mutex m_mutex;
       std::condition_variable m_update_condition;
       Trigger m_trigger;
+      CommitFlag m_flag;
       int m_sequence;
       Box<void> m_reactor;
       Update m_has_update;
 
       void abort();
       void on_update();
+      State commit();
 #if defined WIN32
       static BOOL __stdcall ctrl_handler(DWORD ctrl);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -60,18 +63,25 @@ namespace Aspen {
 
   template<typename R>
   Executor::Executor(R&& reactor)
-    : m_trigger([this] { on_update(); }),
-      m_sequence(0),
-      m_reactor(std::forward<R>(reactor)),
-      m_has_update(Update::NONE) {}
+      : m_trigger([this] { on_update(); }),
+        m_sequence(0),
+        m_reactor(std::forward<R>(reactor)),
+        m_has_update(Update::NONE) {
+    m_flag.set_trigger(&m_trigger);
+  }
+
+  inline State Executor::commit() {
+    m_flag.clear();
+    auto scope = CommitFlagScope(m_flag);
+    auto state = m_reactor.commit(m_sequence);
+    ++m_sequence;
+    return state;
+  }
 
   inline void Executor::run_until_none() {
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
-    while(has_continuation(m_reactor.commit(m_sequence))) {
-      ++m_sequence;
-    }
-    ++m_sequence;
+    while(has_continuation(commit())) {}
     Trigger::set_trigger(old_trigger);
   }
 
@@ -92,8 +102,7 @@ namespace Aspen {
       m_running_executors.insert(this);
     }
     while(true) {
-      auto state = m_reactor.commit(m_sequence);
-      ++m_sequence;
+      auto state = commit();
       if(is_complete(state)) {
         break;
       } else if(!has_continuation(state)) {

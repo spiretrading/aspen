@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/Shared.hpp"
@@ -21,7 +22,7 @@ namespace Aspen {
       using Type = T;
 
       /** Constructs a FoldArgument. */
-      FoldArgument() = default;
+      FoldArgument() noexcept;
 
       State commit(int sequence) noexcept;
 
@@ -31,6 +32,7 @@ namespace Aspen {
       template<typename, typename> friend class Fold;
       Maybe<Type> m_value;
       std::optional<Maybe<Type>> m_next_value;
+      CommitFlag* m_flag;
 
       void update(Maybe<Type> value);
   };
@@ -118,7 +120,12 @@ namespace Aspen {
   }
 
   template<typename T>
+  FoldArgument<T>::FoldArgument() noexcept
+    : m_flag(nullptr) {}
+
+  template<typename T>
   State FoldArgument<T>::commit(int sequence) noexcept {
+    m_flag = CommitFlag::get_current();
     if(m_next_value.has_value()) {
       m_value = std::move(*m_next_value);
       m_next_value = std::nullopt;
@@ -135,6 +142,9 @@ namespace Aspen {
   template<typename T>
   void FoldArgument<T>::update(Maybe<Type> value) {
     m_next_value.emplace(std::move(value));
+    if(m_flag != nullptr) {
+      m_flag->raise();
+    }
   }
 
   template<typename E, typename S>

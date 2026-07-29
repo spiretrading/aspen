@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 #include "Aspen/Box.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 #include "Aspen/Unique.hpp"
@@ -13,6 +14,7 @@ namespace Details {
     State m_state;
     int m_sequence;
     int m_last_evaluation;
+    CommitFlag m_flag;
 
     SharedState();
   };
@@ -83,7 +85,7 @@ namespace Details {
 
       Shared(const Shared& shared) noexcept;
 
-      Shared(Shared&& shared) = default;
+      Shared(Shared&& shared) noexcept;
 
       ~Shared();
 
@@ -105,7 +107,7 @@ namespace Details {
 
       Shared& operator =(const Shared& shared) noexcept;
 
-      Shared& operator =(Shared&& shared) = default;
+      Shared& operator =(Shared&& shared) noexcept;
 
     private:
       template<typename> friend class Shared;
@@ -113,11 +115,15 @@ namespace Details {
       std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
       std::shared_ptr<Reactor> m_reactor;
       int m_last_evaluation;
+      CommitFlag* m_parent;
+
+      static State commit_state(int sequence, Reactor& reactor,
+        Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation,
+        CommitFlag* current);
 
       Shared(std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
         std::shared_ptr<Reactor> reactor);
-      static State commit_state(int sequence, Reactor& reactor,
-        Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation);
+      void set_parent(CommitFlag* parent) noexcept;
   };
 
   /** Type alias for a Shared<Box<T>>. */
@@ -202,7 +208,20 @@ namespace Details {
     : Shared(shared.m_evaluator, shared.m_reactor) {}
 
   template<typename R>
+  Shared<R>::Shared(Shared&& shared) noexcept
+      : m_evaluator(std::move(shared.m_evaluator)),
+        m_reactor(std::move(shared.m_reactor)),
+        m_last_evaluation(shared.m_last_evaluation),
+        m_parent(shared.m_parent) {
+    shared.m_parent = nullptr;
+  }
+
+  template<typename R>
   Shared<R>::~Shared() {
+    if(m_evaluator == nullptr) {
+      return;
+    }
+    set_parent(nullptr);
     if(m_reactor.use_count() == 1 &&
         m_evaluator->m_state->m_last_evaluation != -1) {
       m_evaluator->m_evaluation = try_eval(*m_reactor);
@@ -231,7 +250,13 @@ namespace Details {
 
   template<typename R>
   State Shared<R>::commit(int sequence) noexcept {
-    return commit_state(sequence, *m_reactor, *m_evaluator, m_last_evaluation);
+    auto current = CommitFlag::get_current();
+    auto state = commit_state(
+      sequence, *m_reactor, *m_evaluator, m_last_evaluation, current);
+    if(current != m_parent) {
+      set_parent(current);
+    }
+    return state;
   }
 
   template<typename R>
@@ -241,6 +266,7 @@ namespace Details {
 
   template<typename R>
   Shared<R>& Shared<R>::operator =(const Shared& shared) noexcept {
+    set_parent(nullptr);
     m_evaluator = shared.m_evaluator;
     m_reactor = shared.m_reactor;
     m_last_evaluation = -1;
@@ -248,16 +274,20 @@ namespace Details {
   }
 
   template<typename R>
-  Shared<R>::Shared(
-    std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
-    std::shared_ptr<Reactor> reactor)
-    : m_evaluator(std::move(evaluator)),
-      m_reactor(std::move(reactor)),
-      m_last_evaluation(-1) {}
+  Shared<R>& Shared<R>::operator =(Shared&& shared) noexcept {
+    set_parent(nullptr);
+    m_evaluator = std::move(shared.m_evaluator);
+    m_reactor = std::move(shared.m_reactor);
+    m_last_evaluation = shared.m_last_evaluation;
+    m_parent = shared.m_parent;
+    shared.m_parent = nullptr;
+    return *this;
+  }
 
   template<typename R>
   State Shared<R>::commit_state(int sequence, Reactor& reactor,
-      Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation) {
+      Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation,
+      CommitFlag* current) {
     if(sequence <= evaluator.m_state->m_sequence) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
@@ -265,7 +295,27 @@ namespace Details {
       }
       return evaluator.m_state->m_state;
     }
-    auto reactor_state = reactor.commit(sequence);
+    auto& flag = evaluator.m_state->m_flag;
+    if(current != &flag && !flag.is_raised() &&
+        evaluator.m_state->m_sequence != -1) {
+      auto skipped = reset(
+        evaluator.m_state->m_state, combine(State::EVALUATED, State::CONTINUE));
+      evaluator.m_state->m_state = skipped;
+      evaluator.m_state->m_sequence = sequence;
+      if(last_evaluation < evaluator.m_state->m_last_evaluation) {
+        last_evaluation = evaluator.m_state->m_last_evaluation;
+        return combine(skipped, State::EVALUATED);
+      }
+      return skipped;
+    }
+    flag.clear();
+    auto reactor_state = [&] {
+      auto scope = CommitFlagScope(flag);
+      return reactor.commit(sequence);
+    }();
+    if(has_continuation(reactor_state)) {
+      flag.raise();
+    }
     if(sequence == evaluator.m_state->m_sequence) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
@@ -283,6 +333,33 @@ namespace Details {
       }
     }
     return reactor_state;
+  }
+
+  template<typename R>
+  Shared<R>::Shared(
+    std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
+    std::shared_ptr<Reactor> reactor)
+    : m_evaluator(std::move(evaluator)),
+      m_reactor(std::move(reactor)),
+      m_last_evaluation(-1),
+      m_parent(nullptr) {}
+
+  template<typename R>
+  void Shared<R>::set_parent(CommitFlag* parent) noexcept {
+    auto& flag = m_evaluator->m_state->m_flag;
+    if(parent == &flag) {
+      parent = nullptr;
+    }
+    if(parent == m_parent) {
+      return;
+    }
+    if(m_parent != nullptr) {
+      flag.remove_parent(*m_parent);
+    }
+    m_parent = parent;
+    if(m_parent != nullptr) {
+      flag.add_parent(*m_parent);
+    }
   }
 }
 

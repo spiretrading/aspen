@@ -3,6 +3,7 @@
 
 #ifdef _MSC_VER
   #define ASPEN_EXTERN
+  #define ASPEN_EMIT_DLL
   #if defined(ASPEN_BUILD_DLL)
     #define ASPEN_EXPORT_DLL __declspec(dllexport)
   #elif defined(ASPEN_USE_DLL)
@@ -11,6 +12,11 @@
     #define ASPEN_EXPORT_DLL
   #endif
 #else
+  #if defined(ASPEN_BUILD_DLL)
+    #define ASPEN_EMIT_DLL __attribute__((used))
+  #else
+    #define ASPEN_EMIT_DLL
+  #endif
   #if defined(ASPEN_BUILD_DLL) || defined(ASPEN_USE_DLL)
     #define ASPEN_EXTERN extern
     #define ASPEN_EXPORT_DLL __attribute__((visibility ("default")))
