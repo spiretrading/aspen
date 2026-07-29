@@ -57,6 +57,20 @@ namespace Aspen {
   template<typename T>
   using try_ptr_t = std::conditional_t<Dereferenceable<T>, T, LocalPtr<T>>;
 
+  /** Trait used to extract the type that a LocalPtr wraps. */
+  template<typename T>
+  struct unwrap_local_ptr {
+    using type = T;
+  };
+
+  template<typename T>
+  struct unwrap_local_ptr<LocalPtr<T>> {
+    using type = T;
+  };
+
+  template<typename T>
+  using unwrap_local_ptr_t = typename unwrap_local_ptr<T>::type;
+
   template<typename T>
   template<typename... A> requires
     std::constructible_from<T, A...> && (sizeof...(A) != 1 ||

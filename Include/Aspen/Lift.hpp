@@ -1,12 +1,14 @@
 #ifndef ASPEN_LIFT_HPP
 #define ASPEN_LIFT_HPP
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include "Aspen/Maybe.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StaticCommitHandler.hpp"
 #include "Aspen/Traits.hpp"
@@ -19,6 +21,8 @@ namespace Aspen {
    */
   template<typename T>
   struct FunctionEvaluation {
+
+    /** The result of the function. */
     using Type = T;
 
     /** The value returned by the function. */
@@ -91,20 +95,18 @@ namespace Aspen {
 
   template<>
   struct FunctionEvaluation<void> {
+
+    /** The result of the function. */
     using Type = void;
+
     std::optional<Maybe<Type>> m_value;
     State m_state;
 
     FunctionEvaluation();
-
     FunctionEvaluation(Maybe<Type> value);
-
     FunctionEvaluation(std::optional<Maybe<Type>> value);
-
     FunctionEvaluation(Maybe<Type> value, State state);
-
     FunctionEvaluation(std::optional<Maybe<Type>> value, State state);
-
     FunctionEvaluation(State state);
   };
 
@@ -127,21 +129,45 @@ namespace Details {
   template<typename T>
   using function_reactor_result_t = typename function_reactor_result<T>::type;
 
+  decltype(auto) eval_argument(const auto& reactor) {
+    return try_call([&] () noexcept(noexcept(reactor.eval())) ->
+        decltype(auto) {
+      return reactor.eval();
+    });
+  }
+
+  template<typename T, bool C>
+  struct lift_value {
+    using type = std::conditional_t<
+      std::is_default_constructible_v<T>, LocalPtr<T>, std::optional<T>>;
+  };
+
+  template<typename T>
+  struct lift_value<T, true> {
+    using type = Maybe<T>;
+  };
+
+  template<typename T, bool C>
+  using lift_value_t = typename lift_value<T, C>::type;
+
   template<typename T>
   struct FunctionEvaluator {
     template<typename V, typename F, typename P>
     State operator ()(V& value, F& function, const P& pack) const {
-      auto evaluation = apply(
-        [&] (const auto&... arguments) {
-          return FunctionEvaluation<T>(function(
-            try_call([&] () noexcept(noexcept(arguments.eval())) {
-              return arguments.eval();
-            })...));
-        }, pack);
-      if(evaluation.m_value.has_value()) {
-        value = std::move(*evaluation.m_value);
-      }
-      return evaluation.m_state;
+      return apply([&] (const auto&... arguments) {
+        if constexpr(std::is_same_v<
+            std::decay_t<decltype(function(eval_argument(arguments)...))>, T>) {
+          value = function(eval_argument(arguments)...);
+          return State::EVALUATED;
+        } else {
+          auto evaluation =
+            FunctionEvaluation<T>(function(eval_argument(arguments)...));
+          if(evaluation.m_value) {
+            value = std::move(*evaluation.m_value);
+          }
+          return evaluation.m_state;
+        }
+      }, pack);
     }
   };
 
@@ -149,31 +175,14 @@ namespace Details {
   struct FunctionEvaluator<void> {
     template<typename V, typename F, typename P>
     State operator ()(V& value, F& function, const P& pack) const {
-      apply(
-        [&] (const auto&... arguments) {
-          return FunctionEvaluation<void>(try_call([&] {
-            return function(
-              try_call([&] () noexcept(noexcept(arguments.eval())) {
-                return arguments.eval();
-              })...);
-          }));
-        }, pack);
+      value = apply([&] (const auto&... arguments) {
+        return try_call([&] {
+          return function(eval_argument(arguments)...);
+        });
+      }, pack);
       return State::EVALUATED;
     }
   };
-
-  template<typename T>
-  struct unwrap_local_ptr {
-    using type = T;
-  };
-
-  template<typename T>
-  struct unwrap_local_ptr<LocalPtr<T>> {
-    using type = T;
-  };
-
-  template<typename T>
-  using unwrap_local_ptr_t = typename unwrap_local_ptr<T>::type;
 
   template<typename F, typename... A>
   struct is_lift_noexcept : std::bool_constant<is_noexcept_function_v<F,
@@ -190,11 +199,14 @@ namespace Details {
    * @param <F> The type of function to apply.
    * @param <P> The type of arguments to apply the function to.
    */
-  template<typename F, typename... A>
+  template<typename F, IsReactor... A> requires
+    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
   class Lift {
     public:
-      using Type = Details::function_reactor_result_t<std::invoke_result_t<F,
-        const Maybe<reactor_result_t<A>>&...>>;
+
+      /** The type to evaluate to. */
+      using Type = Details::function_reactor_result_t<
+        std::invoke_result_t<F, const Maybe<reactor_result_t<A>>&...>>;
 
       /** The type of function to apply. */
       using Function = F;
@@ -207,17 +219,19 @@ namespace Details {
        * @param function The function to apply.
        * @param arguments The arguments to apply the <i>function</i> to.
        */
-      template<typename FF, typename AF, typename... AR>
+      template<typename FF, typename AF, typename... AR> requires
+        std::constructible_from<F, FF>
       Lift(FF&& function, AF&& argument, AR&&... arguments);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
+      [[no_unique_address]]
       Function m_function;
       StaticCommitHandler<A...> m_handler;
-      try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
+      Details::lift_value_t<Type, std::is_same_v<Type, void> || !is_noexcept>
+        m_value;
       bool m_has_continuation;
 
       State invoke();
@@ -227,46 +241,54 @@ namespace Details {
    * Specialization for functions that have no parameters.
    * @param <F> The type of function to apply.
    */
-  template<typename F>
+  template<std::invocable F>
   class Lift<F> {
     public:
+
+      /** The type to evaluate to. */
       using Type = Details::function_reactor_result_t<std::invoke_result_t<F>>;
+
+      /** The type of function to apply. */
       using Function = F;
+
+      /** Whether this reactor's eval is noexcept. */
       static constexpr auto is_noexcept = is_noexcept_function_v<F>;
 
       /**
        * Constructs a function reactor.
        * @param function The function to apply.
        */
-      template<typename FF, typename = std::enable_if_t<
-        !std::is_base_of_v<Lift, std::decay_t<FF>>>>
+      template<typename FF> requires std::constructible_from<F, FF>
       explicit Lift(FF&& function);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const;
 
     private:
+      [[no_unique_address]]
       Function m_function;
-      try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
+      Details::lift_value_t<Type, std::is_same_v<Type, void> || !is_noexcept>
+        m_value;
 
       State invoke();
   };
 
   template<typename F, typename AF, typename... AR>
-  Lift(F&&, AF&&, AR&&...) -> Lift<std::decay_t<F>, to_reactor_t<AF>,
-    to_reactor_t<AR>...>;
+  Lift(F&&, AF&&, AR&&...) ->
+    Lift<std::decay_t<F>, to_reactor_t<AF>, to_reactor_t<AR>...>;
 
-  template<typename F, typename = std::enable_if_t<
-    !std::is_base_of_v<Lift<std::decay_t<F>>, std::decay_t<F>>>>
+  template<typename F> requires std::invocable<std::decay_t<F>> &&
+    (!std::derived_from<std::remove_cvref_t<F>, Lift<std::decay_t<F>>>)
   Lift(F&&) -> Lift<std::decay_t<F>>;
 
   /**
    * Lifts a function to operate on reactors.
    * @param function The function to lift.
    * @param arguments The reactors used as arguments to the function.
+   * @return A reactor applying the <i>function</i> to the <i>arguments</i>.
    */
-  template<typename F, typename... A>
+  template<typename F, typename... A> requires
+    std::invocable<std::decay_t<F>, const Maybe<reactor_result_t<A>>&...>
   auto lift(F&& function, A&&... arguments) {
     return Lift(std::forward<F>(function), std::forward<A>(arguments)...);
   }
@@ -315,8 +337,8 @@ namespace Details {
     : FunctionEvaluation(Maybe(std::move(value)), state) {}
 
   template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(std::optional<Maybe<Type>> value,
-      State state)
+  FunctionEvaluation<T>::FunctionEvaluation(
+      std::optional<Maybe<Type>> value, State state)
       : m_value(std::move(value)) {
     if(m_value.has_value()) {
       if(is_complete(state)) {
@@ -336,8 +358,8 @@ namespace Details {
   }
 
   template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(std::optional<Type> value,
-    State state)
+  FunctionEvaluation<T>::FunctionEvaluation(
+    std::optional<Type> value, State state)
     : FunctionEvaluation(std::optional(Maybe(std::move(value))), state) {}
 
   template<typename T>
@@ -363,8 +385,8 @@ namespace Details {
     }
   }
 
-  inline FunctionEvaluation<void>::FunctionEvaluation(Maybe<Type> value,
-      State state)
+  inline FunctionEvaluation<void>::FunctionEvaluation(
+      Maybe<Type> value, State state)
       : m_value(std::move(value)) {
     if(is_complete(state)) {
       m_state = State::COMPLETE_EVALUATED;
@@ -394,14 +416,17 @@ namespace Details {
     assert(!has_evaluation(m_state));
   }
 
-  template<typename F, typename... A>
-  template<typename FF, typename AF, typename... AR>
+  template<typename F, IsReactor... A> requires
+    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
+  template<typename FF, typename AF, typename... AR> requires
+    std::constructible_from<F, FF>
   Lift<F, A...>::Lift(FF&& function, AF&& argument, AR&&... arguments)
     : m_function(std::forward<FF>(function)),
       m_handler(std::forward<AF>(argument), std::forward<AR>(arguments)...),
       m_has_continuation(false) {}
 
-  template<typename F, typename... A>
+  template<typename F, IsReactor... A> requires
+    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
   State Lift<F, A...>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto children_state = m_handler.commit(sequence);
@@ -435,30 +460,35 @@ namespace Details {
     return state;
   }
 
-  template<typename F, typename... A>
+  template<typename F, IsReactor... A> requires
+    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
   eval_result_t<typename Lift<F, A...>::Type> Lift<F, A...>::eval() const
-      noexcept(is_noexcept){
+      noexcept(is_noexcept) {
     return *m_value;
   }
 
-  template<typename F, typename... A>
+  template<typename F, IsReactor... A> requires
+    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
   State Lift<F, A...>::invoke() {
-    try {
+    if constexpr(is_noexcept) {
       return Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
-    } catch(...) {
-      if constexpr(!is_noexcept) {
+    } else {
+      try {
+        return Details::FunctionEvaluator<Type>()(
+          m_value, m_function, m_handler);
+      } catch(...) {
         m_value = std::current_exception();
+        return State::EVALUATED;
       }
-      return State::EVALUATED;
     }
   }
 
-  template<typename F>
-  template<typename FF, typename>
+  template<std::invocable F>
+  template<typename FF> requires std::constructible_from<F, FF>
   Lift<F>::Lift(FF&& function)
     : m_function(std::forward<FF>(function)) {}
 
-  template<typename F>
+  template<std::invocable F>
   State Lift<F>::commit(std::uint64_t sequence) noexcept {
     auto invocation = invoke();
     if(has_evaluation(invocation)) {
@@ -473,21 +503,24 @@ namespace Details {
     return State::COMPLETE;
   }
 
-  template<typename F>
+  template<std::invocable F>
   eval_result_t<typename Lift<F>::Type> Lift<F>::eval() const {
     return *m_value;
   }
 
-  template<typename F>
+  template<std::invocable F>
   State Lift<F>::invoke() {
-    try {
-      return Details::FunctionEvaluator<Type>()(m_value, m_function,
-        std::tuple<>());
-    } catch(...) {
-      if constexpr(!is_noexcept) {
+    if constexpr(is_noexcept) {
+      return Details::FunctionEvaluator<Type>()(
+        m_value, m_function, std::tuple<>());
+    } else {
+      try {
+        return Details::FunctionEvaluator<Type>()(
+          m_value, m_function, std::tuple<>());
+      } catch(...) {
         m_value = std::current_exception();
+        return State::EVALUATED;
       }
-      return State::EVALUATED;
     }
   }
 }
