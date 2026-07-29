@@ -1,7 +1,7 @@
 #ifndef ASPEN_NONE_HPP
 #define ASPEN_NONE_HPP
 #include <cstdint>
-#include <exception>
+#include <stdexcept>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -14,20 +14,20 @@ namespace Aspen {
   template<typename T>
   class None {
     public:
+
+      /** The type of the value to evaluate to. */
       using Type = T;
 
-      /**
-       * Constructs a None reactor.
-       */
       constexpr None() = default;
 
       constexpr State commit(std::uint64_t sequence) noexcept;
-
       constexpr eval_result_t<Type> eval() const;
   };
 
   /**
    * Returns a reactor that never produces an evaluation.
+   * @param <T> The type of the value to evaluate to.
+   * @return A reactor that never produces an evaluation.
    */
   template<typename T>
   constexpr auto none() {
