@@ -23,23 +23,19 @@ namespace Details {
   class Trigger {
     public:
 
-      /**
-       * Type of callback used to indicate an update is available.
-       */
+      /** Type of callback used to indicate an update is available. */
       using Slot = std::function<void ()>;
 
       /** Returns the Trigger currently being used. */
-      static Trigger* get_trigger();
+      static Trigger* get_trigger() noexcept;
 
       /** Sets the Trigger to use within this thread. */
-      static void set_trigger(Trigger* trigger);
+      static void set_trigger(Trigger* trigger) noexcept;
 
       /** Sets the Trigger to use within this thread. */
-      static void set_trigger(Trigger& trigger);
+      static void set_trigger(Trigger& trigger) noexcept;
 
-      /**
-       * Constructs a Trigger with no slot.
-       */
+      /** Constructs a Trigger with no slot. */
       Trigger();
 
       /**
@@ -48,12 +44,10 @@ namespace Details {
        */
       explicit Trigger(Slot slot);
 
-      /**
-       * Signals an update is available.
-       */
+      /** Signals an update is available. */
       void signal();
 
-   private:
+    private:
       Slot m_slot;
 
       Trigger(const Trigger&) = delete;
@@ -62,15 +56,15 @@ namespace Details {
       Trigger& operator =(Trigger&&) = delete;
   };
 
-  inline Trigger* Trigger::get_trigger() {
+  inline Trigger* Trigger::get_trigger() noexcept {
     return Details::StaticTrigger::get();
   }
 
-  inline void Trigger::set_trigger(Trigger* trigger) {
+  inline void Trigger::set_trigger(Trigger* trigger) noexcept {
     Details::StaticTrigger::get() = trigger;
   }
 
-  inline void Trigger::set_trigger(Trigger& trigger) {
+  inline void Trigger::set_trigger(Trigger& trigger) noexcept {
     set_trigger(&trigger);
   }
 
