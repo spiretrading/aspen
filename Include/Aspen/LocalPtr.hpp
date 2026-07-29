@@ -31,10 +31,8 @@ namespace Aspen {
       constexpr LocalPtr(const LocalPtr&) = default;
       constexpr LocalPtr(LocalPtr&&) = default;
 
-      template<typename S>
-      constexpr auto& operator *(this S&& self) noexcept;
-      template<typename S>
-      constexpr auto* operator ->(this S&& self) noexcept;
+      constexpr auto& operator *(this auto&& self) noexcept;
+      constexpr auto* operator ->(this auto&& self) noexcept;
       constexpr LocalPtr& operator =(const LocalPtr&) = default;
       constexpr LocalPtr& operator =(LocalPtr&&) = default;
       template<typename U> requires(
@@ -68,14 +66,12 @@ namespace Aspen {
     : m_value(std::forward<A>(args)...) {}
 
   template<typename T>
-  template<typename S>
-  constexpr auto& LocalPtr<T>::operator *(this S&& self) noexcept {
+  constexpr auto& LocalPtr<T>::operator *(this auto&& self) noexcept {
     return self.m_value;
   }
 
   template<typename T>
-  template<typename S>
-  constexpr auto* LocalPtr<T>::operator ->(this S&& self) noexcept {
+  constexpr auto* LocalPtr<T>::operator ->(this auto&& self) noexcept {
     return &self.m_value;
   }
 
