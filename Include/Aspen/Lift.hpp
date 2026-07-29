@@ -259,7 +259,7 @@ namespace Details {
       using Function = F;
 
       /** Whether this reactor's eval is noexcept. */
-      static constexpr auto is_noexcept = is_noexcept_function_v<F>;
+      static constexpr auto is_noexcept = Details::is_lift_noexcept_v<F>;
 
       /**
        * Constructs a function reactor.
@@ -269,7 +269,7 @@ namespace Details {
       explicit Lift(FF&& function);
 
       State commit(std::uint64_t sequence) noexcept;
-      eval_result_t<Type> eval() const;
+      eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
       [[no_unique_address]]
@@ -511,7 +511,8 @@ namespace Details {
   }
 
   template<std::invocable F>
-  eval_result_t<typename Lift<F>::Type> Lift<F>::eval() const {
+  eval_result_t<typename Lift<F>::Type> Lift<F>::eval() const
+      noexcept(is_noexcept) {
     return *m_value;
   }
 

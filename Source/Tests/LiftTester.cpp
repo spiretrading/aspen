@@ -78,6 +78,27 @@ TEST_SUITE("Lift") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
+  TEST_CASE("lift_no_parameters_is_noexcept") {
+    auto reactor = Lift([] () noexcept {
+      return 512;
+    });
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(is_noexcept_reactor_v<decltype(reactor)>);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 512);
+    REQUIRE(!decltype(Lift(no_parameter_function))::is_noexcept);
+  }
+
+  TEST_CASE("lift_no_parameters_returning_a_maybe") {
+    auto reactor = Lift([] () noexcept {
+      return Maybe<int>(std::make_exception_ptr(std::runtime_error("bad")));
+    });
+    REQUIRE((std::is_same_v<decltype(reactor)::Type, int>));
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
   TEST_CASE("lift_constant_argument") {
     auto reactor = Lift(square, Constant(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
