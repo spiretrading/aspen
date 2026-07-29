@@ -2,6 +2,7 @@
 #define ASPEN_UNTIL_HPP
 #include <optional>
 #include "Aspen/Maybe.hpp"
+#include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -33,8 +34,8 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      C m_condition;
-      std::optional<T> m_series;
+      Branch<C> m_condition;
+      std::optional<Branch<T>> m_series;
       try_maybe_t<Type, !is_noexcept> m_value;
       bool m_is_condition_complete;
   };
@@ -68,7 +69,7 @@ namespace Aspen {
       auto condition_state = m_condition.commit(sequence);
       if(has_evaluation(condition_state)) {
         try {
-          if(m_condition.eval()) {
+          if(m_condition->eval()) {
             m_series = std::nullopt;
             state = State::COMPLETE;
           }
@@ -83,7 +84,7 @@ namespace Aspen {
     if(m_series.has_value()) {
       auto series_state = m_series->commit(sequence);
       if(has_evaluation(series_state)) {
-        m_value = try_eval(*m_series);
+        m_value = try_eval(**m_series);
         state = State::EVALUATED;
       }
       if(is_complete(series_state)) {

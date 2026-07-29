@@ -1,5 +1,6 @@
 #ifndef ASPEN_WHEN_HPP
 #define ASPEN_WHEN_HPP
+#include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -32,8 +33,8 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      C m_condition;
-      T m_series;
+      Branch<C> m_condition;
+      Branch<T> m_series;
       bool m_is_condition_complete;
       bool m_is_triggered;
   };
@@ -68,7 +69,7 @@ namespace Aspen {
       auto condition_state = m_condition.commit(sequence);
       if(has_evaluation(condition_state)) {
         try {
-          m_is_triggered = m_condition.eval();
+          m_is_triggered = m_condition->eval();
         } catch(...) {}
       }
       m_is_condition_complete = is_complete(condition_state);
@@ -97,7 +98,7 @@ namespace Aspen {
   template<typename C, typename T>
   eval_result_t<typename When<C, T>::Type> When<C, T>::eval() const noexcept(
       is_noexcept) {
-    return m_series.eval();
+    return m_series->eval();
   }
 }
 

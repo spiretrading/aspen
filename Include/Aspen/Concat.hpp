@@ -3,6 +3,7 @@
 #include <list>
 #include <type_traits>
 #include <utility>
+#include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -34,10 +35,10 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      Reactor m_producer;
+      Branch<Reactor> m_producer;
       bool m_is_producer_complete;
       State m_producer_state;
-      std::list<reactor_result_t<Reactor>> m_children;
+      std::list<Branch<reactor_result_t<Reactor>>> m_children;
       bool m_is_child_complete;
   };
 
@@ -68,7 +69,7 @@ namespace Aspen {
         auto producer_state = m_producer.commit(sequence);
         if(has_evaluation(producer_state)) {
           try {
-            m_children.emplace_back(m_producer.eval());
+            m_children.emplace_back(m_producer->eval());
           } catch(...) {}
         }
         if(has_continuation(producer_state)) {
@@ -130,7 +131,7 @@ namespace Aspen {
   template<typename T>
   eval_result_t<typename Concat<T>::Type> Concat<T>::eval()
       const noexcept(is_noexcept) {
-    return m_children.front().eval();
+    return m_children.front()->eval();
   }
 }
 

@@ -2,6 +2,7 @@
 #define ASPEN_GROUP_HPP
 #include <cstdint>
 #include <utility>
+#include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -32,8 +33,8 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      A m_first;
-      B m_second;
+      Branch<A> m_first;
+      Branch<B> m_second;
       std::uint8_t m_is_complete: 2;
       std::uint8_t m_current: 1;
       std::uint8_t m_position: 2;
@@ -125,9 +126,9 @@ namespace Aspen {
   eval_result_t<typename Group<A, B>::Type> Group<A, B>::eval()
       const noexcept(is_noexcept) {
     if(m_current == 0) {
-      return m_first.eval();
+      return m_first->eval();
     } else {
-      return m_second.eval();
+      return m_second->eval();
     }
   }
 

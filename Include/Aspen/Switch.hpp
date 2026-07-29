@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <utility>
 #include "Aspen/Maybe.hpp"
+#include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -38,8 +39,8 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      T m_toggle;
-      S m_series;
+      Branch<T> m_toggle;
+      Branch<S> m_series;
       bool m_is_toggle_complete;
       bool m_has_evaluation;
       bool m_is_on;
@@ -72,7 +73,7 @@ namespace Aspen {
     auto flipped = !m_is_on;
     if(has_evaluation(toggle_state)) {
       try {
-        m_is_on = m_toggle.eval();
+        m_is_on = m_toggle->eval();
       } catch(...) {
         m_is_on = false;
         if constexpr(!is_noexcept) {
@@ -85,7 +86,7 @@ namespace Aspen {
     if(m_is_on) {
       state = m_series.commit(sequence);
       if(has_evaluation(state) || m_has_evaluation && flipped) {
-        m_value = try_eval(m_series);
+        m_value = try_eval(*m_series);
         state = combine(state, State::EVALUATED);
         m_has_evaluation = true;
       }

@@ -3,6 +3,7 @@
 #include <list>
 #include <optional>
 #include <utility>
+#include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -34,13 +35,13 @@ namespace Aspen {
 
     private:
       struct Child {
-        reactor_result_t<T> m_reactor;
+        Branch<reactor_result_t<T>> m_reactor;
         bool m_is_complete;
 
         template<typename U>
         Child(U&& reactor);
       };
-      std::optional<T> m_producer;
+      std::optional<Branch<T>> m_producer;
       std::unique_ptr<std::list<Child>> m_children;
       typename std::list<Child>::iterator m_current;
       typename std::list<Child>::iterator m_position;
@@ -82,7 +83,7 @@ namespace Aspen {
         auto producer_state = m_producer->commit(sequence);
         if(has_evaluation(producer_state)) {
           try {
-            m_children->emplace_back(m_producer->eval());
+            m_children->emplace_back((*m_producer)->eval());
             if(m_children->size() == 1) {
               m_position = m_children->begin();
             }
@@ -151,7 +152,7 @@ namespace Aspen {
   template<typename T>
   eval_result_t<typename Concur<T>::Type> Concur<T>::eval()
       const noexcept(is_noexcept) {
-    return m_current->m_reactor.eval();
+    return m_current->m_reactor->eval();
   }
 
   template<typename T>
