@@ -28,7 +28,7 @@ namespace Aspen {
       template<typename AF, typename BF>
       Group(AF&& first, BF&& second);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -77,7 +77,7 @@ namespace Aspen {
       m_position(0) {}
 
   template<typename A, typename B>
-  State Group<A, B>::commit(int sequence) noexcept {
+  State Group<A, B>::commit(std::uint64_t sequence) noexcept {
     if(m_position != m_current && is_complete(m_position)) {
       m_position = next_position();
     }

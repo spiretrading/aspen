@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <memory>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
@@ -25,7 +26,7 @@ namespace {
         return m_count;
       }
 
-      State commit(int sequence) noexcept {
+      State commit(std::uint64_t sequence) noexcept {
         ++*m_count;
         return m_cell.commit(sequence);
       }

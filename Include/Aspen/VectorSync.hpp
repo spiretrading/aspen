@@ -1,5 +1,6 @@
 #ifndef ASPEN_VECTOR_SYNC_HPP
 #define ASPEN_VECTOR_SYNC_HPP
+#include <cstdint>
 #include <vector>
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/State.hpp"
@@ -34,7 +35,7 @@ namespace Details {
        */
       VectorSync(Type& value, std::vector<R> reactors);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       const Type& eval() const noexcept(is_noexcept);
 
@@ -60,7 +61,7 @@ namespace Details {
   }
 
   template<typename R, typename V>
-  State VectorSync<R, V>::commit(int sequence) noexcept {
+  State VectorSync<R, V>::commit(std::uint64_t sequence) noexcept {
     if(m_reactors.size() == 0) {
       return State::COMPLETE_EVALUATED;
     }

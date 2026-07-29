@@ -1,5 +1,6 @@
 #ifndef ASPEN_UNTIL_HPP
 #define ASPEN_UNTIL_HPP
+#include <cstdint>
 #include <optional>
 #include "Aspen/Maybe.hpp"
 #include "Aspen/Branch.hpp"
@@ -29,7 +30,7 @@ namespace Aspen {
       template<typename CF, typename TF>
       Until(CF&& condition, TF&& series);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -62,7 +63,7 @@ namespace Aspen {
       m_is_condition_complete(false) {}
 
   template<typename C, typename T>
-  State Until<C, T>::commit(int sequence) noexcept {
+  State Until<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto has_condition_continuation = false;
     if(!m_is_condition_complete) {

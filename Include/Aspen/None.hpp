@@ -1,5 +1,6 @@
 #ifndef ASPEN_NONE_HPP
 #define ASPEN_NONE_HPP
+#include <cstdint>
 #include <exception>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -20,7 +21,7 @@ namespace Aspen {
        */
       constexpr None() = default;
 
-      constexpr State commit(int sequence) noexcept;
+      constexpr State commit(std::uint64_t sequence) noexcept;
 
       constexpr eval_result_t<Type> eval() const;
   };
@@ -34,7 +35,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  constexpr State None<T>::commit(int sequence) noexcept {
+  constexpr State None<T>::commit(std::uint64_t sequence) noexcept {
     return State::COMPLETE;
   }
 

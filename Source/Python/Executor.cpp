@@ -14,7 +14,7 @@ namespace {
     ExecutorReactor(SharedBox<void> reactor)
       : m_reactor(std::move(reactor)) {}
 
-    State commit(int sequence) noexcept {
+    State commit(std::uint64_t sequence) noexcept {
       auto state = m_reactor.commit(sequence);
       if(has_evaluation(state)) {
         try {

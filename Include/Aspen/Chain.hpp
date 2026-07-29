@@ -28,7 +28,7 @@ namespace Aspen {
       template<typename AF, typename BF>
       Chain(AF&& initial, BF&& continuation);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -78,7 +78,7 @@ namespace Aspen {
       m_which(0) {}
 
   template<typename A, typename B>
-  State Chain<A, B>::commit(int sequence) noexcept {
+  State Chain<A, B>::commit(std::uint64_t sequence) noexcept {
     if(m_status == Status::START) {
       auto state = m_initial.commit(sequence);
       if(has_evaluation(state)) {

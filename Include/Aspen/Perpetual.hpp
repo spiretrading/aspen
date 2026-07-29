@@ -1,5 +1,6 @@
 #ifndef ASPEN_PERPETUAL_HPP
 #define ASPEN_PERPETUAL_HPP
+#include <cstdint>
 #include "Aspen/State.hpp"
 
 namespace Aspen {
@@ -12,7 +13,7 @@ namespace Aspen {
     public:
       using Type = void;
 
-      constexpr State commit(int sequence) noexcept;
+      constexpr State commit(std::uint64_t sequence) noexcept;
 
       constexpr void eval() const noexcept;
   };
@@ -22,7 +23,7 @@ namespace Aspen {
     return Perpetual();
   }
 
-  constexpr State Perpetual::commit(int sequence) noexcept {
+  constexpr State Perpetual::commit(std::uint64_t sequence) noexcept {
     return State::CONTINUE_EVALUATED;
   }
 

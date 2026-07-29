@@ -1,5 +1,6 @@
 #ifndef ASPEN_CONVERSIONS_HPP
 #define ASPEN_CONVERSIONS_HPP
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 #include "Aspen/Maybe.hpp"
@@ -29,7 +30,7 @@ namespace Aspen {
       template<typename RF, typename FF>
       ConversionReactor(RF&& reactor, FF&& conversion);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -63,7 +64,7 @@ namespace Aspen {
       m_conversion(std::forward<FF>(conversion)) {}
 
   template<typename R, typename F>
-  State ConversionReactor<R, F>::commit(int sequence) noexcept {
+  State ConversionReactor<R, F>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactor.commit(sequence);
     if(has_evaluation(state)) {
       if constexpr(is_noexcept && !std::is_same_v<Type, void>) {

@@ -1,5 +1,6 @@
 #ifndef ASPEN_STATE_REACTOR_HPP
 #define ASPEN_STATE_REACTOR_HPP
+#include <cstdint>
 #include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -23,7 +24,7 @@ namespace Aspen {
         !std::is_base_of_v<StateReactor, std::decay_t<RF>>>>
       explicit StateReactor(RF&& reactor);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Type eval() const noexcept;
 
@@ -43,7 +44,7 @@ namespace Aspen {
       m_value(State::EVALUATED) {}
 
   template<typename R>
-  State StateReactor<R>::commit(int sequence) noexcept {
+  State StateReactor<R>::commit(std::uint64_t sequence) noexcept {
     auto value = m_reactor.commit(sequence);
     auto state = [&] {
       if(is_complete(value)) {

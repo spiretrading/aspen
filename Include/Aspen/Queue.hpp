@@ -1,5 +1,6 @@
 #ifndef ASPEN_QUEUE_HPP
 #define ASPEN_QUEUE_HPP
+#include <cstdint>
 #include <deque>
 #include <exception>
 #include <mutex>
@@ -52,7 +53,7 @@ namespace Aspen {
       template<typename E>
       void set_complete(const E& exception);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -121,7 +122,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  State Queue<T>::commit(int sequence) noexcept {
+  State Queue<T>::commit(std::uint64_t sequence) noexcept {
     auto lock = std::lock_guard(m_mutex);
     m_flag = CommitFlag::get_current();
     auto state = [&] {

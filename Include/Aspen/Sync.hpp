@@ -1,5 +1,6 @@
 #ifndef ASPEN_SYNC_HPP
 #define ASPEN_SYNC_HPP
+#include <cstdint>
 #include <exception>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -33,7 +34,7 @@ namespace Details {
        */
       Sync(Type& value, Reactor reactor);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       /** Returns the exception thrown by the reactor, or nullptr for none. */
       std::exception_ptr get_exception() const noexcept;
@@ -51,7 +52,7 @@ namespace Details {
       m_reactor(std::move(reactor)) {}
 
   template<typename R, typename V>
-  State Sync<R, V>::commit(int sequence) noexcept {
+  State Sync<R, V>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactor.commit(sequence);
     if(has_evaluation(state)) {
       if constexpr(is_noexcept) {

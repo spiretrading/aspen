@@ -1,5 +1,6 @@
 #ifndef ASPEN_PYTHON_REACTOR_PTR_HPP
 #define ASPEN_PYTHON_REACTOR_PTR_HPP
+#include <cstdint>
 #include <memory>
 #include <pybind11/pybind11.h>
 #include "Aspen/Shared.hpp"
@@ -36,7 +37,7 @@ namespace Aspen {
       //! Returns a pointer to the reactor.
       Shared<Unique<Reactor>>* operator ->() noexcept;
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Result eval() const noexcept(is_noexcept);
 
@@ -73,7 +74,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  State ReactorPtr<R>::commit(int sequence) noexcept {
+  State ReactorPtr<R>::commit(std::uint64_t sequence) noexcept {
     return m_reactor->commit(sequence);
   }
 

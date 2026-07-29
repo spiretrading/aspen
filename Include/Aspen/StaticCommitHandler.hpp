@@ -1,5 +1,6 @@
 #ifndef ASPEN_STATIC_COMMIT_HANDLER_HPP
 #define ASPEN_STATIC_COMMIT_HANDLER_HPP
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <tuple>
@@ -56,7 +57,7 @@ namespace Details {
        * @param sequence The commit's sequence.
        * @return The aggregate State of all children.
        */
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       /** Returns the reactor at the specified index. */
       template<std::size_t I>
@@ -218,7 +219,7 @@ namespace Details {
   }
 
   template<typename... R>
-  State StaticCommitHandler<R...>::commit(int sequence) noexcept {
+  State StaticCommitHandler<R...>::commit(std::uint64_t sequence) noexcept {
     if(sizeof...(R) == 0) {
       return State::COMPLETE;
     }

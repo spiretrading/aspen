@@ -1,5 +1,6 @@
 #ifndef ASPEN_MULTI_SYNC_HPP
 #define ASPEN_MULTI_SYNC_HPP
+#include <cstdint>
 #include "Aspen/State.hpp"
 #include "Aspen/StaticCommitHandler.hpp"
 #include "Aspen/Sync.hpp"
@@ -33,7 +34,7 @@ namespace Details {
        */
       explicit MultiSync(Type& value, R... reactor);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       const Type& eval() const noexcept(is_noexcept);
 
@@ -48,7 +49,7 @@ namespace Details {
       m_reactors(std::move(reactor)...) {}
 
   template<typename V, typename... R>
-  State MultiSync<V, R...>::commit(int sequence) noexcept {
+  State MultiSync<V, R...>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactors.commit(sequence);
     if constexpr(!is_noexcept) {
       if(has_evaluation(state)) {

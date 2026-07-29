@@ -1,5 +1,6 @@
 #ifndef ASPEN_SWITCH_HPP
 #define ASPEN_SWITCH_HPP
+#include <cstdint>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -34,7 +35,7 @@ namespace Aspen {
       template<typename TF, typename SF>
       Switch(TF&& toggle, SF&& series);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -65,7 +66,7 @@ namespace Aspen {
       m_is_on(false) {}
 
   template<typename T, typename S>
-  State Switch<T, S>::commit(int sequence) noexcept {
+  State Switch<T, S>::commit(std::uint64_t sequence) noexcept {
     if(m_is_toggle_complete && m_is_on) {
       return m_series.commit(sequence);
     }

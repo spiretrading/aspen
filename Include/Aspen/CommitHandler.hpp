@@ -37,7 +37,7 @@ namespace Aspen {
        * @param sequence The commit's sequence.
        * @return The aggregate State of all children.
        */
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       /** Returns the number of reactors managed. */
       std::size_t size() const noexcept;
@@ -141,7 +141,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  State CommitHandler<R>::commit(int sequence) noexcept {
+  State CommitHandler<R>::commit(std::uint64_t sequence) noexcept {
     if(m_children.empty()) {
       return State::COMPLETE;
     }

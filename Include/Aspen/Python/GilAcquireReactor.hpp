@@ -1,7 +1,8 @@
 #ifndef ASPEN_PYTHON_GIL_ACQUIRE_REACTOR_HPP
 #define ASPEN_PYTHON_GIL_ACQUIRE_REACTOR_HPP
-#include <type_traits>
+#include <cstdint>
 #include <pybind11/pybind11.h>
+#include <type_traits>
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -23,7 +24,7 @@ namespace Aspen {
       template<typename RF>
       GilAcquireReactor(RF&& reactor);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept_reactor_v<R>);
 
@@ -40,7 +41,7 @@ namespace Aspen {
     : m_reactor(std::forward<RF>(reactor)) {}
 
   template<typename R>
-  State GilAcquireReactor<R>::commit(int sequence) noexcept {
+  State GilAcquireReactor<R>::commit(std::uint64_t sequence) noexcept {
     auto lock = pybind11::gil_scoped_acquire();
     return m_reactor->commit(sequence);
   }

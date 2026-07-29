@@ -1,5 +1,6 @@
 #ifndef ASPEN_CONCUR_HPP
 #define ASPEN_CONCUR_HPP
+#include <cstdint>
 #include <list>
 #include <optional>
 #include <utility>
@@ -29,7 +30,7 @@ namespace Aspen {
         !std::is_base_of_v<Concur, std::decay_t<TF>>>>
       Concur(TF&& producer);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -77,7 +78,7 @@ namespace Aspen {
       m_position(m_children->end()) {}
 
   template<typename T>
-  State Concur<T>::commit(int sequence) noexcept {
+  State Concur<T>::commit(std::uint64_t sequence) noexcept {
     auto state = [&] {
       if(m_producer.has_value()) {
         auto producer_state = m_producer->commit(sequence);

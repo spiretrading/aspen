@@ -1,5 +1,6 @@
 #ifndef ASPEN_BRANCH_HPP
 #define ASPEN_BRANCH_HPP
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 #include "Aspen/CommitFlag.hpp"
@@ -49,7 +50,7 @@ namespace Aspen {
       /** Returns a pointer to the reactor. */
       Reactor* operator ->() noexcept;
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       /** Copies a Branch. */
       Branch& operator =(const Branch& branch);
@@ -112,7 +113,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  State Branch<R>::commit(int sequence) noexcept {
+  State Branch<R>::commit(std::uint64_t sequence) noexcept {
     if(!m_is_linked) {
       m_is_linked = true;
       m_flag.set_parent(CommitFlag::get_current());

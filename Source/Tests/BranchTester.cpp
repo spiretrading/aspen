@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <doctest/doctest.h>
@@ -23,7 +24,7 @@ namespace {
         return m_count;
       }
 
-      State commit(int sequence) noexcept {
+      State commit(std::uint64_t sequence) noexcept {
         ++*m_count;
         return m_state;
       }

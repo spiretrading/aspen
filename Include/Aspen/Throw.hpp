@@ -1,5 +1,6 @@
 #ifndef ASPEN_THROW_HPP
 #define ASPEN_THROW_HPP
+#include <cstdint>
 #include <exception>
 #include <type_traits>
 #include <utility>
@@ -30,7 +31,7 @@ namespace Aspen {
       template<typename E>
       Throw(E exception);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -66,7 +67,7 @@ namespace Aspen {
     : Throw(std::make_exception_ptr(std::move(exception))) {}
 
   template<typename T>
-  State Throw<T>::commit(int sequence) noexcept {
+  State Throw<T>::commit(std::uint64_t sequence) noexcept {
     return State::COMPLETE_EVALUATED;
   }
 

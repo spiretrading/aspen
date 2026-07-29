@@ -1,5 +1,6 @@
 #ifndef ASPEN_CELL_HPP
 #define ASPEN_CELL_HPP
+#include <cstdint>
 #include <mutex>
 #include <optional>
 #include <utility>
@@ -69,7 +70,7 @@ namespace Aspen {
       template<typename... A>
       void emplace_complete(A&&... args);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept;
 
@@ -163,7 +164,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  State Cell<T>::commit(int sequence) noexcept {
+  State Cell<T>::commit(std::uint64_t sequence) noexcept {
     auto lock = std::lock_guard(m_mutex);
     m_flag = CommitFlag::get_current();
     auto state = State::NONE;

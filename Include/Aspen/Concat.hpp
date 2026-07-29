@@ -1,5 +1,6 @@
 #ifndef ASPEN_CONCAT_HPP
 #define ASPEN_CONCAT_HPP
+#include <cstdint>
 #include <list>
 #include <type_traits>
 #include <utility>
@@ -30,7 +31,7 @@ namespace Aspen {
         !std::is_base_of_v<Concat, std::decay_t<RF>>>>
       explicit Concat(RF&& producer);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -63,7 +64,7 @@ namespace Aspen {
       m_is_child_complete(false) {}
 
   template<typename R>
-  State Concat<R>::commit(int sequence) noexcept {
+  State Concat<R>::commit(std::uint64_t sequence) noexcept {
     auto state = [&] {
       if(!m_is_producer_complete) {
         auto producer_state = m_producer.commit(sequence);

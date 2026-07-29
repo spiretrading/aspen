@@ -1,5 +1,6 @@
 #ifndef ASPEN_WHEN_HPP
 #define ASPEN_WHEN_HPP
+#include <cstdint>
 #include "Aspen/Branch.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -28,7 +29,7 @@ namespace Aspen {
       template<typename CF, typename TF>
       When(CF&& condition, TF&& series);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -63,7 +64,7 @@ namespace Aspen {
       m_is_triggered(false) {}
 
   template<typename C, typename T>
-  State When<C, T>::commit(int sequence) noexcept {
+  State When<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     if(!m_is_triggered) {
       auto condition_state = m_condition.commit(sequence);

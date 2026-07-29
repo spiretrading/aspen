@@ -1,5 +1,6 @@
 #ifndef ASPEN_WEAK_HPP
 #define ASPEN_WEAK_HPP
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include "Aspen/CommitFlag.hpp"
@@ -36,13 +37,13 @@ namespace Aspen {
       /** Returns a new Shared reactor to the reactor being observed. */
       std::optional<Shared<Reactor>> lock() const noexcept;
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Result eval() const noexcept(is_noexcept);
 
     private:
       std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
-      int m_last_evaluation;
+      Details::Sequence m_last_evaluation;
       CommitFlag* m_parent;
 
       void set_parent(CommitFlag* parent) noexcept;
@@ -51,13 +52,11 @@ namespace Aspen {
   template<typename R>
   Weak<R>::Weak(Shared<Reactor> reactor) noexcept
     : m_evaluator(std::move(reactor.m_evaluator)),
-      m_last_evaluation(-1),
       m_parent(nullptr) {}
 
   template<typename R>
   Weak<R>::Weak(const Weak& weak) noexcept
     : m_evaluator(weak.m_evaluator),
-      m_last_evaluation(-1),
       m_parent(nullptr) {}
 
   template<typename R>
@@ -85,7 +84,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  State Weak<R>::commit(int sequence) noexcept {
+  State Weak<R>::commit(std::uint64_t sequence) noexcept {
     auto reactor = m_evaluator->m_reactor.lock();
     if(reactor == nullptr) {
       if(m_last_evaluation < m_evaluator->m_state->m_last_evaluation) {

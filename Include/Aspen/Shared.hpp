@@ -1,5 +1,6 @@
 #ifndef ASPEN_SHARED_HPP
 #define ASPEN_SHARED_HPP
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include "Aspen/Box.hpp"
@@ -10,10 +11,28 @@
 
 namespace Aspen {
 namespace Details {
+
+  /** Records the sequence at which an event last took place. */
+  struct Sequence {
+    std::uint64_t m_value;
+    bool m_is_set;
+
+    Sequence() noexcept;
+
+    /** Records that the event took place at a given sequence. */
+    void set(std::uint64_t value) noexcept;
+
+    /** Returns true iff the event took place at a given sequence. */
+    bool is_at(std::uint64_t value) const noexcept;
+  };
+
+  /** Returns true iff the left sequence precedes the right. */
+  bool operator <(Sequence left, Sequence right) noexcept;
+
   struct SharedState {
     State m_state;
-    int m_sequence;
-    int m_last_evaluation;
+    Sequence m_sequence;
+    Sequence m_last_evaluation;
     CommitFlag m_flag;
 
     SharedState();
@@ -29,10 +48,25 @@ namespace Details {
     SharedEvaluator(std::shared_ptr<SharedState> state);
   };
 
+  inline Sequence::Sequence() noexcept
+    : m_value(0),
+      m_is_set(false) {}
+
+  inline void Sequence::set(std::uint64_t value) noexcept {
+    m_value = value;
+    m_is_set = true;
+  }
+
+  inline bool Sequence::is_at(std::uint64_t value) const noexcept {
+    return m_is_set && m_value == value;
+  }
+
+  inline bool operator <(Sequence left, Sequence right) noexcept {
+    return right.m_is_set && (!left.m_is_set || left.m_value < right.m_value);
+  }
+
   inline SharedState::SharedState()
-    : m_state(State::NONE),
-      m_sequence(-1),
-      m_last_evaluation(-1) {}
+    : m_state(State::NONE) {}
 
   template<typename R>
   SharedEvaluator<R>::SharedEvaluator(std::shared_ptr<SharedState> state)
@@ -101,7 +135,7 @@ namespace Details {
       //! Returns a pointer to the reactor.
       Reactor* operator ->() noexcept;
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Result eval() const noexcept(is_noexcept);
 
@@ -114,12 +148,12 @@ namespace Details {
       template<typename> friend class Weak;
       std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
       std::shared_ptr<Reactor> m_reactor;
-      int m_last_evaluation;
+      Details::Sequence m_last_evaluation;
       CommitFlag* m_parent;
 
-      static State commit_state(int sequence, Reactor& reactor,
-        Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation,
-        CommitFlag* current);
+      static State commit_state(std::uint64_t sequence, Reactor& reactor,
+        Details::SharedEvaluator<Reactor>& evaluator,
+        Details::Sequence& last_evaluation, CommitFlag* current);
 
       Shared(std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
         std::shared_ptr<Reactor> reactor);
@@ -223,7 +257,7 @@ namespace Details {
     }
     set_parent(nullptr);
     if(m_reactor.use_count() == 1 &&
-        m_evaluator->m_state->m_last_evaluation != -1) {
+        m_evaluator->m_state->m_last_evaluation.m_is_set) {
       m_evaluator->m_evaluation = try_eval(*m_reactor);
     }
   }
@@ -249,7 +283,7 @@ namespace Details {
   }
 
   template<typename R>
-  State Shared<R>::commit(int sequence) noexcept {
+  State Shared<R>::commit(std::uint64_t sequence) noexcept {
     auto current = CommitFlag::get_current();
     auto state = commit_state(
       sequence, *m_reactor, *m_evaluator, m_last_evaluation, current);
@@ -269,7 +303,7 @@ namespace Details {
     set_parent(nullptr);
     m_evaluator = shared.m_evaluator;
     m_reactor = shared.m_reactor;
-    m_last_evaluation = -1;
+    m_last_evaluation = Details::Sequence();
     return *this;
   }
 
@@ -285,10 +319,11 @@ namespace Details {
   }
 
   template<typename R>
-  State Shared<R>::commit_state(int sequence, Reactor& reactor,
-      Details::SharedEvaluator<Reactor>& evaluator, int& last_evaluation,
-      CommitFlag* current) {
-    if(sequence <= evaluator.m_state->m_sequence) {
+  State Shared<R>::commit_state(std::uint64_t sequence, Reactor& reactor,
+      Details::SharedEvaluator<Reactor>& evaluator,
+      Details::Sequence& last_evaluation, CommitFlag* current) {
+    if(evaluator.m_state->m_sequence.m_is_set &&
+        sequence <= evaluator.m_state->m_sequence.m_value) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         return combine(evaluator.m_state->m_state, State::EVALUATED);
@@ -297,11 +332,11 @@ namespace Details {
     }
     auto& flag = evaluator.m_state->m_flag;
     if(current != &flag && !flag.is_raised() &&
-        evaluator.m_state->m_sequence != -1) {
+        evaluator.m_state->m_sequence.m_is_set) {
       auto skipped = reset(
         evaluator.m_state->m_state, combine(State::EVALUATED, State::CONTINUE));
       evaluator.m_state->m_state = skipped;
-      evaluator.m_state->m_sequence = sequence;
+      evaluator.m_state->m_sequence.set(sequence);
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         return combine(skipped, State::EVALUATED);
@@ -316,17 +351,17 @@ namespace Details {
     if(has_continuation(reactor_state)) {
       flag.raise();
     }
-    if(sequence == evaluator.m_state->m_sequence) {
+    if(evaluator.m_state->m_sequence.is_at(sequence)) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         reactor_state = combine(reactor_state, State::EVALUATED);
       }
     } else {
       evaluator.m_state->m_state = reactor_state;
-      evaluator.m_state->m_sequence = sequence;
+      evaluator.m_state->m_sequence.set(sequence);
       if(has_evaluation(reactor_state)) {
-        evaluator.m_state->m_last_evaluation = sequence;
-        last_evaluation = sequence;
+        evaluator.m_state->m_last_evaluation.set(sequence);
+        last_evaluation.set(sequence);
       } else if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         reactor_state = combine(reactor_state, State::EVALUATED);
@@ -341,7 +376,6 @@ namespace Details {
     std::shared_ptr<Reactor> reactor)
     : m_evaluator(std::move(evaluator)),
       m_reactor(std::move(reactor)),
-      m_last_evaluation(-1),
       m_parent(nullptr) {}
 
   template<typename R>

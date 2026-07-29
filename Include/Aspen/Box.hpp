@@ -1,5 +1,6 @@
 #ifndef ASPEN_BOX_HPP
 #define ASPEN_BOX_HPP
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <type_traits>
@@ -27,14 +28,14 @@ namespace Aspen {
         !std::is_base_of_v<Box, std::decay_t<R>>>>
       explicit Box(R&& reactor);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Result eval() const;
 
     private:
       struct BaseWrapper {
         virtual ~BaseWrapper() = default;
-        virtual State commit(int sequence) noexcept = 0;
+        virtual State commit(std::uint64_t sequence) noexcept = 0;
         virtual Result eval() const = 0;
       };
       template<typename R>
@@ -44,7 +45,7 @@ namespace Aspen {
         template<typename Q, typename = std::enable_if_t<
           !std::is_base_of_v<ByReferenceWrapper, std::decay_t<Q>>>>
         ByReferenceWrapper(Q&& reactor);
-        State commit(int sequence) noexcept override;
+        State commit(std::uint64_t sequence) noexcept override;
         Result eval() const override;
       };
       template<typename R>
@@ -57,7 +58,7 @@ namespace Aspen {
         template<typename Q, typename = std::enable_if_t<
           !std::is_base_of_v<ByValueWrapper, std::decay_t<Q>>>>
         ByValueWrapper(Q&& reactor);
-        State commit(int sequence) noexcept override;
+        State commit(std::uint64_t sequence) noexcept override;
         Result eval() const override;
       };
       std::unique_ptr<BaseWrapper> m_reactor;
@@ -92,7 +93,7 @@ namespace Aspen {
   }
 
   template<typename T>
-  State Box<T>::commit(int sequence) noexcept {
+  State Box<T>::commit(std::uint64_t sequence) noexcept {
     return m_reactor->commit(sequence);
   }
 
@@ -109,7 +110,7 @@ namespace Aspen {
 
   template<typename T>
   template<typename R>
-  State Box<T>::ByReferenceWrapper<R>::commit(int sequence) noexcept {
+  State Box<T>::ByReferenceWrapper<R>::commit(std::uint64_t sequence) noexcept {
     return m_reactor.commit(sequence);
   }
 
@@ -131,7 +132,7 @@ namespace Aspen {
 
   template<typename T>
   template<typename R>
-  State Box<T>::ByValueWrapper<R>::commit(int sequence) noexcept {
+  State Box<T>::ByValueWrapper<R>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactor.commit(sequence);
     if(has_evaluation(state)) {
       m_value = try_call(

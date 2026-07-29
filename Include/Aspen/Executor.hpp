@@ -1,6 +1,7 @@
 #ifndef ASPEN_EXECUTOR_HPP
 #define ASPEN_EXECUTOR_HPP
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #if defined WIN32
   #include <windows.h>
@@ -45,7 +46,7 @@ namespace Aspen {
       std::condition_variable m_update_condition;
       Trigger m_trigger;
       CommitFlag m_flag;
-      int m_sequence;
+      std::uint64_t m_sequence;
       Box<void> m_reactor;
       Update m_has_update;
 

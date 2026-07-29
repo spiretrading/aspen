@@ -1,6 +1,7 @@
 #ifndef ASPEN_LIFT_HPP
 #define ASPEN_LIFT_HPP
 #include <cassert>
+#include <cstdint>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -213,7 +214,7 @@ namespace Details {
       template<typename FF, typename AF, typename... AR>
       Lift(FF&& function, AF&& argument, AR&&... arguments);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
@@ -245,7 +246,7 @@ namespace Details {
         !std::is_base_of_v<Lift, std::decay_t<FF>>>>
       explicit Lift(FF&& function);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -405,7 +406,7 @@ namespace Details {
       m_has_continuation(false) {}
 
   template<typename F, typename... A>
-  State Lift<F, A...>::commit(int sequence) noexcept {
+  State Lift<F, A...>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto children_state = m_handler.commit(sequence);
     if(has_evaluation(children_state) || m_has_continuation) {
@@ -462,7 +463,7 @@ namespace Details {
     : m_function(std::forward<FF>(function)) {}
 
   template<typename F>
-  State Lift<F>::commit(int sequence) noexcept {
+  State Lift<F>::commit(std::uint64_t sequence) noexcept {
     auto invocation = invoke();
     if(has_evaluation(invocation)) {
       if(has_continuation(invocation)) {

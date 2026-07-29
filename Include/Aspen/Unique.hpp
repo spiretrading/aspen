@@ -1,5 +1,6 @@
 #ifndef ASPEN_UNIQUE_HPP
 #define ASPEN_UNIQUE_HPP
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include "Aspen/State.hpp"
@@ -46,7 +47,7 @@ namespace Aspen {
       //! Returns a pointer to the reactor.
       Reactor* operator ->() noexcept;
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Result eval() const noexcept(is_noexcept);
 
@@ -84,7 +85,7 @@ namespace Aspen {
   }
 
   template<typename R>
-  State Unique<R>::commit(int sequence) noexcept {
+  State Unique<R>::commit(std::uint64_t sequence) noexcept {
     return m_reactor->commit(sequence);
   }
 

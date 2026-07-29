@@ -1,7 +1,8 @@
 #ifndef ASPEN_PYTHON_PYTHON_BOX_HPP
 #define ASPEN_PYTHON_PYTHON_BOX_HPP
-#include <utility>
+#include <cstdint>
 #include <pybind11/pybind11.h>
+#include <utility>
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
@@ -22,7 +23,7 @@ namespace Aspen {
        */
       explicit PythonBox(pybind11::object reactor);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       Type eval() const;
 
@@ -35,7 +36,7 @@ namespace Aspen {
     : m_reactor(std::move(reactor)) {}
 
   template<typename T>
-  State PythonBox<T>::commit(int sequence) noexcept {
+  State PythonBox<T>::commit(std::uint64_t sequence) noexcept {
     return m_reactor.attr("commit")(sequence).template cast<State>();
   }
 

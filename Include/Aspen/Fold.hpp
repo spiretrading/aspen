@@ -1,5 +1,6 @@
 #ifndef ASPEN_FOLD_HPP
 #define ASPEN_FOLD_HPP
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -24,7 +25,7 @@ namespace Aspen {
       /** Constructs a FoldArgument. */
       FoldArgument() noexcept;
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -61,7 +62,7 @@ namespace Aspen {
       Fold(EF&& evaluator, Shared<FoldArgument<Type>> left,
         Shared<FoldArgument<Type>> right, SF&& series);
 
-      State commit(int sequence) noexcept;
+      State commit(std::uint64_t sequence) noexcept;
 
       eval_result_t<Type> eval() const;
 
@@ -124,7 +125,7 @@ namespace Aspen {
     : m_flag(nullptr) {}
 
   template<typename T>
-  State FoldArgument<T>::commit(int sequence) noexcept {
+  State FoldArgument<T>::commit(std::uint64_t sequence) noexcept {
     m_flag = CommitFlag::get_current();
     if(m_next_value.has_value()) {
       m_value = std::move(*m_next_value);
@@ -157,7 +158,7 @@ namespace Aspen {
       m_series(std::forward<SF>(series)) {}
 
   template<typename E, typename S>
-  State Fold<E, S>::commit(int sequence) noexcept {
+  State Fold<E, S>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto series_state = m_series.commit(sequence);
     if(has_evaluation(series_state)) {

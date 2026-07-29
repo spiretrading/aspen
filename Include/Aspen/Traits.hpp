@@ -1,5 +1,6 @@
 #ifndef ASPEN_TRAITS_HPP
 #define ASPEN_TRAITS_HPP
+#include <cstdint>
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -17,7 +18,8 @@ namespace Aspen {
 
   template<typename T>
   struct is_reactor<T, std::enable_if_t<std::is_same_v<
-    decltype(std::declval<T>().commit(std::declval<int>())), State>>> :
+    decltype(std::declval<T>().commit(std::declval<std::uint64_t>())),
+    State>>> :
     std::true_type {};
 
   template<typename T>

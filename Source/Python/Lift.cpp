@@ -30,7 +30,7 @@ namespace {
             return children;
           }()) {}
 
-    State commit(int sequence) noexcept {
+    State commit(std::uint64_t sequence) noexcept {
       return m_arguments.commit(sequence);
     }
 

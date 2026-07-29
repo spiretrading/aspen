@@ -1,5 +1,6 @@
 #ifndef ASPEN_CONSTANT_HPP
 #define ASPEN_CONSTANT_HPP
+#include <cstdint>
 #include <utility>
 #include "Aspen/State.hpp"
 
@@ -20,7 +21,7 @@ namespace Aspen {
        */
       constexpr explicit Constant(T value);
 
-      constexpr State commit(int sequence) noexcept;
+      constexpr State commit(std::uint64_t sequence) noexcept;
 
       constexpr const Type& eval() const noexcept;
 
@@ -42,7 +43,7 @@ namespace Aspen {
     : m_value(std::move(value)) {}
 
   template<typename T>
-  constexpr State Constant<T>::commit(int sequence) noexcept {
+  constexpr State Constant<T>::commit(std::uint64_t sequence) noexcept {
     return State::COMPLETE_EVALUATED;
   }
 
