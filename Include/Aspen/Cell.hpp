@@ -17,9 +17,11 @@ namespace Aspen {
   template<typename T>
   class Cell {
     public:
+
+      /** The type to evaluate to. */
       using Type = T;
 
-      /** Constructs an Cell with a default initial value. */
+      /** Constructs a Cell with a default initial value. */
       Cell();
 
       /**
@@ -36,7 +38,6 @@ namespace Aspen {
       explicit Cell(std::in_place_t, A&&... args);
 
       Cell(const Cell& cell);
-
       Cell(Cell&& cell);
 
       /**
@@ -71,21 +72,18 @@ namespace Aspen {
       void emplace_complete(A&&... args);
 
       State commit(std::uint64_t sequence) noexcept;
-
       eval_result_t<Type> eval() const noexcept;
-
       Cell& operator =(const Cell& cell);
-
       Cell& operator =(Cell&& cell);
 
     private:
-      std::mutex m_mutex;
+      mutable std::mutex m_mutex;
       bool m_is_complete;
       std::optional<Type> m_current;
       std::optional<Type> m_next;
       CommitFlag* m_flag;
 
-      void notify();
+      void update(auto&& f);
   };
 
   template<typename T>
@@ -108,7 +106,8 @@ namespace Aspen {
 
   template<typename T>
   Cell<T>::Cell(const Cell& cell)
-      : m_flag(nullptr) {
+      : m_is_complete(false),
+        m_flag(nullptr) {
     auto lock = std::lock_guard(cell.m_mutex);
     m_is_complete = cell.m_is_complete;
     m_current = cell.m_current;
@@ -126,41 +125,41 @@ namespace Aspen {
 
   template<typename T>
   void Cell<T>::set(Type value) {
-    auto lock = std::lock_guard(m_mutex);
-    m_next = std::move(value);
-    notify();
+    update([&] {
+      m_next = std::move(value);
+    });
   }
 
   template<typename T>
   template<typename... A>
   void Cell<T>::emplace(A&&... args) {
-    auto lock = std::lock_guard(m_mutex);
-    m_next.emplace(std::forward<A>(args)...);
-    notify();
+    update([&] {
+      m_next.emplace(std::forward<A>(args)...);
+    });
   }
 
   template<typename T>
   void Cell<T>::set_complete() {
-    auto lock = std::lock_guard(m_mutex);
-    m_is_complete = true;
-    notify();
+    update([&] {
+      m_is_complete = true;
+    });
   }
 
   template<typename T>
   void Cell<T>::set_complete(Type value) {
-    auto lock = std::lock_guard(m_mutex);
-    m_is_complete = true;
-    m_next = std::move(value);
-    notify();
+    update([&] {
+      m_is_complete = true;
+      m_next = std::move(value);
+    });
   }
 
   template<typename T>
   template<typename... A>
   void Cell<T>::emplace_complete(A&&... args) {
-    auto lock = std::lock_guard(m_mutex);
-    m_is_complete = true;
-    m_next.emplace(std::forward<A>(args)...);
-    notify();
+    update([&] {
+      m_is_complete = true;
+      m_next.emplace(std::forward<A>(args)...);
+    });
   }
 
   template<typename T>
@@ -168,7 +167,7 @@ namespace Aspen {
     auto lock = std::lock_guard(m_mutex);
     m_flag = CommitFlag::get_current();
     auto state = State::NONE;
-    if(m_next.has_value()) {
+    if(m_next) {
       m_current = std::move(m_next);
       m_next = std::nullopt;
       state = State::EVALUATED;
@@ -180,35 +179,56 @@ namespace Aspen {
   }
 
   template<typename T>
-  void Cell<T>::notify() {
-    if(m_flag != nullptr) {
-      m_flag->raise();
-    }
-  }
-
-  template<typename T>
   eval_result_t<typename Cell<T>::Type> Cell<T>::eval() const noexcept {
     return *m_current;
   }
 
   template<typename T>
   Cell<T>& Cell<T>::operator =(const Cell& cell) {
-    auto lock = std::lock_guard(m_mutex);
-    auto cell_lock = std::lock_guard(cell.m_mutex);
-    m_is_complete = cell.m_is_complete;
-    m_current = cell.m_current;
-    m_next = cell.m_next;
+    if(this == &cell) {
+      return *this;
+    }
+    auto flag = [&] {
+      auto lock = std::scoped_lock(m_mutex, cell.m_mutex);
+      m_is_complete = cell.m_is_complete;
+      m_current = cell.m_current;
+      m_next = cell.m_next;
+      return m_flag;
+    }();
+    if(flag) {
+      flag->raise();
+    }
     return *this;
   }
 
   template<typename T>
   Cell<T>& Cell<T>::operator =(Cell&& cell) {
-    auto lock = std::lock_guard(m_mutex);
-    auto cell_lock = std::lock_guard(cell.m_mutex);
-    m_is_complete = std::move(cell.m_is_complete);
-    m_current = std::move(cell.m_current);
-    m_next = std::move(cell.m_next);
+    if(this == &cell) {
+      return *this;
+    }
+    auto flag = [&] {
+      auto lock = std::scoped_lock(m_mutex, cell.m_mutex);
+      m_is_complete = cell.m_is_complete;
+      m_current = std::move(cell.m_current);
+      m_next = std::move(cell.m_next);
+      return m_flag;
+    }();
+    if(flag) {
+      flag->raise();
+    }
     return *this;
+  }
+
+  template<typename T>
+  void Cell<T>::update(auto&& f) {
+    auto flag = [&] {
+      auto lock = std::lock_guard(m_mutex);
+      f();
+      return m_flag;
+    }();
+    if(flag) {
+      flag->raise();
+    }
   }
 }
 
