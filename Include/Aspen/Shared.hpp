@@ -258,7 +258,7 @@ namespace Details {
     set_parent(nullptr);
     if(m_reactor.use_count() == 1 &&
         m_evaluator->m_state->m_last_evaluation.m_is_set) {
-      m_evaluator->m_evaluation = try_eval(*m_reactor);
+      try_assign(m_evaluator->m_evaluation, *m_reactor);
     }
   }
 

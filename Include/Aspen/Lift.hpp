@@ -139,11 +139,7 @@ namespace Details {
             })...));
         }, pack);
       if(evaluation.m_value.has_value()) {
-        if constexpr(std::is_same_v<V, LocalPtr<T>>) {
-          *value = std::move(*evaluation.m_value);
-        } else {
-          value = std::move(*evaluation.m_value);
-        }
+        value = std::move(*evaluation.m_value);
       }
       return evaluation.m_state;
     }

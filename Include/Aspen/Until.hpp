@@ -85,7 +85,7 @@ namespace Aspen {
     if(m_series.has_value()) {
       auto series_state = m_series->commit(sequence);
       if(has_evaluation(series_state)) {
-        m_value = try_eval(**m_series);
+        try_assign(m_value, **m_series);
         state = State::EVALUATED;
       }
       if(is_complete(series_state)) {

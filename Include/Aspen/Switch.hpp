@@ -87,7 +87,7 @@ namespace Aspen {
     if(m_is_on) {
       state = m_series.commit(sequence);
       if(has_evaluation(state) || m_has_evaluation && flipped) {
-        m_value = try_eval(*m_series);
+        try_assign(m_value, *m_series);
         state = combine(state, State::EVALUATED);
         m_has_evaluation = true;
       }

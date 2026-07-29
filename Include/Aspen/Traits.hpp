@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <utility>
 #include "Aspen/Constant.hpp"
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/State.hpp"
 
@@ -91,17 +90,22 @@ namespace Aspen {
     }(std::make_index_sequence<J - I>());
   }
 
-  template<typename R>
-  auto try_eval(const R& reactor) noexcept {
+  /**
+   * Assigns a reactor's evaluation to a value, capturing any exception thrown.
+   * @param value The value to assign to.
+   * @param reactor The reactor to evaluate.
+   */
+  template<typename V, typename R>
+  void try_assign(V& value, const R& reactor) noexcept {
     if constexpr(is_noexcept_reactor_v<R>) {
       if constexpr(std::is_same_v<reactor_result_t<R>, void>) {
         reactor.eval();
-        return Maybe<void>();
+        value = Maybe<void>();
       } else {
-        return LocalPtr(reactor.eval());
+        value = reactor.eval();
       }
     } else {
-      return try_call([&] { return reactor.eval(); });
+      value = try_call([&] { return reactor.eval(); });
     }
   }
 }
