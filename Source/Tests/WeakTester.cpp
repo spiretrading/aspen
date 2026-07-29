@@ -1,5 +1,5 @@
-#include <doctest/doctest.h>
 #include <optional>
+#include <doctest/doctest.h>
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Weak.hpp"

@@ -1,5 +1,6 @@
 #ifndef ASPEN_PYTHON_REACTOR_HPP
 #define ASPEN_PYTHON_REACTOR_HPP
+#include <cstdint>
 #include <string>
 #include <pybind11/pybind11.h>
 #include "Aspen/Box.hpp"
@@ -92,7 +93,7 @@ namespace Aspen {
     auto reactor = pybind11::class_<T, ReactorPtr<T>, Options...>(module,
       name.c_str())
       .def("commit",
-        [] (ReactorPtr<T>& self, int sequence) {
+        [] (ReactorPtr<T>& self, std::uint64_t sequence) {
           return self.commit(sequence);
         })
       .def("eval",
