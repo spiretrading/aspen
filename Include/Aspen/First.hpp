@@ -2,6 +2,8 @@
 #define ASPEN_FIRST_HPP
 #include <utility>
 #include "Aspen/Lift.hpp"
+#include "Aspen/Reactor.hpp"
+#include "Aspen/Traits.hpp"
 
 namespace Aspen {
 
@@ -9,14 +11,13 @@ namespace Aspen {
    * Implements a reactor that evaluates to the first value it receives from its
    * source.
    * @param source The source that will provide the value to evaluate to.
+   * @return A reactor evaluating to the first value of the <i>source</i>.
    */
-  template<typename Reactor>
-  auto first(Reactor&& source) {
-    return Lift(
-      [] (auto&& value) {
-        return FunctionEvaluation(std::forward<decltype(value)>(value),
-          State::COMPLETE_EVALUATED);
-      }, std::forward<Reactor>(source));
+  template<typename Source> requires IsReactor<to_reactor_t<Source>>
+  auto first(Source&& source) {
+    return lift([] (const auto& value) noexcept {
+      return FunctionEvaluation(value, State::COMPLETE_EVALUATED);
+    }, std::forward<Source>(source));
   }
 }
 
