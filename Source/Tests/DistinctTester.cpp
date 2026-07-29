@@ -27,4 +27,15 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.commit(5) == State::EVALUATED);
     REQUIRE(reactor.eval() == 30);
   }
+
+  TEST_CASE("exception") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = distinct(queue);
+    queue->push(10);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
 }

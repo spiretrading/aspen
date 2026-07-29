@@ -1,5 +1,6 @@
 #ifndef ASPEN_DISTINCT_HPP
 #define ASPEN_DISTINCT_HPP
+#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include "Aspen/Lift.hpp"
@@ -17,8 +18,13 @@ namespace Aspen {
     using Type = reactor_result_t<Reactor>;
     return Lift([production = std::unordered_set<Type>()] (
         auto&& value) mutable noexcept -> FunctionEvaluation<Type> {
-      auto result = production.insert(value);
-      if(result.second) {
+      if constexpr(std::is_same_v<std::decay_t<decltype(value)>,
+          Maybe<Type>>) {
+        if(value.has_exception()) {
+          return std::forward<decltype(value)>(value);
+        }
+      }
+      if(production.insert(value).second) {
         return std::forward<decltype(value)>(value);
       }
       return State::NONE;
