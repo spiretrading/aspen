@@ -1,16 +1,20 @@
 #ifndef ASPEN_EXECUTOR_HPP
 #define ASPEN_EXECUTOR_HPP
+#include <atomic>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
+#include <type_traits>
+#include <utility>
+#include <vector>
 #if defined WIN32
   #include <windows.h>
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
   #include <signal.h>
 #endif
-#include <set>
 #include "Aspen/Box.hpp"
 #include "Aspen/CommitFlag.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/Trigger.hpp"
 
 namespace Aspen {
@@ -23,52 +27,57 @@ namespace Aspen {
        * Constructs an Executor.
        * @param reactor The reactor to execute.
        */
-      template<typename R>
+      template<typename R> requires IsReactor<std::remove_cvref_t<R>>
       explicit Executor(R&& reactor);
 
-      /** Repeatedly executes the reactor until it completes or evaluates to
-       *  NONE.
+      /**
+       * Repeatedly executes the reactor until it completes or evaluates to
+       * NONE.
        */
       void run_until_none();
 
       /** Repeatedly executes the reactor until it completes. */
       void run_until_complete();
 
+      /** Stops a run in progress, callable from any thread. */
+      void abort();
+
     private:
-      enum class Update : char {
-        NONE,
-        UPDATE,
-        ABORT
-      };
       static inline std::mutex m_abort_mutex;
-      static inline std::set<Executor*> m_running_executors;
+      static inline std::vector<Executor*> m_running_executors;
       std::mutex m_mutex;
       std::condition_variable m_update_condition;
       Trigger m_trigger;
       CommitFlag m_flag;
       std::uint64_t m_sequence;
       Box<void> m_reactor;
-      Update m_has_update;
+      std::atomic_bool m_is_aborted;
+      bool m_has_update;
 
-      void abort();
       void on_update();
+      bool is_aborted() const noexcept;
       State commit();
 #if defined WIN32
       static BOOL __stdcall ctrl_handler(DWORD ctrl);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-      static void ctrl_handler(int sig);
+      static void ctrl_handler(int);
 #endif
       Executor(const Executor&) = delete;
       Executor& operator =(const Executor&) = delete;
   };
 
-  template<typename R>
+  template<typename R> requires IsReactor<std::remove_cvref_t<R>>
   Executor::Executor(R&& reactor)
       : m_trigger([this] { on_update(); }),
         m_sequence(0),
         m_reactor(std::forward<R>(reactor)),
-        m_has_update(Update::NONE) {
+        m_is_aborted(false),
+        m_has_update(false) {
     m_flag.set_trigger(&m_trigger);
+  }
+
+  inline bool Executor::is_aborted() const noexcept {
+    return m_is_aborted.load(std::memory_order_acquire);
   }
 
   inline State Executor::commit() {
@@ -82,7 +91,7 @@ namespace Aspen {
   inline void Executor::run_until_none() {
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
-    while(has_continuation(commit())) {}
+    while(has_continuation(commit()) && !is_aborted()) {}
     Trigger::set_trigger(old_trigger);
   }
 
@@ -90,41 +99,37 @@ namespace Aspen {
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-    auto previous_handler = static_cast<sighandler_t>(nullptr);
+    auto previous_handler = static_cast<void (*)(int)>(nullptr);
 #endif
     {
       auto lock = std::lock_guard(m_abort_mutex);
 #if defined WIN32
-      ::SetConsoleCtrlHandler(reinterpret_cast<PHANDLER_ROUTINE>(&ctrl_handler),
-        TRUE);
+      ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
       previous_handler = ::signal(SIGINT, &ctrl_handler);
 #endif
-      m_running_executors.insert(this);
+      m_running_executors.push_back(this);
     }
-    while(true) {
+    while(!is_aborted()) {
       auto state = commit();
       if(is_complete(state)) {
         break;
-      } else if(!has_continuation(state)) {
+      }
+      if(!has_continuation(state)) {
         auto lock = std::unique_lock(m_mutex);
-        while(m_has_update == Update::NONE) {
-          m_update_condition.wait(lock);
-        }
-        if(m_has_update == Update::ABORT) {
-          break;
-        }
-        m_has_update = Update::NONE;
+        m_update_condition.wait(lock, [&] {
+          return m_has_update || is_aborted();
+        });
+        m_has_update = false;
       }
     }
     {
       auto lock = std::lock_guard(m_abort_mutex);
-      m_running_executors.erase(this);
+      std::erase(m_running_executors, this);
 #if defined WIN32
-    ::SetConsoleCtrlHandler(reinterpret_cast<PHANDLER_ROUTINE>(&ctrl_handler),
-      FALSE);
+      ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-    ::signal(SIGINT, previous_handler);
+      ::signal(SIGINT, previous_handler);
 #endif
     }
     Trigger::set_trigger(old_trigger);
@@ -133,7 +138,7 @@ namespace Aspen {
   inline void Executor::abort() {
     {
       auto lock = std::lock_guard(m_mutex);
-      m_has_update = Update::ABORT;
+      m_is_aborted.store(true, std::memory_order_release);
     }
     m_update_condition.notify_one();
   }
@@ -141,29 +146,26 @@ namespace Aspen {
   inline void Executor::on_update() {
     {
       auto lock = std::lock_guard(m_mutex);
-      m_has_update = Update::UPDATE;
+      m_has_update = true;
     }
     m_update_condition.notify_one();
   }
 
 #if defined WIN32
   inline BOOL __stdcall Executor::ctrl_handler(DWORD ctrl) {
-    switch(ctrl) {
-      case CTRL_C_EVENT:
-        {
-          auto lock = std::lock_guard(m_abort_mutex);
-          for(auto& executor : m_running_executors) {
-            executor->abort();
-          }
-        }
-        return true;
+    if(ctrl != CTRL_C_EVENT) {
+      return FALSE;
     }
-    return false;
+    auto lock = std::lock_guard(m_abort_mutex);
+    for(auto executor : m_running_executors) {
+      executor->abort();
+    }
+    return TRUE;
   }
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-  inline void Executor::ctrl_handler(int sig) {
+  inline void Executor::ctrl_handler(int) {
     auto lock = std::lock_guard(m_abort_mutex);
-    for(auto& executor : m_running_executors) {
+    for(auto executor : m_running_executors) {
       executor->abort();
     }
   }

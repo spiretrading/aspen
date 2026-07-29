@@ -1,9 +1,12 @@
+#include <atomic>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <thread>
 #include <vector>
 #include <doctest/doctest.h>
+#include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Executor.hpp"
 #include "Aspen/Lift.hpp"
@@ -21,7 +24,7 @@ TEST_SUITE("Executor") {
         result = value;
       }, none<int>()));
     executor.run_until_none();
-    REQUIRE(!result.has_value());
+    REQUIRE(!result);
   }
 
   TEST_CASE("run_until_none_constant") {
@@ -31,8 +34,27 @@ TEST_SUITE("Executor") {
         result = value;
       }, constant(5)));
     executor.run_until_none();
-    REQUIRE(result.has_value());
+    REQUIRE(result);
     REQUIRE(*result == 5);
+  }
+
+  TEST_CASE("run_until_none_continues") {
+    auto results = std::vector<int>();
+    auto executor = Executor(
+      lift([&] (const auto& value) {
+        results.push_back(value);
+      }, chain(1, 2, 3)));
+    executor.run_until_none();
+    REQUIRE(results == std::vector{1, 2, 3});
+  }
+
+  TEST_CASE("run_until_none_restores_the_trigger") {
+    auto trigger = Trigger();
+    Trigger::set_trigger(trigger);
+    auto executor = Executor(constant(5));
+    executor.run_until_none();
+    REQUIRE(Trigger::get_trigger() == &trigger);
+    Trigger::set_trigger(nullptr);
   }
 
   TEST_CASE("run_until_complete") {
@@ -84,5 +106,58 @@ TEST_SUITE("Executor") {
     queue->set_complete(40);
     executor_thread.join();
     REQUIRE(results == std::vector{10, 20, 30, 40});
+  }
+
+  TEST_CASE("aborting_a_waiting_executor") {
+    auto queue = Shared(Queue<int>());
+    auto mutex = std::mutex();
+    auto condition = std::condition_variable();
+    auto results = std::vector<int>();
+    auto executor = Executor(
+      lift([&] (const auto& value) {
+        auto lock = std::lock_guard(mutex);
+        results.push_back(value);
+        condition.notify_all();
+      }, queue));
+    auto executor_thread = std::thread([&] {
+      executor.run_until_complete();
+    });
+    queue->push(10);
+    {
+      auto lock = std::unique_lock(mutex);
+      condition.wait(lock, [&] {
+        return !results.empty();
+      });
+    }
+    executor.abort();
+    executor_thread.join();
+    REQUIRE(results == std::vector{10});
+  }
+
+  TEST_CASE("aborting_a_reactor_that_always_continues") {
+    auto counter = std::make_shared<std::atomic_int>(0);
+    auto executor = Executor(
+      lift([counter] (const auto& value) {
+        ++*counter;
+        return FunctionEvaluation<int>(value, State::CONTINUE);
+      }, constant(1)));
+    auto executor_thread = std::thread([&] {
+      executor.run_until_complete();
+    });
+    while(counter->load() < 10) {}
+    executor.abort();
+    executor_thread.join();
+    REQUIRE(counter->load() >= 10);
+  }
+
+  TEST_CASE("aborting_before_a_run_starts") {
+    auto counter = std::make_shared<std::atomic_int>(0);
+    auto executor = Executor(
+      lift([counter] (const auto& value) {
+        ++*counter;
+      }, constant(1)));
+    executor.abort();
+    executor.run_until_complete();
+    REQUIRE(counter->load() == 0);
   }
 }
