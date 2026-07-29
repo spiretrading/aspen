@@ -7,15 +7,17 @@
 #include <utility>
 #include <vector>
 #include "Aspen/CommitFlag.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 
 namespace Aspen {
 
-  /** Helper class used to commit a list of reactors and evaluate to their
-   *  aggregate state.
-   *  @param <R> The type of reactor to manage.
+  /**
+   * Helper class used to commit a list of reactors and evaluate to their
+   * aggregate state.
+   * @param <R> The type of reactor to manage.
    */
-  template<typename R>
+  template<IsReactor R>
   class CommitHandler {
     public:
 
@@ -26,11 +28,7 @@ namespace Aspen {
       template<typename A = std::allocator<R>>
       explicit CommitHandler(std::vector<R, A> children);
 
-      /** Moves a CommitHandler. */
       CommitHandler(CommitHandler&& handler) noexcept;
-
-      /** Moves a CommitHandler. */
-      CommitHandler& operator =(CommitHandler&& handler) noexcept;
 
       /**
        * Commits all children and returns their aggregate State.
@@ -43,10 +41,7 @@ namespace Aspen {
       std::size_t size() const noexcept;
 
       /** Returns the reactor at the specified index. */
-      const R& get(std::size_t i) const noexcept;
-
-      /** Returns the reactor at the specified index. */
-      R& get(std::size_t i) noexcept;
+      auto& get(this auto&& self, std::size_t index) noexcept;
 
       /**
        * Returns the indices of the reactors that evaluated during the most
@@ -54,15 +49,18 @@ namespace Aspen {
        */
       const std::vector<std::size_t>& get_evaluated() const noexcept;
 
+      CommitHandler& operator =(CommitHandler&& handler) noexcept;
+
     private:
       static constexpr auto BITS = std::size_t(64);
       struct Child {
         CommitFlag m_flag;
+        [[no_unique_address]]
         R m_reactor;
         State m_state;
         bool m_has_evaluation;
 
-        Child(R reactor);
+        explicit Child(R reactor);
         Child(Child&& child) noexcept;
       };
       std::vector<Child> m_children;
@@ -77,19 +75,19 @@ namespace Aspen {
       void link() noexcept;
   };
 
-  template<typename R>
+  template<IsReactor R>
   CommitHandler<R>::Child::Child(R reactor)
     : m_reactor(std::move(reactor)),
       m_state(State::NONE),
       m_has_evaluation(false) {}
 
-  template<typename R>
+  template<IsReactor R>
   CommitHandler<R>::Child::Child(Child&& child) noexcept
     : m_reactor(std::move(child.m_reactor)),
       m_state(child.m_state),
       m_has_evaluation(child.m_has_evaluation) {}
 
-  template<typename R>
+  template<IsReactor R>
   template<typename A>
   CommitHandler<R>::CommitHandler(std::vector<R, A> children)
       : m_word_count((children.size() + BITS - 1) / BITS),
@@ -99,12 +97,12 @@ namespace Aspen {
         m_is_linked(false) {
     m_children.reserve(children.size());
     for(auto& child : children) {
-      m_children.push_back(std::move(child));
+      m_children.emplace_back(std::move(child));
     }
     m_raised = std::make_unique<std::atomic_uint64_t[]>(m_word_count);
   }
 
-  template<typename R>
+  template<IsReactor R>
   CommitHandler<R>::CommitHandler(CommitHandler&& handler) noexcept
     : m_children(std::move(handler.m_children)),
       m_evaluated(std::move(handler.m_evaluated)),
@@ -115,7 +113,7 @@ namespace Aspen {
       m_is_initializing(handler.m_is_initializing),
       m_is_linked(false) {}
 
-  template<typename R>
+  template<IsReactor R>
   CommitHandler<R>& CommitHandler<R>::operator =(
       CommitHandler&& handler) noexcept {
     m_children = std::move(handler.m_children);
@@ -129,7 +127,7 @@ namespace Aspen {
     return *this;
   }
 
-  template<typename R>
+  template<IsReactor R>
   void CommitHandler<R>::link() noexcept {
     m_is_linked = true;
     auto parent = CommitFlag::get_current();
@@ -140,7 +138,7 @@ namespace Aspen {
     }
   }
 
-  template<typename R>
+  template<IsReactor R>
   State CommitHandler<R>::commit(std::uint64_t sequence) noexcept {
     if(m_children.empty()) {
       return State::COMPLETE;
@@ -202,25 +200,20 @@ namespace Aspen {
     return state;
   }
 
-  template<typename R>
+  template<IsReactor R>
   const std::vector<std::size_t>&
       CommitHandler<R>::get_evaluated() const noexcept {
     return m_evaluated;
   }
 
-  template<typename R>
+  template<IsReactor R>
   std::size_t CommitHandler<R>::size() const noexcept {
     return m_children.size();
   }
 
-  template<typename R>
-  const R& CommitHandler<R>::get(std::size_t i) const noexcept {
-    return m_children[i].m_reactor;
-  }
-
-  template<typename R>
-  R& CommitHandler<R>::get(std::size_t i) noexcept {
-    return m_children[i].m_reactor;
+  template<IsReactor R>
+  auto& CommitHandler<R>::get(this auto&& self, std::size_t index) noexcept {
+    return self.m_children[index].m_reactor;
   }
 }
 
