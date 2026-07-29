@@ -48,6 +48,12 @@ namespace Aspen {
       /** Returns the reactor at the specified index. */
       R& get(std::size_t i) noexcept;
 
+      /**
+       * Returns the indices of the reactors that evaluated during the most
+       * recent commit.
+       */
+      const std::vector<std::size_t>& get_evaluated() const noexcept;
+
     private:
       static constexpr auto BITS = std::size_t(64);
       struct Child {
@@ -60,6 +66,7 @@ namespace Aspen {
         Child(Child&& child) noexcept;
       };
       std::vector<Child> m_children;
+      std::vector<std::size_t> m_evaluated;
       std::unique_ptr<std::atomic_uint64_t[]> m_raised;
       std::size_t m_word_count;
       std::size_t m_completion_count;
@@ -100,6 +107,7 @@ namespace Aspen {
   template<typename R>
   CommitHandler<R>::CommitHandler(CommitHandler&& handler) noexcept
     : m_children(std::move(handler.m_children)),
+      m_evaluated(std::move(handler.m_evaluated)),
       m_raised(std::move(handler.m_raised)),
       m_word_count(handler.m_word_count),
       m_completion_count(handler.m_completion_count),
@@ -111,6 +119,7 @@ namespace Aspen {
   CommitHandler<R>& CommitHandler<R>::operator =(
       CommitHandler&& handler) noexcept {
     m_children = std::move(handler.m_children);
+    m_evaluated = std::move(handler.m_evaluated);
     m_raised = std::move(handler.m_raised);
     m_word_count = handler.m_word_count;
     m_completion_count = handler.m_completion_count;
@@ -139,7 +148,7 @@ namespace Aspen {
     if(!m_is_linked) {
       link();
     }
-    auto evaluation_count = std::size_t(0);
+    m_evaluated.clear();
     auto has_continue = false;
     for(auto word = std::size_t(0); word != m_word_count; ++word) {
       if(m_raised[word].load(std::memory_order_acquire) == 0) {
@@ -159,7 +168,7 @@ namespace Aspen {
           child.m_state = child.m_reactor.commit(sequence);
         }
         if(has_evaluation(child.m_state)) {
-          ++evaluation_count;
+          m_evaluated.push_back(index);
           if(!child.m_has_evaluation) {
             child.m_has_evaluation = true;
             ++m_evaluation_count;
@@ -182,7 +191,7 @@ namespace Aspen {
         m_is_initializing = false;
         state = combine(state, State::EVALUATED);
       }
-    } else if(evaluation_count != 0) {
+    } else if(!m_evaluated.empty()) {
       state = combine(state, State::EVALUATED);
     }
     if(m_completion_count == m_children.size()) {
@@ -191,6 +200,12 @@ namespace Aspen {
       state = combine(state, State::CONTINUE);
     }
     return state;
+  }
+
+  template<typename R>
+  const std::vector<std::size_t>&
+      CommitHandler<R>::get_evaluated() const noexcept {
+    return m_evaluated;
   }
 
   template<typename R>

@@ -35,6 +35,9 @@ namespace Details {
 
       State commit(int sequence) noexcept;
 
+      /** Returns the exception thrown by the reactor, or nullptr for none. */
+      std::exception_ptr get_exception() const noexcept;
+
       const Type& eval() const noexcept(is_noexcept);
 
     private:
@@ -63,6 +66,15 @@ namespace Details {
       }
     }
     return state;
+  }
+
+  template<typename R, typename V>
+  std::exception_ptr Sync<R, V>::get_exception() const noexcept {
+    if constexpr(is_noexcept) {
+      return nullptr;
+    } else {
+      return this->m_exception;
+    }
   }
 
   template<typename R, typename V>

@@ -7,6 +7,12 @@
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
+namespace Details {
+  struct ExceptionTally {
+    std::vector<bool> m_has_exception;
+    std::size_t m_count = 0;
+  };
+}
 
   /** Used to keep a vector's elements synchronized with a corresponding vector
       of reactors.
@@ -16,7 +22,7 @@ namespace Aspen {
    */
   template<typename R, typename V = std::vector<reactor_result_t<R>>>
   class VectorSync : private std::conditional_t<is_noexcept_reactor_v<R>,
-      Details::Empty, Details::Exception> {
+      Details::Empty, Details::ExceptionTally> {
     public:
       using Type = V;
       static constexpr auto is_noexcept = is_noexcept_reactor_v<R>;
@@ -47,7 +53,11 @@ namespace Aspen {
           sync_reactors.push_back(Sync(value[i], std::move(reactors[i])));
         }
         return sync_reactors;
-      }()) {}
+      }()) {
+    if constexpr(!is_noexcept) {
+      this->m_has_exception.resize(m_reactors.size());
+    }
+  }
 
   template<typename R, typename V>
   State VectorSync<R, V>::commit(int sequence) noexcept {
@@ -56,14 +66,15 @@ namespace Aspen {
     }
     auto state = m_reactors.commit(sequence);
     if constexpr(!is_noexcept) {
-      if(has_evaluation(state)) {
-        try {
-          for(auto i = std::size_t(0); i != m_reactors.size(); ++i) {
-            m_reactors.get(i).eval();
+      for(auto i : m_reactors.get_evaluated()) {
+        auto has_exception = m_reactors.get(i).get_exception() != nullptr;
+        if(has_exception != this->m_has_exception[i]) {
+          this->m_has_exception[i] = has_exception;
+          if(has_exception) {
+            ++this->m_count;
+          } else {
+            --this->m_count;
           }
-          this->m_exception = nullptr;
-        } catch(...) {
-          this->m_exception = std::current_exception();
         }
       }
     }
@@ -74,8 +85,12 @@ namespace Aspen {
   const typename VectorSync<R, V>::Type& VectorSync<R, V>::eval() const
       noexcept(is_noexcept) {
     if constexpr(!is_noexcept) {
-      if(this->m_exception) {
-        std::rethrow_exception(this->m_exception);
+      if(this->m_count != 0) {
+        for(auto i = std::size_t(0); i != m_reactors.size(); ++i) {
+          if(this->m_has_exception[i]) {
+            m_reactors.get(i).eval();
+          }
+        }
       }
     }
     return *m_value;
