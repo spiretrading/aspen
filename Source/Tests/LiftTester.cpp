@@ -190,6 +190,19 @@ TEST_SUITE("Lift") {
     REQUIRE(Counted::copies == copies);
   }
 
+  TEST_CASE("a_generic_function_sees_the_evaluation") {
+    auto cell = Shared(Cell(1));
+    auto reactor = Lift([] (auto&& value) noexcept {
+      return value;
+    }, cell);
+    REQUIRE((std::is_same_v<decltype(reactor)::Type, int>));
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    cell->set(4);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 4);
+  }
+
   TEST_CASE("lifting_a_function_returning_an_optional") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
@@ -204,6 +217,26 @@ TEST_SUITE("Lift") {
     queue->push(2);
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("lifting_a_function_returning_a_maybe") {
+    auto cell = Shared(Cell(1));
+    auto reactor = Lift([] (int value) noexcept {
+      if(value < 0) {
+        return Maybe<int>(std::make_exception_ptr(std::runtime_error("bad")));
+      }
+      return Maybe<int>(2 * value);
+    }, cell);
+    REQUIRE((std::is_same_v<decltype(reactor)::Type, int>));
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    cell->set(-1);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+    cell->set(3);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 6);
   }
 
   TEST_CASE("lifting_a_function_returning_an_evaluation") {

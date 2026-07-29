@@ -127,6 +127,11 @@ namespace Details {
   };
 
   template<typename T>
+  struct function_reactor_result<Maybe<T>> {
+    using type = T;
+  };
+
+  template<typename T>
   using function_reactor_result_t = typename function_reactor_result<T>::type;
 
   decltype(auto) eval_argument(const auto& reactor) {
@@ -152,8 +157,7 @@ namespace Details {
 
   template<typename T>
   struct FunctionEvaluator {
-    template<typename V, typename F, typename P>
-    State operator ()(V& value, F& function, const P& pack) const {
+    State operator ()(auto& value, auto& function, const auto& pack) const {
       return apply([&] (const auto&... arguments) {
         if constexpr(std::is_same_v<
             std::decay_t<decltype(function(eval_argument(arguments)...))>, T>) {
@@ -173,8 +177,7 @@ namespace Details {
 
   template<>
   struct FunctionEvaluator<void> {
-    template<typename V, typename F, typename P>
-    State operator ()(V& value, F& function, const P& pack) const {
+    State operator ()(auto& value, auto& function, const auto& pack) const {
       value = apply([&] (const auto&... arguments) {
         return try_call([&] {
           return function(eval_argument(arguments)...);
@@ -184,11 +187,15 @@ namespace Details {
     }
   };
 
+  template<typename A>
+  using lift_argument_t = const unwrap_local_ptr_t<
+    try_maybe_t<reactor_result_t<A>, !is_noexcept_reactor_v<A>>>&;
+
   template<typename F, typename... A>
-  struct is_lift_noexcept : std::bool_constant<is_noexcept_function_v<F,
-    const unwrap_local_ptr_t<try_maybe_t<reactor_result_t<A>,
-    !is_noexcept_reactor_v<A>>>& ...> &&
-    std::conjunction_v<is_noexcept_reactor<A>...>> {};
+  struct is_lift_noexcept : std::bool_constant<
+    is_noexcept_function_v<F, lift_argument_t<A>...> &&
+    std::conjunction_v<is_noexcept_reactor<A>...> &&
+    !IsMaybe<std::invoke_result_t<F, lift_argument_t<A>...>>> {};
 
   template<typename F, typename... A>
   constexpr auto is_lift_noexcept_v = is_lift_noexcept<F, A...>::value;
@@ -197,16 +204,16 @@ namespace Details {
   /**
    * A reactor that applies a function to its parameters.
    * @param <F> The type of function to apply.
-   * @param <P> The type of arguments to apply the function to.
+   * @param <A> The types of arguments to apply the function to.
    */
   template<typename F, IsReactor... A> requires
-    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
+    std::invocable<F, Details::lift_argument_t<A>...>
   class Lift {
     public:
 
       /** The type to evaluate to. */
       using Type = Details::function_reactor_result_t<
-        std::invoke_result_t<F, const Maybe<reactor_result_t<A>>&...>>;
+        std::invoke_result_t<F, Details::lift_argument_t<A>...>>;
 
       /** The type of function to apply. */
       using Function = F;
@@ -287,8 +294,8 @@ namespace Details {
    * @param arguments The reactors used as arguments to the function.
    * @return A reactor applying the <i>function</i> to the <i>arguments</i>.
    */
-  template<typename F, typename... A> requires
-    std::invocable<std::decay_t<F>, const Maybe<reactor_result_t<A>>&...>
+  template<typename F, typename... A> requires std::invocable<
+    std::decay_t<F>, Details::lift_argument_t<to_reactor_t<A>>...>
   auto lift(F&& function, A&&... arguments) {
     return Lift(std::forward<F>(function), std::forward<A>(arguments)...);
   }
@@ -417,7 +424,7 @@ namespace Details {
   }
 
   template<typename F, IsReactor... A> requires
-    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
+    std::invocable<F, Details::lift_argument_t<A>...>
   template<typename FF, typename AF, typename... AR> requires
     std::constructible_from<F, FF>
   Lift<F, A...>::Lift(FF&& function, AF&& argument, AR&&... arguments)
@@ -426,7 +433,7 @@ namespace Details {
       m_has_continuation(false) {}
 
   template<typename F, IsReactor... A> requires
-    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
+    std::invocable<F, Details::lift_argument_t<A>...>
   State Lift<F, A...>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto children_state = m_handler.commit(sequence);
@@ -461,14 +468,14 @@ namespace Details {
   }
 
   template<typename F, IsReactor... A> requires
-    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
+    std::invocable<F, Details::lift_argument_t<A>...>
   eval_result_t<typename Lift<F, A...>::Type> Lift<F, A...>::eval() const
       noexcept(is_noexcept) {
     return *m_value;
   }
 
   template<typename F, IsReactor... A> requires
-    std::invocable<F, const Maybe<reactor_result_t<A>>&...>
+    std::invocable<F, Details::lift_argument_t<A>...>
   State Lift<F, A...>::invoke() {
     if constexpr(is_noexcept) {
       return Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
