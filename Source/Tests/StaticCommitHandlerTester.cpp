@@ -1,7 +1,9 @@
+#include <utility>
 #include <doctest/doctest.h>
-#include "Aspen/StaticCommitHandler.hpp"
+#include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/StaticCommitHandler.hpp"
 
 using namespace Aspen;
 
@@ -43,5 +45,45 @@ TEST_SUITE("StaticCommitHandler") {
     reactor.get<0>().push(123);
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.commit(2) == State::NONE);
+  }
+
+  TEST_CASE("copying_a_handler") {
+    auto handler = StaticCommitHandler(constant(1), constant(2));
+    auto copy = StaticCommitHandler<Constant<int>, Constant<int>>(handler);
+    REQUIRE(copy.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(copy.get<0>().eval() == 1);
+    REQUIRE(copy.get<1>().eval() == 2);
+  }
+
+  TEST_CASE("moving_a_handler") {
+    auto handler = StaticCommitHandler(constant(1), constant(2));
+    auto moved = StaticCommitHandler(std::move(handler));
+    REQUIRE(moved.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(moved.get<0>().eval() == 1);
+    REQUIRE(moved.get<1>().eval() == 2);
+  }
+
+  TEST_CASE("assigning_a_handler") {
+    auto handler = StaticCommitHandler(constant(1), constant(2));
+    auto other = StaticCommitHandler(constant(10), constant(20));
+    handler = other;
+    REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(handler.get<0>().eval() == 10);
+    handler = std::move(other);
+    REQUIRE(handler.get<1>().eval() == 20);
+  }
+
+  TEST_CASE("applying_over_every_reactor") {
+    auto handler = StaticCommitHandler(constant(1), constant(2));
+    REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
+    auto total = apply([] (const auto&... children) {
+      return (children.eval() + ...);
+    }, handler);
+    REQUIRE(total == 3);
+    const auto& reference = handler;
+    auto same = apply([] (const auto&... children) {
+      return (children.eval() + ...);
+    }, reference);
+    REQUIRE(same == 3);
   }
 }
