@@ -1,41 +1,43 @@
 #ifndef ASPEN_MULTI_SYNC_HPP
 #define ASPEN_MULTI_SYNC_HPP
 #include <cstdint>
+#include <exception>
+#include <type_traits>
+#include <utility>
+#include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/StaticCommitHandler.hpp"
 #include "Aspen/Sync.hpp"
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
-namespace Details {
-  template<typename... T>
-  constexpr bool test_all(T... args) {
-    return (args && ...);
-  }
-}
 
-  /** Used to keep a series of fields synchronized with a corresponding series
-      of reactors.
-      @param <V> The value to synchronize.
-      @param <R> The series of reactors used to synchronize the value.
+  /**
+   * Used to keep a series of fields synchronized with a corresponding series
+   * of reactors.
+   * @param <V> The value to synchronize.
+   * @param <R> The series of reactors used to synchronize the value.
    */
-  template<typename V, typename... R>
+  template<typename V, IsReactor... R>
   class MultiSync : private std::conditional_t<
-      Details::test_all(is_noexcept_reactor_v<R>...), Details::Empty,
-      Details::Exception> {
+      (is_noexcept_reactor_v<R> && ...), Details::Empty, Details::Exception> {
     public:
-      using Type = V;
-      static constexpr auto is_noexcept = Details::test_all(
-        is_noexcept_reactor_v<R>...);
 
-      /** Constructs a MultiSync.
-          @param value The value to keep synchronized.
-          @param reactor The reactors used to synchronize the <i>value</i>.
+      /** The type of the value being synchronized. */
+      using Type = V;
+
+      /** Whether this reactor's eval is noexcept. */
+      static constexpr auto is_noexcept = (is_noexcept_reactor_v<R> && ...);
+
+      /**
+       * Constructs a MultiSync.
+       * @param value The value to keep synchronized, which must outlive this
+       *        reactor.
+       * @param reactors The reactors used to synchronize the <i>value</i>.
        */
-      explicit MultiSync(Type& value, R... reactor);
+      explicit MultiSync(Type& value, R... reactors);
 
       State commit(std::uint64_t sequence) noexcept;
-
       const Type& eval() const noexcept(is_noexcept);
 
     private:
@@ -43,12 +45,12 @@ namespace Details {
       StaticCommitHandler<R...> m_reactors;
   };
 
-  template<typename V, typename... R>
-  MultiSync<V, R...>::MultiSync(Type& value, R... reactor)
+  template<typename V, IsReactor... R>
+  MultiSync<V, R...>::MultiSync(Type& value, R... reactors)
     : m_value(&value),
-      m_reactors(std::move(reactor)...) {}
+      m_reactors(std::move(reactors)...) {}
 
-  template<typename V, typename... R>
+  template<typename V, IsReactor... R>
   State MultiSync<V, R...>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactors.commit(sequence);
     if constexpr(!is_noexcept) {
@@ -66,7 +68,7 @@ namespace Details {
     return state;
   }
 
-  template<typename V, typename... R>
+  template<typename V, IsReactor... R>
   const typename MultiSync<V, R...>::Type& MultiSync<V, R...>::eval() const
       noexcept(is_noexcept) {
     if constexpr(!is_noexcept) {
