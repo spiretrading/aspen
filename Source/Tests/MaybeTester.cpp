@@ -67,7 +67,8 @@ TEST_SUITE("Maybe") {
   }
 
   TEST_CASE("converting_maybe_exception") {
-    auto maybe_int = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
+    auto maybe_int = Maybe<int>(
+      std::make_exception_ptr(std::runtime_error("")));
     auto maybe_double = Maybe<double>(maybe_int);
     REQUIRE(maybe_double.has_exception());
   }
