@@ -1,5 +1,6 @@
 #ifndef ASPEN_OVERRIDE_HPP
 #define ASPEN_OVERRIDE_HPP
+#include <cstdint>
 #include <utility>
 #include "Aspen/Concat.hpp"
 #include "Aspen/Count.hpp"
@@ -21,7 +22,7 @@ namespace Aspen {
     auto producer_handle = Shared(std::forward<T>(producer));
     auto counter = Shared(count(producer_handle));
     return concat(lift(
-      [=] (const Reactor& reactor, int count) mutable {
+      [=] (const Reactor& reactor, std::uint64_t count) mutable {
         return Shared(until(counter != constant(count), reactor));
       }, std::move(producer_handle), std::move(counter)));
   }

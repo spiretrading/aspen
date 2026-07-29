@@ -1,9 +1,10 @@
 #ifndef ASPEN_DISTINCT_HPP
 #define ASPEN_DISTINCT_HPP
-#include <type_traits>
+#include <concepts>
 #include <unordered_set>
 #include <utility>
 #include "Aspen/Lift.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
@@ -12,23 +13,24 @@ namespace Aspen {
    * Implements a reactor that only evaluates distinct values, ignoring values
    * that have been previously evaluated.
    * @param source The source to filter out duplicate values from.
+   * @return A reactor evaluating to the distinct values of the <i>source</i>.
    */
-  template<typename Reactor>
-  auto distinct(Reactor&& source) {
-    using Type = reactor_result_t<Reactor>;
-    return Lift([production = std::unordered_set<Type>()] (
-        auto&& value) mutable noexcept -> FunctionEvaluation<Type> {
-      if constexpr(std::is_same_v<std::decay_t<decltype(value)>,
-          Maybe<Type>>) {
+  template<typename Source> requires IsReactor<to_reactor_t<Source>> &&
+    std::equality_comparable<reactor_result_t<Source>>
+  auto distinct(Source&& source) {
+    using Type = reactor_result_t<Source>;
+    return lift([production = std::unordered_set<Type>()] (
+        const auto& value) mutable noexcept -> FunctionEvaluation<Type> {
+      if constexpr(!is_noexcept_reactor_v<to_reactor_t<Source>>) {
         if(value.has_exception()) {
-          return std::forward<decltype(value)>(value);
+          return value;
         }
       }
       if(production.insert(value).second) {
-        return std::forward<decltype(value)>(value);
+        return value;
       }
       return State::NONE;
-    }, std::forward<Reactor>(source));
+    }, std::forward<Source>(source));
   }
 }
 

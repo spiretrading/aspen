@@ -139,6 +139,16 @@ TEST_SUITE("Maybe") {
     REQUIRE(!IsMaybe<LocalPtr<int>>);
   }
 
+  TEST_CASE("deducing_a_maybe") {
+    auto value = Maybe(123);
+    REQUIRE((std::is_same_v<decltype(value), Maybe<int>>));
+    auto copy = Maybe(value);
+    REQUIRE((std::is_same_v<decltype(copy), Maybe<int>>));
+    auto failure = Maybe(std::make_exception_ptr(std::runtime_error("")));
+    REQUIRE((std::is_same_v<decltype(failure), Maybe<void>>));
+    REQUIRE_THROWS_AS(failure.get(), std::runtime_error);
+  }
+
   TEST_CASE("void_maybe") {
     auto maybe = Maybe<void>();
     REQUIRE(!maybe.has_exception());

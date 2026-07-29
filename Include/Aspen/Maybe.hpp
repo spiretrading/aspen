@@ -156,6 +156,8 @@ namespace Details {
       std::exception_ptr m_exception;
   };
 
+  Maybe(std::exception_ptr) -> Maybe<void>;
+
   /**
    * Type trait that wraps a type in a Maybe depending on a condition.
    * @param <T> The type to potentially wrap.

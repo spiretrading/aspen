@@ -1,4 +1,7 @@
+#include <stdexcept>
+#include <string>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Distinct.hpp"
 #include "Aspen/Queue.hpp"
@@ -28,6 +31,42 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.eval() == 30);
   }
 
+  TEST_CASE("constant") {
+    auto reactor = distinct(Constant(5));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+  }
+
+  TEST_CASE("a_noexcept_source") {
+    auto cell = Shared(Cell(1));
+    auto reactor = distinct(cell);
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    cell->set(1);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(reactor.eval() == 1);
+    cell->set(2);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    cell->set(1);
+    REQUIRE(reactor.commit(3) == State::NONE);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("a_value_requiring_an_allocation") {
+    auto cell = Shared(Cell(std::string("a")));
+    auto reactor = distinct(cell);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == "a");
+    cell->set("b");
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == "b");
+    cell->set("a");
+    REQUIRE(reactor.commit(2) == State::NONE);
+    REQUIRE(reactor.eval() == "b");
+  }
+
   TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = distinct(queue);
@@ -35,7 +74,7 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 10);
     queue->set_complete(std::runtime_error("fail"));
-    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 }
