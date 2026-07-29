@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <stdexcept>
+#include <vector>
 #include <doctest/doctest.h>
 #include "Aspen/Aspen.hpp"
 
@@ -170,6 +171,67 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
     child->set_complete();
+    REQUIRE(reactor.commit(sequence++) == State::COMPLETE);
+  }
+
+  TEST_CASE("evaluating_more_children_than_a_word_holds") {
+    auto producer = Producer();
+    auto queues = std::vector<Shared<Queue<int>>>();
+    for(auto i = 0; i != 100; ++i) {
+      queues.push_back(Shared(Queue<int>()));
+      producer->push(shared_box(queues.back()));
+    }
+    producer->set_complete();
+    auto reactor = concur(producer);
+    auto sequence = std::uint64_t(0);
+    absorb(reactor, sequence, 105);
+    queues[70]->push(7);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 7);
+    queues[3]->push(3);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+  }
+
+  TEST_CASE("a_slot_is_reused_by_a_later_child") {
+    auto producer = Producer();
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    auto third = Shared(Queue<int>());
+    producer->push(shared_box(first));
+    producer->push(shared_box(second));
+    auto reactor = concur(producer);
+    auto sequence = std::uint64_t(0);
+    absorb(reactor, sequence, 2);
+    first->set_complete();
+    absorb(reactor, sequence, 3);
+    producer->set_complete(shared_box(third));
+    absorb(reactor, sequence, 2);
+    third->push(3);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+    second->push(2);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("a_child_produced_after_another_completes") {
+    auto producer = Producer();
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    producer->push(shared_box(first));
+    auto reactor = concur(producer);
+    auto sequence = std::uint64_t(0);
+    absorb(reactor, sequence, 1);
+    first->set_complete(1);
+    REQUIRE(reactor.commit(sequence++) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    producer->set_complete(shared_box(second));
+    absorb(reactor, sequence, 2);
+    second->push(2);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    second->set_complete();
     REQUIRE(reactor.commit(sequence++) == State::COMPLETE);
   }
 

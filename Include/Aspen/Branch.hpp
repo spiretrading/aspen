@@ -1,5 +1,6 @@
 #ifndef ASPEN_BRANCH_HPP
 #define ASPEN_BRANCH_HPP
+#include <atomic>
 #include <concepts>
 #include <cstdint>
 #include <utility>
@@ -34,6 +35,13 @@ namespace Aspen {
 
       Branch(const Branch& branch);
       Branch(Branch&& branch) noexcept;
+
+      /**
+       * Sets a bit to raise whenever this Branch requires a commit.
+       * @param word The word containing the bit to raise.
+       * @param bit The index of the bit to raise.
+       */
+      void set_slot(std::atomic_uint64_t* word, std::uint8_t bit) noexcept;
 
       auto& operator *(this auto&& self) noexcept;
       auto* operator ->(this auto&& self) noexcept;
@@ -75,6 +83,12 @@ namespace Aspen {
     : m_reactor(std::move(branch.m_reactor)),
       m_state(branch.m_state),
       m_is_linked(false) {}
+
+  template<IsReactor R>
+  void Branch<R>::set_slot(
+      std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
+    m_flag.set_slot(word, bit);
+  }
 
   template<IsReactor R>
   auto& Branch<R>::operator *(this auto&& self) noexcept {
