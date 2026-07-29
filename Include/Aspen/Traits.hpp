@@ -1,7 +1,9 @@
 #ifndef ASPEN_TRAITS_HPP
 #define ASPEN_TRAITS_HPP
 #include <memory>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 #include "Aspen/Constant.hpp"
 #include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
@@ -73,20 +75,18 @@ namespace Aspen {
   template<typename R>
   constexpr auto is_noexcept_reactor_v = is_noexcept_reactor<R>::value;
 
-  template<std::size_t I = 0, typename... T, typename F>
+  template<typename... T, typename F>
   void for_each(std::tuple<T...>& t, F&& f) {
-    if constexpr(I != sizeof...(T)) {
-      f(std::get<I>(t));
-      for_each<I + 1>(t, std::forward<F>(f));
-    }
+    std::apply([&] (T&... elements) {
+      (f(elements), ...);
+    }, t);
   }
 
   template<std::size_t I, std::size_t J, typename F>
   void for_each(F&& f) {
-    if constexpr(I != J) {
-      f(std::integral_constant<std::size_t, I>());
-      for_each<I + 1, J>(std::forward<F>(f));
-    }
+    [&] <std::size_t... O> (std::index_sequence<O...>) {
+      (f(std::integral_constant<std::size_t, I + O>()), ...);
+    }(std::make_index_sequence<J - I>());
   }
 
   template<typename R>

@@ -233,18 +233,19 @@ namespace Details {
     auto evaluation_count = std::size_t(0);
     auto completion_count = std::size_t(0);
     auto has_continue = false;
+    auto is_initializing = m_is_initializing;
     for_each(m_children, [&] (auto& child) noexcept {
       if(state == State::COMPLETE) {
         return;
       }
       if(is_complete(child.m_state)) {
         ++completion_count;
-        if(m_is_initializing && child.m_has_evaluation) {
+        if(is_initializing && child.m_has_evaluation) {
           ++evaluation_count;
         }
       } else if(!child.m_flag.is_raised()) {
         child.m_state = State::NONE;
-        if(m_is_initializing && child.m_has_evaluation) {
+        if(is_initializing && child.m_has_evaluation) {
           ++evaluation_count;
         }
       } else {
@@ -253,7 +254,7 @@ namespace Details {
           auto scope = CommitFlagScope(child.m_flag);
           child.m_state = child.m_reactor.commit(sequence);
         }
-        if(m_is_initializing) {
+        if(is_initializing) {
           child.m_has_evaluation |= has_evaluation(child.m_state);
           if(child.m_has_evaluation) {
             ++evaluation_count;
@@ -277,7 +278,7 @@ namespace Details {
     if(state == State::COMPLETE) {
       return State::COMPLETE;
     }
-    if(m_is_initializing) {
+    if(is_initializing) {
       if(evaluation_count == sizeof...(R)) {
         m_is_initializing = false;
         state = combine(state, State::EVALUATED);
