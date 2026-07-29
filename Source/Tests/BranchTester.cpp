@@ -99,6 +99,25 @@ TEST_SUITE("Branch") {
     REQUIRE(moved->eval() == 3);
   }
 
+  TEST_CASE("assigning_a_branch_commits_it_again") {
+    auto first = Shared(Cell(1));
+    auto second = Shared(Cell(2));
+    auto third = Shared(Cell(3));
+    auto branch = Branch(first);
+    REQUIRE(branch.commit(0) == State::EVALUATED);
+    REQUIRE(branch->eval() == 1);
+    REQUIRE(branch.commit(1) == State::NONE);
+    branch = Branch(second);
+    REQUIRE(branch.commit(2) == State::EVALUATED);
+    REQUIRE(branch->eval() == 2);
+    REQUIRE(branch.commit(3) == State::NONE);
+    auto other = Branch(third);
+    branch = other;
+    REQUIRE(branch.commit(4) == State::EVALUATED);
+    REQUIRE(branch->eval() == 3);
+    REQUIRE(branch.commit(5) == State::NONE);
+  }
+
   TEST_CASE("copying_a_branch_preserves_propagation") {
     auto cell = Shared(Cell(1));
     auto branch = Branch(cell);
