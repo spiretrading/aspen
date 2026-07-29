@@ -8,6 +8,20 @@
 #include "Aspen/LocalPtr.hpp"
 
 namespace Aspen {
+  template<typename T>
+  class Maybe;
+
+namespace Details {
+  template<typename T>
+  struct is_maybe : std::false_type {};
+
+  template<typename T>
+  struct is_maybe<Maybe<T>> : std::true_type {};
+}
+
+  /** Concept for a type that is a Maybe. */
+  template<typename T>
+  concept IsMaybe = Details::is_maybe<std::remove_cvref_t<T>>::value;
 
   /**
    * Stores a value that could potentially result in an exception.
@@ -16,9 +30,11 @@ namespace Aspen {
   template<typename T>
   class Maybe {
     public:
+
+      /** The type of value to store. */
       using Type = T;
 
-      /** Constructs a Maybe initialized to Type's default value. */
+      /** Constructs a Maybe storing neither a value nor an exception. */
       Maybe() = default;
 
       /**
@@ -57,11 +73,8 @@ namespace Aspen {
       Maybe(Maybe<U>&& maybe) noexcept(
         std::is_nothrow_constructible_v<Type, U&&>);
 
-      /** Implicitly converts to the underlying value. */
-      operator const Type& () const;
-
-      /** Implicitly converts to the underlying value. */
-      operator Type& ();
+      Maybe(const Maybe&) = default;
+      Maybe(Maybe&&) = default;
 
       /** Returns <code>true</code> iff a value is stored. */
       bool has_value() const noexcept;
@@ -70,71 +83,77 @@ namespace Aspen {
       bool has_exception() const noexcept;
 
       /** Returns the stored value, or throws an exception. */
-      const Type& get() const;
-
-      /** Returns the stored value, or throws an exception. */
-      Type& get();
+      template<typename S>
+      auto& get(this S&& self);
 
       /** Returns the exception. */
       std::exception_ptr get_exception() const noexcept;
 
-      //! Returns a reference to the value.
-      const Type& operator *() const;
-
-      //! Returns a pointer to the value.
-      const Type* operator ->() const;
-
-      //! Returns a reference to the value.
-      Type& operator *();
-
-      //! Returns a pointer to the value.
-      Type* operator ->();
-
+      operator const Type& () const;
+      operator Type& ();
+      template<typename S>
+      auto& operator *(this S&& self);
+      template<typename S>
+      auto* operator ->(this S&& self);
+      Maybe& operator =(const Maybe&) = default;
+      Maybe& operator =(Maybe&&) = default;
       template<typename U>
-      Maybe& operator =(const Maybe<U>& rhs) noexcept(
-        std::is_nothrow_assignable_v<Type, const U&>);
-
+      Maybe& operator =(const Maybe<U>& maybe) noexcept(
+        std::is_nothrow_assignable_v<Type&, const U&>);
       template<typename U>
-      Maybe& operator =(Maybe<U>&& rhs) noexcept(
-        std::is_nothrow_assignable_v<Type, U&&>);
-
-      template<typename U>
-      Maybe& operator =(const U& rhs) noexcept(
-        std::is_nothrow_assignable_v<Type, const U&>);
-
-      template<typename U>
-      Maybe& operator =(U&& rhs) noexcept(
-        std::is_nothrow_assignable_v<Type, U&&>);
+      Maybe& operator =(Maybe<U>&& maybe) noexcept(
+        std::is_nothrow_assignable_v<Type&, U&&>);
+      template<typename U> requires(!IsMaybe<U>)
+      Maybe& operator =(U&& value) noexcept(
+        std::is_nothrow_assignable_v<Type&, U>);
 
     private:
       template<typename> friend class Maybe;
       std::variant<std::exception_ptr, Type> m_value;
   };
 
+  /** Stores an exception resulting from an operation with no value. */
   template<>
   class Maybe<void> {
     public:
+
+      /** The type of value to store. */
       using Type = void;
 
+      /** Constructs a Maybe storing no exception. */
       Maybe() = default;
 
+      /**
+       * Constructs a Maybe initialized to an exception.
+       * @param exception The exception to throw.
+       */
       Maybe(std::exception_ptr exception) noexcept;
 
+      /**
+       * Converts a Maybe of one type to this Maybe.
+       * @param maybe The Maybe to convert.
+       */
       template<typename U>
       Maybe(const Maybe<U>& maybe) noexcept;
 
+      Maybe(const Maybe&) = default;
+      Maybe(Maybe&&) = default;
+
+      /** Returns <code>true</code> iff an exception is stored. */
       bool has_exception() const noexcept;
 
+      /** Throws the stored exception, if one is stored. */
       void get() const;
 
+      /** Returns the exception. */
       std::exception_ptr get_exception() const noexcept;
 
       void operator *() const;
-
       void operator ->() const;
-
+      Maybe& operator =(const Maybe&) = default;
+      Maybe& operator =(Maybe&&) = default;
       template<typename U>
-      Maybe& operator =(const Maybe<U>& rhs) noexcept;
+      Maybe& operator =(const Maybe<U>& maybe) noexcept;
 
     private:
       std::exception_ptr m_exception;
@@ -203,7 +222,7 @@ namespace Aspen {
     std::is_nothrow_constructible_v<Type, const U&>)
     : m_value([&] () -> std::variant<std::exception_ptr, Type> {
         if(maybe.has_value()) {
-          return static_cast<Type>(static_cast<const U&>(maybe));
+          return static_cast<Type>(maybe.get());
         } else {
           return maybe.get_exception();
         }
@@ -215,21 +234,11 @@ namespace Aspen {
     std::is_nothrow_constructible_v<Type, U&&>)
     : m_value([&] () -> std::variant<std::exception_ptr, Type> {
         if(maybe.has_value()) {
-          return std::move(static_cast<U&>(maybe));
+          return static_cast<Type>(std::move(maybe.get()));
         } else {
           return maybe.get_exception();
         }
       }()) {}
-
-  template<typename T>
-  Maybe<T>::operator const typename Maybe<T>::Type& () const {
-    return get();
-  }
-
-  template<typename T>
-  Maybe<T>::operator typename Maybe<T>::Type& () {
-    return get();
-  }
 
   template<typename T>
   bool Maybe<T>::has_value() const noexcept {
@@ -242,25 +251,14 @@ namespace Aspen {
   }
 
   template<typename T>
-  const typename Maybe<T>::Type& Maybe<T>::get() const {
-    if(has_value()) {
-      return std::get<Type>(m_value);
+  template<typename S>
+  auto& Maybe<T>::get(this S&& self) {
+    if(self.has_value()) {
+      return std::get<Type>(self.m_value);
     }
-    auto& e = std::get<std::exception_ptr>(m_value);
-    if(e != nullptr) {
-      std::rethrow_exception(e);
-    }
-    throw std::runtime_error("Uninitialized.");
-  }
-
-  template<typename T>
-  typename Maybe<T>::Type& Maybe<T>::get() {
-    if(has_value()) {
-      return std::get<Type>(m_value);
-    }
-    auto& e = std::get<std::exception_ptr>(m_value);
-    if(e != nullptr) {
-      std::rethrow_exception(e);
+    auto& exception = std::get<std::exception_ptr>(self.m_value);
+    if(exception) {
+      std::rethrow_exception(exception);
     }
     throw std::runtime_error("Uninitialized.");
   }
@@ -274,54 +272,56 @@ namespace Aspen {
   }
 
   template<typename T>
-  const typename Maybe<T>::Type& Maybe<T>::operator *() const {
+  Maybe<T>::operator const T& () const {
     return get();
   }
 
   template<typename T>
-  const typename Maybe<T>::Type* Maybe<T>::operator ->() const {
-    return &get();
-  }
-
-  template<typename T>
-  typename Maybe<T>::Type& Maybe<T>::operator *() {
+  Maybe<T>::operator T& () {
     return get();
   }
 
   template<typename T>
-  typename Maybe<T>::Type* Maybe<T>::operator ->() {
-    return &get();
+  template<typename S>
+  auto& Maybe<T>::operator *(this S&& self) {
+    return self.get();
+  }
+
+  template<typename T>
+  template<typename S>
+  auto* Maybe<T>::operator ->(this S&& self) {
+    return &self.get();
   }
 
   template<typename T>
   template<typename U>
-  Maybe<T>& Maybe<T>::operator =(const Maybe<U>& rhs) noexcept(
-      std::is_nothrow_assignable_v<Type, const U&>) {
-    m_value = rhs.m_value;
+  Maybe<T>& Maybe<T>::operator =(const Maybe<U>& maybe) noexcept(
+      std::is_nothrow_assignable_v<Type&, const U&>) {
+    if(maybe.has_value()) {
+      m_value = static_cast<Type>(maybe.get());
+    } else {
+      m_value = maybe.get_exception();
+    }
     return *this;
   }
 
   template<typename T>
   template<typename U>
-  Maybe<T>& Maybe<T>::operator =(Maybe<U>&& rhs) noexcept(
-      std::is_nothrow_assignable_v<Type, U&&>) {
-    m_value = std::move(rhs.m_value);
+  Maybe<T>& Maybe<T>::operator =(Maybe<U>&& maybe) noexcept(
+      std::is_nothrow_assignable_v<Type&, U&&>) {
+    if(maybe.has_value()) {
+      m_value = static_cast<Type>(std::move(maybe.get()));
+    } else {
+      m_value = maybe.get_exception();
+    }
     return *this;
   }
 
   template<typename T>
-  template<typename U>
-  Maybe<T>& Maybe<T>::operator =(const U& rhs) noexcept(
-      std::is_nothrow_assignable_v<Type, const U&>) {
-    m_value = rhs;
-    return *this;
-  }
-
-  template<typename T>
-  template<typename U>
-  Maybe<T>& Maybe<T>::operator =(U&& rhs) noexcept(
-      std::is_nothrow_assignable_v<Type, U&&>) {
-    m_value = std::move(rhs);
+  template<typename U> requires(!IsMaybe<U>)
+  Maybe<T>& Maybe<T>::operator =(U&& value) noexcept(
+      std::is_nothrow_assignable_v<Type&, U>) {
+    m_value = std::forward<U>(value);
     return *this;
   }
 
@@ -336,11 +336,11 @@ namespace Aspen {
   }
 
   inline bool Maybe<void>::has_exception() const noexcept {
-    return m_exception != nullptr;
+    return static_cast<bool>(m_exception);
   }
 
   inline void Maybe<void>::get() const {
-    if(m_exception != nullptr) {
+    if(m_exception) {
       std::rethrow_exception(m_exception);
     }
   }
@@ -358,9 +358,9 @@ namespace Aspen {
   }
 
   template<typename U>
-  Maybe<void>& Maybe<void>::operator =(const Maybe<U>& rhs) noexcept {
-    if(rhs.has_exception()) {
-      m_exception = rhs.get_exception();
+  Maybe<void>& Maybe<void>::operator =(const Maybe<U>& maybe) noexcept {
+    if(maybe.has_exception()) {
+      m_exception = maybe.get_exception();
     } else {
       m_exception = nullptr;
     }

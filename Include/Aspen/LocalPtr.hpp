@@ -28,15 +28,15 @@ namespace Aspen {
       constexpr explicit LocalPtr(A&&... args) noexcept(
         std::is_nothrow_constructible_v<T, A...>);
 
-      constexpr LocalPtr(const LocalPtr& ptr) = default;
-      constexpr LocalPtr(LocalPtr&& ptr) = default;
+      constexpr LocalPtr(const LocalPtr&) = default;
+      constexpr LocalPtr(LocalPtr&&) = default;
 
       template<typename S>
       constexpr auto& operator *(this S&& self) noexcept;
       template<typename S>
       constexpr auto* operator ->(this S&& self) noexcept;
-      constexpr LocalPtr& operator =(const LocalPtr& ptr) = default;
-      constexpr LocalPtr& operator =(LocalPtr&& ptr) = default;
+      constexpr LocalPtr& operator =(const LocalPtr&) = default;
+      constexpr LocalPtr& operator =(LocalPtr&&) = default;
       template<typename U> requires(
         !std::same_as<std::remove_cvref_t<U>, LocalPtr<T>>) &&
         std::is_assignable_v<T&, U>
