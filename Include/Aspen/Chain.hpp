@@ -61,9 +61,10 @@ namespace Aspen {
    * @param continuation The reactor to evaluate to thereafter.
    * @return A reactor evaluating to one and then the other.
    */
-  auto chain(auto&& initial, auto&& continuation) {
-    return Chain(std::forward<decltype(initial)>(initial),
-      std::forward<decltype(continuation)>(continuation));
+  template<typename A, typename B> requires IsReactor<to_reactor_t<A>> &&
+    IsReactorOf<to_reactor_t<B>, reactor_result_t<A>>
+  auto chain(A&& initial, B&& continuation) {
+    return Chain(std::forward<A>(initial), std::forward<B>(continuation));
   }
 
   /**
@@ -73,10 +74,12 @@ namespace Aspen {
    * @param remainder The reactors to evaluate to in turn.
    * @return A reactor evaluating to each of them in turn.
    */
-  auto chain(auto&& initial, auto&& continuation, auto&&... remainder) {
-    return Chain(std::forward<decltype(initial)>(initial),
-      chain(std::forward<decltype(continuation)>(continuation),
-        std::forward<decltype(remainder)>(remainder)...));
+  template<typename A, typename B, typename... C> requires
+    IsReactor<to_reactor_t<A>> &&
+    IsReactorOf<to_reactor_t<B>, reactor_result_t<A>>
+  auto chain(A&& initial, B&& continuation, C&&... remainder) {
+    return Chain(std::forward<A>(initial),
+      chain(std::forward<B>(continuation), std::forward<C>(remainder)...));
   }
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
