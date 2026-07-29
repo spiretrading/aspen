@@ -1,4 +1,7 @@
+#include <stdexcept>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
+#include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Range.hpp"
 #include "Aspen/Shared.hpp"
@@ -55,6 +58,45 @@ TEST_SUITE("Range") {
     queue->push(200);
     REQUIRE(reactor.commit(3) == State::COMPLETE);
     REQUIRE(reactor.eval() == 51);
+  }
+
+  TEST_CASE("range_with_a_step") {
+    auto reactor = range(constant(0), constant(10), constant(3));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 6);
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 9);
+  }
+
+  TEST_CASE("range_with_a_step_that_is_a_value") {
+    auto reactor = range(constant(0), constant(10), 4);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 4);
+    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 8);
+  }
+
+  TEST_CASE("a_start_that_cannot_throw") {
+    auto cell = Shared(Cell(0));
+    auto reactor = range(cell, constant(3));
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+  }
+
+  TEST_CASE("a_start_that_fails") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = range(queue, constant(10));
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
   TEST_CASE("changing_end") {
