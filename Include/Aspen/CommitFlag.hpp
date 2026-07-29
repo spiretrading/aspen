@@ -82,6 +82,11 @@ namespace Details {
       void set_trigger(Trigger* trigger) noexcept;
 
     private:
+      enum class Kind : std::uint8_t {
+        PLAIN,
+        HUB,
+        ROOT
+      };
       union {
         CommitFlag* m_parent;
         Trigger* m_trigger;
@@ -93,8 +98,7 @@ namespace Details {
       std::atomic_bool m_is_raised;
       std::atomic_bool m_is_propagated;
       std::uint8_t m_bit;
-      bool m_is_hub;
-      bool m_is_root;
+      Kind m_kind;
 
       CommitFlag(const CommitFlag&) = delete;
       CommitFlag(CommitFlag&&) = delete;
@@ -131,11 +135,10 @@ namespace Details {
       m_is_raised(true),
       m_is_propagated(false),
       m_bit(0),
-      m_is_hub(false),
-      m_is_root(false) {}
+      m_kind(Kind::PLAIN) {}
 
   inline CommitFlag::~CommitFlag() {
-    if(m_is_hub) {
+    if(m_kind == Kind::HUB) {
       delete m_parents;
     }
   }
@@ -145,7 +148,7 @@ namespace Details {
   }
 
   inline void CommitFlag::raise() noexcept {
-    if(m_is_hub) {
+    if(m_kind == Kind::HUB) {
       m_is_raised.store(true, std::memory_order_release);
       if(m_is_propagated.load(std::memory_order_acquire)) {
         return;
@@ -168,7 +171,7 @@ namespace Details {
         m_word->fetch_or(std::uint64_t(1) << m_bit,
           std::memory_order_release);
       }
-      if(m_is_root) {
+      if(m_kind == Kind::ROOT) {
         if(m_trigger) {
           m_trigger->signal();
         }
@@ -189,7 +192,7 @@ namespace Details {
 
   inline void CommitFlag::set_trigger(Trigger* trigger) noexcept {
     m_trigger = trigger;
-    m_is_root = true;
+    m_kind = Kind::ROOT;
   }
 
   inline void CommitFlag::set_slot(std::atomic_uint64_t* word,
@@ -202,11 +205,11 @@ namespace Details {
   }
 
   inline void CommitFlag::add_parent(CommitFlag& parent) {
-    if(!m_is_hub) {
-      m_is_hub = true;
+    if(m_kind != Kind::HUB) {
+      m_kind = Kind::HUB;
       m_parents = nullptr;
     }
-    if(m_parent == nullptr) {
+    if(!m_parent) {
       m_parent = &parent;
     } else {
       if(!m_parents) {

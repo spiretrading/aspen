@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <doctest/doctest.h>
@@ -218,6 +219,40 @@ TEST_SUITE("CommitFlag") {
     hub.raise();
     REQUIRE(!a.is_raised());
     REQUIRE(c.is_raised());
+  }
+
+  TEST_CASE("a_slot_records_a_raised_flag") {
+    auto word = std::atomic_uint64_t(0);
+    auto flag = CommitFlag();
+    flag.clear();
+    flag.set_slot(&word, 3);
+    REQUIRE(word.load() == 0);
+    flag.raise();
+    REQUIRE(word.load() == std::uint64_t(1) << 3);
+    flag.clear();
+    flag.raise();
+    REQUIRE(word.load() == std::uint64_t(1) << 3);
+  }
+
+  TEST_CASE("a_slot_records_a_flag_that_is_already_raised") {
+    auto word = std::atomic_uint64_t(0);
+    auto flag = CommitFlag();
+    flag.set_slot(&word, 5);
+    REQUIRE(word.load() == std::uint64_t(1) << 5);
+  }
+
+  TEST_CASE("adding_a_dependent_reports_a_raised_flag") {
+    auto raised_parent = CommitFlag();
+    auto hub = CommitFlag();
+    raised_parent.clear();
+    hub.add_parent(raised_parent);
+    REQUIRE(raised_parent.is_raised());
+    auto cleared_parent = CommitFlag();
+    auto cleared_hub = CommitFlag();
+    cleared_parent.clear();
+    cleared_hub.clear();
+    cleared_hub.add_parent(cleared_parent);
+    REQUIRE(!cleared_parent.is_raised());
   }
 
   TEST_CASE("raising_stops_at_raised_ancestors") {
