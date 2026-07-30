@@ -2,6 +2,7 @@
 #define ASPEN_WHEN_HPP
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include "Aspen/Branch.hpp"
 #include "Aspen/Reactor.hpp"
@@ -41,7 +42,7 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      Branch<C> m_condition;
+      std::optional<Branch<C>> m_condition;
       Branch<T> m_series;
       bool m_is_triggered;
   };
@@ -77,15 +78,15 @@ namespace Aspen {
     std::convertible_to<reactor_result_t<C>, bool>
   State When<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
-    if(!m_is_triggered) {
-      auto condition_state = m_condition.commit(sequence);
+    if(!m_is_triggered && m_condition) {
+      auto condition_state = m_condition->commit(sequence);
       if(has_evaluation(condition_state)) {
         m_is_triggered = [&] {
           if constexpr(is_noexcept_reactor_v<C>) {
-            return static_cast<bool>(m_condition->eval());
+            return static_cast<bool>((*m_condition)->eval());
           } else {
             try {
-              return static_cast<bool>(m_condition->eval());
+              return static_cast<bool>((*m_condition)->eval());
             } catch(...) {
               return false;
             }
@@ -95,9 +96,12 @@ namespace Aspen {
       if(!m_is_triggered) {
         if(is_complete(condition_state)) {
           state = combine(state, State::COMPLETE);
+          m_condition = std::nullopt;
         } else if(has_continuation(condition_state)) {
           state = combine(state, State::CONTINUE);
         }
+      } else {
+        m_condition = std::nullopt;
       }
     }
     if(m_is_triggered) {

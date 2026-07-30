@@ -2,6 +2,7 @@
 #define ASPEN_REACTOR_TESTS_HPP
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <type_traits>
 #include <utility>
 #include <doctest/doctest.h>
@@ -77,6 +78,37 @@ namespace Aspen::Tests {
   ByValueReactor(T&&) -> ByValueReactor<std::decay_t<T>>;
 
   /**
+   * Implements a reactor evaluating to a fixed value whose destruction can be
+   * observed.
+   * @param <T> The type of value to evaluate to.
+   */
+  template<typename T>
+  class TrackedReactor {
+    public:
+
+      /** The type to evaluate to. */
+      using Type = T;
+
+      /**
+       * Constructs a TrackedReactor.
+       * @param value The value to evaluate to.
+       * @param state The state to report from every commit.
+       */
+      TrackedReactor(T value, State state);
+
+      /** Returns a token that expires when this reactor is destroyed. */
+      std::weak_ptr<void> get_token() const noexcept;
+
+      State commit(std::uint64_t sequence) noexcept;
+      const Type& eval() const;
+
+    private:
+      std::shared_ptr<void> m_token;
+      T m_value;
+      State m_state;
+  };
+
+  /**
    * Tests that committing and evaluating a reactor does not evaluate to a
    * value that has already been destroyed.
    * @param reactor The reactor to commit and evaluate.
@@ -150,6 +182,27 @@ namespace Aspen::Tests {
 
   template<typename T>
   typename ByValueReactor<T>::Type ByValueReactor<T>::eval() const {
+    return m_value;
+  }
+
+  template<typename T>
+  TrackedReactor<T>::TrackedReactor(T value, State state)
+    : m_token(std::make_shared<int>(0)),
+      m_value(std::move(value)),
+      m_state(state) {}
+
+  template<typename T>
+  std::weak_ptr<void> TrackedReactor<T>::get_token() const noexcept {
+    return m_token;
+  }
+
+  template<typename T>
+  State TrackedReactor<T>::commit(std::uint64_t sequence) noexcept {
+    return m_state;
+  }
+
+  template<typename T>
+  const typename TrackedReactor<T>::Type& TrackedReactor<T>::eval() const {
     return m_value;
   }
 }

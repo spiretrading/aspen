@@ -1,12 +1,15 @@
+#include <utility>
 #include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 #include "Aspen/When.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("When") {
   TEST_CASE("a_condition_already_true") {
@@ -74,5 +77,14 @@ TEST_SUITE("When") {
     condition->push(true);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 9);
+  }
+
+  TEST_CASE("a_completed_condition_is_released") {
+    auto condition = TrackedReactor<bool>(true, State::COMPLETE_EVALUATED);
+    auto token = condition.get_token();
+    auto reactor = when(std::move(condition), Constant(5));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(token.expired());
   }
 }
