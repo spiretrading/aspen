@@ -169,4 +169,25 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(0) == State::COMPLETE);
   }
 
+  TEST_CASE("move_assigning_a_queue_in_a_graph") {
+    auto flag = CommitFlag();
+    auto destination = Queue<int>();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(destination.commit(0) == State::NONE);
+    }
+    flag.clear();
+    auto source = Queue<int>();
+    source.push(5);
+    destination = std::move(source);
+    REQUIRE(flag.is_raised());
+    flag.clear();
+    destination.push(10);
+    REQUIRE(flag.is_raised());
+    REQUIRE(destination.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(destination.eval() == 5);
+    REQUIRE(destination.commit(2) == State::EVALUATED);
+    REQUIRE(destination.eval() == 10);
+  }
+
 }
