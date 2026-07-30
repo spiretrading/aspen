@@ -30,6 +30,18 @@ namespace {
       return 0;
     }
   };
+
+  struct Throwing {
+    using Type = int;
+
+    State commit(std::uint64_t sequence) {
+      return State::NONE;
+    }
+
+    int eval() const noexcept {
+      return 0;
+    }
+  };
 }
 
 TEST_SUITE("Reactor") {
@@ -69,6 +81,11 @@ TEST_SUITE("Reactor") {
   TEST_CASE("a_reactor_evaluating_by_value") {
     REQUIRE((IsReactorOf<StateReactor<Constant<int>>, State>));
     REQUIRE(!(IsReactorOf<StateReactor<Constant<int>>, int>));
+  }
+
+  TEST_CASE("a_type_that_can_throw_when_committed_is_not_a_reactor") {
+    REQUIRE(!IsReactor<Throwing>);
+    REQUIRE(!(IsReactorOf<Throwing, int>));
   }
 
   TEST_CASE("a_type_disagreeing_with_its_own_type_is_not_a_reactor") {

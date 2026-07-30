@@ -15,7 +15,7 @@ namespace Aspen {
   template<typename R>
   concept IsReactor = requires(R& reactor) {
     typename R::Type;
-    { reactor.commit(std::uint64_t()) } -> std::same_as<State>;
+    { reactor.commit(std::uint64_t()) } noexcept -> std::same_as<State>;
     requires std::same_as<std::remove_cvref_t<
       decltype(std::as_const(reactor).eval())>, typename R::Type>;
   };
