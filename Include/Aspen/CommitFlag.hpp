@@ -189,7 +189,7 @@ namespace Details {
   }
 
   inline void CommitFlag::clear() noexcept {
-    m_flags.store(0, std::memory_order_release);
+    m_flags.exchange(0, std::memory_order_acq_rel);
   }
 
   inline void CommitFlag::set_parent(CommitFlag* parent) noexcept {

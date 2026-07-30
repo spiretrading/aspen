@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -108,6 +109,18 @@ TEST_SUITE("Branch") {
     cell->set(2);
     REQUIRE(moved.commit(1) == State::EVALUATED);
     REQUIRE(moved->eval() == 2);
+  }
+
+  TEST_CASE("a_completed_branch_with_a_slot_is_not_committed_again") {
+    auto word = std::atomic_uint64_t(0);
+    auto counter = Counter(State::COMPLETE_EVALUATED);
+    auto count = counter.get_count();
+    auto branch = Branch(std::move(counter));
+    branch.set_slot(&word, 0);
+    REQUIRE(branch.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(*count == 1);
+    REQUIRE(branch.commit(1) == State::COMPLETE);
+    REQUIRE(*count == 1);
   }
 
   TEST_CASE("assigning_a_branch_commits_it_again") {
