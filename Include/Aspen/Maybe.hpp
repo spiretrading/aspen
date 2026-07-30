@@ -85,14 +85,14 @@ namespace Details {
       bool has_exception() const noexcept;
 
       /** Returns the stored value, or throws an exception. */
-      auto& get(this auto&& self);
+      auto&& get(this auto&& self);
 
       /** Returns the exception. */
       std::exception_ptr get_exception() const noexcept;
 
       operator const Type& () const;
       operator Type& ();
-      auto& operator *(this auto&& self);
+      auto&& operator *(this auto&& self);
       auto* operator ->(this auto&& self);
       Maybe& operator =(const Maybe&) = default;
       Maybe& operator =(Maybe&&) = default;
@@ -255,9 +255,9 @@ namespace Details {
   }
 
   template<typename T>
-  auto& Maybe<T>::get(this auto&& self) {
+  auto&& Maybe<T>::get(this auto&& self) {
     if(self.has_value()) {
-      return std::get<Type>(self.m_value);
+      return std::get<Type>(std::forward<decltype(self)>(self).m_value);
     }
     auto& exception = std::get<std::exception_ptr>(self.m_value);
     if(exception) {
@@ -285,8 +285,8 @@ namespace Details {
   }
 
   template<typename T>
-  auto& Maybe<T>::operator *(this auto&& self) {
-    return self.get();
+  auto&& Maybe<T>::operator *(this auto&& self) {
+    return std::forward<decltype(self)>(self).get();
   }
 
   template<typename T>

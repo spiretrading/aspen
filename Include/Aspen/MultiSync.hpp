@@ -37,6 +37,9 @@ namespace Aspen {
        */
       explicit MultiSync(Type& value, R... reactors);
 
+      /** Returns the exception thrown by a reactor, or nullptr for none. */
+      std::exception_ptr get_exception() const noexcept;
+
       State commit(std::uint64_t sequence) noexcept;
       const Type& eval() const noexcept(is_noexcept);
 
@@ -49,6 +52,15 @@ namespace Aspen {
   MultiSync<V, R...>::MultiSync(Type& value, R... reactors)
     : m_value(&value),
       m_reactors(std::move(reactors)...) {}
+
+  template<typename V, IsReactor... R>
+  std::exception_ptr MultiSync<V, R...>::get_exception() const noexcept {
+    if constexpr(is_noexcept) {
+      return nullptr;
+    } else {
+      return this->m_exception;
+    }
+  }
 
   template<typename V, IsReactor... R>
   State MultiSync<V, R...>::commit(std::uint64_t sequence) noexcept {

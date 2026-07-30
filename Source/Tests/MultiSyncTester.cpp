@@ -7,6 +7,7 @@
 #include "Aspen/Constant.hpp"
 #include "Aspen/MultiSync.hpp"
 #include "Aspen/None.hpp"
+#include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/Sync.hpp"
 #include "Aspen/Throw.hpp"
@@ -65,5 +66,17 @@ TEST_SUITE("MultiSync") {
     REQUIRE(reactor.commit(2) == State::EVALUATED);
     REQUIRE(record == std::tuple(10, 20));
     REQUIRE(reactor.eval() == std::tuple(10, 20));
+  }
+
+  TEST_CASE("multi_sync_reports_an_exception") {
+    auto record = std::tuple<int, std::string>();
+    auto queue = Shared(Queue<int>());
+    auto reactor = MultiSync(record, Sync(std::get<0>(record), queue),
+      Sync(std::get<1>(record), constant("hello")));
+    REQUIRE(reactor.get_exception() == nullptr);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.get_exception() != nullptr);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 }

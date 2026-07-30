@@ -160,4 +160,14 @@ TEST_SUITE("Maybe") {
     maybe = Maybe<void>();
     REQUIRE(!maybe.has_exception());
   }
+
+  TEST_CASE("moving_a_value_out_of_a_maybe") {
+    auto maybe = Maybe(Tracker(5));
+    REQUIRE((std::is_lvalue_reference_v<decltype(maybe.get())>));
+    REQUIRE((std::is_rvalue_reference_v<decltype(std::move(maybe).get())>));
+    REQUIRE((std::is_rvalue_reference_v<decltype(*std::move(maybe))>));
+    auto moved = std::move(maybe).get();
+    REQUIRE(moved.m_value == 5);
+    REQUIRE(maybe.get().m_is_moved);
+  }
 }

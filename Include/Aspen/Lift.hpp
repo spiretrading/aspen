@@ -155,6 +155,9 @@ namespace Details {
           auto evaluation =
             FunctionEvaluation<T>(function(eval_argument(arguments)...));
           if(evaluation.m_value) {
+            if constexpr(!IsMaybe<std::remove_reference_t<decltype(value)>>) {
+              assert(!evaluation.m_value->has_exception());
+            }
             value = std::move(*evaluation.m_value);
           }
           return evaluation.m_state;

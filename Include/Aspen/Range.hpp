@@ -41,6 +41,9 @@ namespace Aspen {
         auto increment = *value + step;
         return std::max<Type>(start, increment);
       }();
+      if(value && current <= *value) {
+        return FunctionEvaluation<Type>(State::NONE);
+      }
       if(current >= end) {
         if(is_complete(end_state)) {
           return FunctionEvaluation<Type>(State::COMPLETE);

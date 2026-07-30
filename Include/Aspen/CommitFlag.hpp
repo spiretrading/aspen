@@ -82,6 +82,8 @@ namespace Details {
       void set_trigger(Trigger* trigger) noexcept;
 
     private:
+      static constexpr auto RAISED = std::uint8_t(1);
+      static constexpr auto PROPAGATED = std::uint8_t(2);
       enum class Kind : std::uint8_t {
         PLAIN,
         HUB,
@@ -95,8 +97,7 @@ namespace Details {
         std::vector<CommitFlag*>* m_parents;
         std::atomic_uint64_t* m_word;
       };
-      std::atomic_bool m_is_raised;
-      std::atomic_bool m_is_propagated;
+      std::atomic_uint8_t m_flags;
       std::uint8_t m_bit;
       Kind m_kind;
 
@@ -132,8 +133,7 @@ namespace Details {
   inline CommitFlag::CommitFlag() noexcept
     : m_parent(nullptr),
       m_word(nullptr),
-      m_is_raised(true),
-      m_is_propagated(false),
+      m_flags(RAISED),
       m_bit(0),
       m_kind(Kind::PLAIN) {}
 
@@ -144,16 +144,16 @@ namespace Details {
   }
 
   inline bool CommitFlag::is_raised() const noexcept {
-    return m_is_raised.load(std::memory_order_acquire);
+    return (m_flags.load(std::memory_order_acquire) & RAISED) != 0;
   }
 
   inline void CommitFlag::raise() noexcept {
     if(m_kind == Kind::HUB) {
-      m_is_raised.store(true, std::memory_order_release);
-      if(m_is_propagated.load(std::memory_order_acquire)) {
+      auto previous =
+        m_flags.fetch_or(RAISED | PROPAGATED, std::memory_order_acq_rel);
+      if((previous & PROPAGATED) != 0) {
         return;
       }
-      m_is_propagated.store(true, std::memory_order_release);
       if(m_parent) {
         m_parent->raise();
       }
@@ -163,10 +163,10 @@ namespace Details {
         }
       }
     } else {
-      if(m_is_raised.load(std::memory_order_acquire)) {
+      auto previous = m_flags.fetch_or(RAISED, std::memory_order_acq_rel);
+      if((previous & RAISED) != 0) {
         return;
       }
-      m_is_raised.store(true, std::memory_order_release);
       if(m_word) {
         m_word->fetch_or(std::uint64_t(1) << m_bit,
           std::memory_order_release);
@@ -182,8 +182,7 @@ namespace Details {
   }
 
   inline void CommitFlag::clear() noexcept {
-    m_is_propagated.store(false, std::memory_order_release);
-    m_is_raised.store(false, std::memory_order_release);
+    m_flags.store(0, std::memory_order_release);
   }
 
   inline void CommitFlag::set_parent(CommitFlag* parent) noexcept {

@@ -177,4 +177,22 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.eval() == 11);
   }
 
+  TEST_CASE("a_step_that_does_not_advance") {
+    auto step = Shared(Cell(0));
+    auto reactor = range(constant(0), constant(10), step);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(reactor.eval() == 0);
+    step->set(2);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("a_negative_step") {
+    auto reactor = range(constant(0), constant(10), constant(-1));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
+  }
 }
