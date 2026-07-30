@@ -41,6 +41,7 @@ namespace Details {
     std::shared_ptr<SharedState> m_state;
     std::weak_ptr<R> m_reactor;
     Sequence m_sequence;
+    Sequence m_evaluated;
     std::optional<try_maybe_t<reactor_result_t<R>, !is_noexcept_reactor_v<R>>>
       m_evaluation;
 
@@ -324,7 +325,8 @@ namespace Details {
       return evaluator.m_state->m_state;
     }
     auto& flag = evaluator.m_state->m_flag;
-    if(current != &flag && !flag.is_raised() && evaluator.m_sequence.m_is_set) {
+    if(current != &flag && !flag.is_raised() && evaluator.m_sequence.m_is_set &&
+        !(evaluator.m_evaluated < evaluator.m_state->m_last_evaluation)) {
       auto skipped = reset(
         evaluator.m_state->m_state, combine(State::EVALUATED, State::CONTINUE));
       evaluator.m_state->m_state = skipped;
@@ -343,6 +345,9 @@ namespace Details {
     }();
     if(has_continuation(reactor_state)) {
       flag.raise();
+    }
+    if(has_evaluation(reactor_state)) {
+      evaluator.m_evaluated.set(sequence);
     }
     evaluator.m_sequence.set(sequence);
     if(evaluator.m_state->m_sequence.is_at(sequence)) {
@@ -376,7 +381,7 @@ namespace Details {
   void Shared<R>::release() noexcept {
     set_parent(nullptr);
     if(m_evaluator.use_count() > 1 && m_reactor.use_count() == 1 &&
-        m_evaluator->m_state->m_last_evaluation.m_is_set) {
+        m_evaluator->m_evaluated.m_is_set) {
       try_assign(m_evaluator->m_evaluation, *m_reactor);
     }
   }

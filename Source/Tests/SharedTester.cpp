@@ -139,6 +139,21 @@ TEST_SUITE("Shared") {
     REQUIRE(second.eval() == 5);
   }
 
+  TEST_CASE("a_boxed_shared_commits_its_own_reactor") {
+    auto cell = Shared(Cell(1));
+    auto first = Shared<Box<double>>(cell);
+    auto second = Shared<Box<double>>(cell);
+    REQUIRE(first.commit(0) == State::EVALUATED);
+    REQUIRE(first.eval() == 1.0);
+    REQUIRE(second.commit(0) == State::EVALUATED);
+    REQUIRE(second.eval() == 1.0);
+    cell->set(2);
+    REQUIRE(first.commit(1) == State::EVALUATED);
+    REQUIRE(first.eval() == 2.0);
+    REQUIRE(second.commit(1) == State::EVALUATED);
+    REQUIRE(second.eval() == 2.0);
+  }
+
   TEST_CASE("moving_a_shared_stops_reporting_to_the_old_flag") {
     auto cell = Shared(Cell(1));
     auto observer = cell;

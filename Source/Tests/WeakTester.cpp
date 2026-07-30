@@ -137,6 +137,15 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 1);
   }
 
+  TEST_CASE("a_weak_over_an_uncommitted_box_reports_no_evaluation") {
+    auto cell = Shared(Cell(1));
+    auto boxed = std::optional(Shared<Box<double>>(cell));
+    auto observer = Weak(*boxed);
+    REQUIRE(cell.commit(0) == State::EVALUATED);
+    boxed = std::nullopt;
+    REQUIRE(observer.commit(1) == State::COMPLETE);
+  }
+
   TEST_CASE("moving_a_weak_stops_reporting_to_the_old_flag") {
     auto cell = Shared(Cell(1));
     auto observer = Weak(cell);
