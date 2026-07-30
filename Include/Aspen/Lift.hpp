@@ -178,12 +178,22 @@ namespace Details {
   template<>
   struct FunctionEvaluator<void> {
     State operator ()(auto& value, auto& function, const auto& pack) const {
-      value = apply([&] (const auto&... arguments) {
-        return try_call([&] {
-          return function(eval_argument(arguments)...);
-        });
+      return apply([&] (const auto&... arguments) {
+        if constexpr(std::is_same_v<std::decay_t<
+            decltype(function(eval_argument(arguments)...))>, void>) {
+          value = try_call([&] {
+            return function(eval_argument(arguments)...);
+          });
+          return State::EVALUATED;
+        } else {
+          auto evaluation =
+            FunctionEvaluation<void>(function(eval_argument(arguments)...));
+          if(evaluation.m_value) {
+            value = std::move(*evaluation.m_value);
+          }
+          return evaluation.m_state;
+        }
       }, pack);
-      return State::EVALUATED;
     }
   };
 
@@ -397,6 +407,8 @@ namespace Details {
       : m_value(std::move(value)) {
     if(is_complete(state)) {
       m_state = State::COMPLETE_EVALUATED;
+    } else if(has_continuation(state)) {
+      m_state = State::CONTINUE_EVALUATED;
     } else {
       m_state = State::EVALUATED;
     }
@@ -408,11 +420,15 @@ namespace Details {
     if(m_value) {
       if(is_complete(state)) {
         m_state = State::COMPLETE_EVALUATED;
+      } else if(has_continuation(state)) {
+        m_state = State::CONTINUE_EVALUATED;
       } else {
         m_state = State::EVALUATED;
       }
     } else if(is_complete(state)) {
       m_state = State::COMPLETE;
+    } else if(has_continuation(state)) {
+      m_state = State::CONTINUE;
     } else {
       m_state = State::NONE;
     }

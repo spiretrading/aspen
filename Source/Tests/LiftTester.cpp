@@ -1,3 +1,4 @@
+#include <exception>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -176,6 +177,46 @@ TEST_SUITE("Lift") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       throw std::runtime_error("fail");
+    }, queue);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("lifting_a_void_function_that_completes") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([] (int value) {
+      return FunctionEvaluation<void>(State::COMPLETE);
+    }, queue);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
+  TEST_CASE("lifting_a_void_function_that_continues") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([] (int value) {
+      return FunctionEvaluation<void>(State::CONTINUE);
+    }, queue);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::CONTINUE);
+  }
+
+  TEST_CASE("lifting_a_void_function_that_evaluates_and_continues") {
+    auto queue = Shared(Queue<int>());
+    auto total = std::make_shared<int>(0);
+    auto reactor = Lift([total] (int value) {
+      *total += value;
+      return FunctionEvaluation<void>(Maybe<void>(), State::CONTINUE);
+    }, queue);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(*total == 1);
+  }
+
+  TEST_CASE("lifting_a_void_function_returning_a_failure") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([] (int value) {
+      return Maybe<void>(std::make_exception_ptr(std::runtime_error("fail")));
     }, queue);
     queue->push(1);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
