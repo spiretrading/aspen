@@ -3,8 +3,10 @@
 #include <vector>
 #include <doctest/doctest.h>
 #include "Aspen/Aspen.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 namespace {
   using Producer = Shared<Queue<SharedBox<int>>>;
@@ -271,4 +273,9 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
   }
+  TEST_CASE("concur_children_evaluating_by_value") {
+    auto reactor = Concur(Constant(ByValueReactor(CountedValue(1))));
+    test_evaluation_lifetime(reactor);
+  }
+
 }

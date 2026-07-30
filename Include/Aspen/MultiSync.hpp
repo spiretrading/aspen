@@ -20,14 +20,14 @@ namespace Aspen {
    */
   template<typename V, IsReactor... R>
   class MultiSync : private std::conditional_t<
-      (is_noexcept_reactor_v<R> && ...), Details::Empty, Details::Exception> {
+      is_noexcept_reactor_v<R...>, Details::Empty, Details::Exception> {
     public:
 
       /** The type of the value being synchronized. */
       using Type = V;
 
       /** Whether this reactor's eval is noexcept. */
-      static constexpr auto is_noexcept = (is_noexcept_reactor_v<R> && ...);
+      static constexpr auto is_noexcept = is_noexcept_reactor_v<R...>;
 
       /**
        * Constructs a MultiSync.

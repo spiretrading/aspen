@@ -4,8 +4,10 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Chain") {
   TEST_CASE("constant_chain") {
@@ -107,5 +109,31 @@ TEST_SUITE("Chain") {
     queue->set_complete();
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
+  }
+
+  TEST_CASE("chain_children_evaluating_by_reference_does_not_copy") {
+    auto reactor = Chain(
+      Constant(CountedValue(1)), Constant(CountedValue(2)));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    CountedValue::reset_counts();
+    [[maybe_unused]] const auto& value = reactor.eval();
+    REQUIRE(CountedValue::get_copies() == 0);
+    REQUIRE(CountedValue::get_destructions() == 0);
+  }
+
+  TEST_CASE("chain_children_evaluating_by_value") {
+    auto reactor = Chain(
+      ByValueReactor(CountedValue(1)), ByValueReactor(CountedValue(2)));
+    test_evaluation_lifetime(reactor);
+  }
+
+  TEST_CASE("chain_a_continuation_evaluating_by_value") {
+    auto reactor = Chain(
+      Constant(CountedValue(1)), ByValueReactor(CountedValue(2)));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    CountedValue::reset_counts();
+    [[maybe_unused]] const auto& value = reactor.eval();
+    REQUIRE(CountedValue::get_destructions() == 0);
   }
 }

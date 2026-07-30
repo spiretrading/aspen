@@ -47,9 +47,39 @@ namespace Aspen {
   template<typename T>
   using eval_result_t = typename eval_result<T>::type;
 
-  /** Tests if a reactor's eval method is noexcept. */
+  /** Trait used to determine the type returned by a reactor's evaluation. */
   template<typename R> requires IsReactor<std::remove_cvref_t<R>>
-  constexpr auto is_noexcept_reactor_v = noexcept(std::declval<R>().eval());
+  using reactor_evaluation_t = decltype(std::declval<const R&>().eval());
+
+  /** Tests if a reactor's evaluation is returned by reference. */
+  template<typename R> requires IsReactor<std::remove_cvref_t<R>>
+  constexpr auto is_reference_evaluation_v =
+    std::is_reference_v<reactor_evaluation_t<R>>;
+
+  /** Trait used to determine the type a series of reactors evaluates to. */
+  template<IsReactor... R>
+  using common_result_t = std::common_type_t<reactor_result_t<R>...>;
+
+  /**
+   * Trait used to determine the type returned by evaluating any one of a series
+   * of reactors.
+   */
+  template<IsReactor... R>
+  using common_evaluation_t =
+    std::conditional_t<(is_reference_evaluation_v<R> && ...),
+      eval_result_t<common_result_t<R...>>, common_result_t<R...>>;
+
+  /** Tests if the eval method of each of a series of reactors is noexcept. */
+  template<typename... R> requires (IsReactor<std::remove_cvref_t<R>> && ...)
+  constexpr auto is_noexcept_reactor_v =
+    (noexcept(std::declval<R>().eval()) && ...);
+
+  /** Tests if evaluating any one of a series of reactors is noexcept. */
+  template<IsReactor... R>
+  constexpr auto is_noexcept_evaluation_v = is_noexcept_reactor_v<R...> &&
+    (std::is_reference_v<common_evaluation_t<R...>> ||
+      std::is_void_v<common_result_t<R...>> ||
+      std::is_nothrow_copy_constructible_v<common_result_t<R...>>);
 
   /**
    * Applies a function to every element of a tuple.

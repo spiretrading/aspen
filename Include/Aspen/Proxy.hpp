@@ -22,8 +22,11 @@ namespace Aspen {
       /** The type to evaluate to. */
       using Type = reactor_result_t<T>;
 
+      /** The type returned by an evaluation. */
+      using Result = common_evaluation_t<T>;
+
       /** Whether this reactor's eval is noexcept. */
-      static constexpr auto is_noexcept = is_noexcept_reactor_v<T>;
+      static constexpr auto is_noexcept = is_noexcept_evaluation_v<T>;
 
       /** Constructs an empty Proxy. */
       Proxy() noexcept;
@@ -36,7 +39,7 @@ namespace Aspen {
       void set_reactor(U&& reactor);
 
       State commit(std::uint64_t sequence) noexcept;
-      eval_result_t<Type> eval() const noexcept(is_noexcept);
+      Result eval() const noexcept(is_noexcept);
 
     private:
       std::optional<T> m_reactor;
@@ -88,8 +91,7 @@ namespace Aspen {
   }
 
   template<IsReactor T>
-  eval_result_t<typename Proxy<T>::Type> Proxy<T>::eval()
-      const noexcept(is_noexcept) {
+  typename Proxy<T>::Result Proxy<T>::eval() const noexcept(is_noexcept) {
     return m_reactor->eval();
   }
 }

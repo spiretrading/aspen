@@ -27,9 +27,12 @@ namespace Aspen {
       /** The type to evaluate to. */
       using Type = reactor_result_t<reactor_result_t<Reactor>>;
 
+      /** The type returned by an evaluation. */
+      using Result = common_evaluation_t<reactor_result_t<Reactor>>;
+
       /** Whether an evaluation is noexcept. */
       static constexpr auto is_noexcept =
-        is_noexcept_reactor_v<reactor_result_t<Reactor>>;
+        is_noexcept_evaluation_v<reactor_result_t<Reactor>>;
 
       /**
        * Constructs a Concat.
@@ -39,7 +42,7 @@ namespace Aspen {
       explicit Concat(RF&& producer);
 
       State commit(std::uint64_t sequence) noexcept;
-      eval_result_t<Type> eval() const noexcept(is_noexcept);
+      Result eval() const noexcept(is_noexcept);
 
     private:
       Branch<Reactor> m_producer;
@@ -136,8 +139,7 @@ namespace Aspen {
   }
 
   template<IsReactor R> requires IsReactor<reactor_result_t<R>>
-  eval_result_t<typename Concat<R>::Type> Concat<R>::eval()
-      const noexcept(is_noexcept) {
+  typename Concat<R>::Result Concat<R>::eval() const noexcept(is_noexcept) {
     return m_children.front()->eval();
   }
 }

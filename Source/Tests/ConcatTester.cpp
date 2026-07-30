@@ -8,8 +8,10 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Concat") {
   TEST_CASE("constant_then_empty") {
@@ -107,4 +109,9 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
   }
+  TEST_CASE("concat_children_evaluating_by_value") {
+    auto reactor = Concat(Constant(ByValueReactor(CountedValue(1))));
+    test_evaluation_lifetime(reactor);
+  }
+
 }

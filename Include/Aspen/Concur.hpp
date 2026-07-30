@@ -29,9 +29,12 @@ namespace Aspen {
       /** The type to evaluate to. */
       using Type = reactor_result_t<reactor_result_t<T>>;
 
+      /** The type returned by an evaluation. */
+      using Result = common_evaluation_t<reactor_result_t<T>>;
+
       /** Whether an evaluation is noexcept. */
       static constexpr auto is_noexcept =
-        is_noexcept_reactor_v<reactor_result_t<T>>;
+        is_noexcept_evaluation_v<reactor_result_t<T>>;
 
       /**
        * Constructs a Concur.
@@ -41,7 +44,7 @@ namespace Aspen {
       explicit Concur(TF&& producer);
 
       State commit(std::uint64_t sequence) noexcept;
-      eval_result_t<Type> eval() const noexcept(is_noexcept);
+      Result eval() const noexcept(is_noexcept);
 
     private:
       static constexpr auto BITS = std::size_t(64);
@@ -171,8 +174,7 @@ namespace Aspen {
   }
 
   template<IsReactor T> requires IsReactor<reactor_result_t<T>>
-  eval_result_t<typename Concur<T>::Type> Concur<T>::eval()
-      const noexcept(is_noexcept) {
+  typename Concur<T>::Result Concur<T>::eval() const noexcept(is_noexcept) {
     return m_children[m_current]->m_reactor->eval();
   }
 

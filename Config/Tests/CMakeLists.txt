@@ -1,5 +1,7 @@
+file(GLOB_RECURSE header_files ${ASPEN_INCLUDE_PATH}/Aspen/Tests/*.hpp)
 file(GLOB_RECURSE source_files ${ASPEN_SOURCE_PATH}/Tests/*.cpp)
-add_executable(aspen_tester ${source_files})
+add_executable(aspen_tester ${header_files} ${source_files})
+source_group("Header Files" FILES ${header_files})
 target_include_directories(aspen_tester SYSTEM PRIVATE ${DOCTEST_INCLUDE_PATH})
 if(UNIX)
   target_link_libraries(aspen_tester PRIVATE pthread)

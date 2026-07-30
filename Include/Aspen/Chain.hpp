@@ -22,9 +22,11 @@ namespace Aspen {
       /** The type to evaluate to. */
       using Type = reactor_result_t<A>;
 
+      /** The type returned by an evaluation. */
+      using Result = common_evaluation_t<A, B>;
+
       /** Whether an evaluation is noexcept. */
-      static constexpr auto is_noexcept = is_noexcept_reactor_v<A> &&
-        is_noexcept_reactor_v<B>;
+      static constexpr auto is_noexcept = is_noexcept_evaluation_v<A, B>;
 
       /**
        * Constructs a Chain.
@@ -36,7 +38,7 @@ namespace Aspen {
       Chain(AF&& initial, BF&& continuation);
 
       State commit(std::uint64_t sequence) noexcept;
-      eval_result_t<Type> eval() const noexcept(is_noexcept);
+      Result eval() const noexcept(is_noexcept);
 
     private:
       enum class Status : char {
@@ -128,8 +130,7 @@ namespace Aspen {
   }
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
-  eval_result_t<typename Chain<A, B>::Type> Chain<A, B>::eval()
-      const noexcept(is_noexcept) {
+  typename Chain<A, B>::Result Chain<A, B>::eval() const noexcept(is_noexcept) {
     if(m_status == Status::CONTINUATION) {
       return m_continuation.eval();
     }

@@ -194,7 +194,7 @@ namespace Details {
   template<typename F, typename... A>
   struct is_lift_noexcept : std::bool_constant<
     std::is_nothrow_invocable_v<F, lift_argument_t<A>...> &&
-    (is_noexcept_reactor_v<A> && ...) &&
+    is_noexcept_reactor_v<A...> &&
     !IsMaybe<std::invoke_result_t<F, lift_argument_t<A>...>>> {};
 
   template<typename F, typename... A>

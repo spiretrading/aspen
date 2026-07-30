@@ -7,8 +7,10 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Group") {
   TEST_CASE("group_loop_complete") {
@@ -79,4 +81,19 @@ TEST_SUITE("Group") {
     auto mixed = group(Shared(Cell(1)), Shared(Queue<int>()));
     REQUIRE(!decltype(mixed)::is_noexcept);
   }
+  TEST_CASE("group_children_evaluating_by_value") {
+    auto reactor = Group(
+      ByValueReactor(CountedValue(1)), ByValueReactor(CountedValue(2)));
+    test_evaluation_lifetime(reactor);
+  }
+
+  TEST_CASE("group_children_evaluating_by_reference_does_not_copy") {
+    auto reactor = Group(
+      Constant(CountedValue(1)), Constant(CountedValue(2)));
+    REQUIRE(has_evaluation(reactor.commit(0)));
+    CountedValue::reset_counts();
+    [[maybe_unused]] const auto& value = reactor.eval();
+    REQUIRE(CountedValue::get_copies() == 0);
+  }
+
 }

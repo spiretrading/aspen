@@ -4,8 +4,10 @@
 #include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Proxy") {
   TEST_CASE("proxy_without_a_reactor") {
@@ -67,4 +69,10 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
   }
+  TEST_CASE("proxy_a_reactor_evaluating_by_value") {
+    auto reactor = Proxy<ByValueReactor<CountedValue>>();
+    reactor.set_reactor(ByValueReactor(CountedValue(1)));
+    test_evaluation_lifetime(reactor);
+  }
+
 }
