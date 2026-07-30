@@ -11,6 +11,11 @@ namespace {
     sink << state;
     return sink.str();
   }
+
+  constexpr State merge(State left, State right) {
+    return static_cast<State>(
+      static_cast<unsigned char>(left) | static_cast<unsigned char>(right));
+  }
 }
 
 TEST_SUITE("State") {
@@ -63,9 +68,9 @@ TEST_SUITE("State") {
   }
 
   TEST_CASE("streaming_a_combination_without_a_name") {
-    REQUIRE(to_string(combine(State::COMPLETE, State::CONTINUE)) ==
+    REQUIRE(to_string(merge(State::COMPLETE, State::CONTINUE)) ==
       "COMPLETE_CONTINUE");
-    REQUIRE(to_string(combine(State::COMPLETE_EVALUATED, State::CONTINUE)) ==
+    REQUIRE(to_string(merge(State::COMPLETE_EVALUATED, State::CONTINUE)) ==
       "COMPLETE_CONTINUE_EVALUATED");
   }
 

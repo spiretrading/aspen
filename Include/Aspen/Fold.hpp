@@ -186,7 +186,7 @@ namespace Aspen {
     }
     if(is_complete(series_state)) {
       state = combine(reset(state, State::CONTINUE), State::COMPLETE);
-    } else if(has_continuation(series_state)) {
+    } else if(!is_complete(state) && has_continuation(series_state)) {
       state = combine(state, State::CONTINUE);
     }
     return state;

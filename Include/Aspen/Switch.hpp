@@ -121,7 +121,7 @@ namespace Aspen {
       state = combine(state, State::COMPLETE);
       m_series = std::nullopt;
     }
-    if(has_continuation(toggle_state)) {
+    if(!is_complete(state) && has_continuation(toggle_state)) {
       state = combine(state, State::CONTINUE);
     }
     return state;

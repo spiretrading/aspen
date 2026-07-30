@@ -173,7 +173,7 @@ namespace Aspen {
     if((m_count == 0 || m_count == 1 && m_current != NO_CHILD &&
         m_children[m_current] && m_children[m_current]->m_is_complete) &&
         !m_producer) {
-      state = combine(state, State::COMPLETE);
+      state = combine(reset(state, State::CONTINUE), State::COMPLETE);
     }
     return state;
   }

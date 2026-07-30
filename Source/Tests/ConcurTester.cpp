@@ -138,6 +138,24 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 4);
   }
 
+  TEST_CASE("the_last_child_evaluating_as_it_completes") {
+    auto producer = Producer();
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    producer->push(shared_box(first));
+    producer->push(shared_box(second));
+    producer->set_complete();
+    auto reactor = concur(producer);
+    auto sequence = std::uint64_t(0);
+    absorb(reactor, sequence, 2);
+    first->set_complete(9);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 9);
+    second->set_complete(3);
+    REQUIRE(reactor.commit(sequence++) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+  }
+
   TEST_CASE("a_producer_that_throws_is_ignored") {
     auto producer = Producer();
     producer->set_complete(std::runtime_error("fail"));

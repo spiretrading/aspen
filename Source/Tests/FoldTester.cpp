@@ -92,6 +92,21 @@ TEST_SUITE("Fold") {
     REQUIRE_THROWS_AS(f.eval(), std::runtime_error);
   }
 
+  TEST_CASE("fold_does_not_continue_when_its_evaluator_completes") {
+    auto left = make_fold_argument<int>();
+    auto right = make_fold_argument<int>();
+    auto queue = Shared(Queue<int>());
+    auto f = Fold(Lift([] (const auto& left, const auto& right) {
+      return FunctionEvaluation<int>(*left + *right, State::COMPLETE);
+    }, left, right), left, right, queue);
+    queue->push(1);
+    queue->push(2);
+    queue->push(3);
+    REQUIRE(f.commit(0) == State::CONTINUE);
+    REQUIRE(f.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(f.eval() == 3);
+  }
+
   TEST_CASE("fold_does_not_complete_with_a_continuation") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();

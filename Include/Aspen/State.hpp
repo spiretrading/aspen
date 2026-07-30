@@ -1,5 +1,6 @@
 #ifndef ASPEN_STATE_HPP
 #define ASPEN_STATE_HPP
+#include <cassert>
 #include <ostream>
 
 namespace Aspen {
@@ -28,12 +29,6 @@ namespace Aspen {
     COMPLETE_EVALUATED = COMPLETE | EVALUATED
   };
 
-  /** Returns the combination of two States. */
-  constexpr State combine(State left, State right) {
-    return static_cast<State>(
-      static_cast<unsigned char>(left) | static_cast<unsigned char>(right));
-  }
-
   /** Returns <code>true</code> iff a reactor State is in an EVALUATED state. */
   constexpr bool has_evaluation(State state) {
     return (static_cast<unsigned char>(state) & static_cast<unsigned char>(
@@ -50,6 +45,14 @@ namespace Aspen {
   constexpr bool is_complete(State state) {
     return (static_cast<unsigned char>(state) &
       static_cast<unsigned char>(State::COMPLETE)) != 0;
+  }
+
+  /** Returns the combination of two States. */
+  constexpr State combine(State left, State right) {
+    auto state = static_cast<State>(
+      static_cast<unsigned char>(left) | static_cast<unsigned char>(right));
+    assert(!is_complete(state) || !has_continuation(state));
+    return state;
   }
 
   /** Resets a state flag. */

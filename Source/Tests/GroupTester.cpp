@@ -8,6 +8,7 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Switch.hpp"
 #include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
@@ -97,6 +98,18 @@ TEST_SUITE("Group") {
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_copies() == 0);
   }
+
+  TEST_CASE("a_child_that_completes_as_it_evaluates_is_not_committed_again") {
+    auto toggle = Shared(Queue<bool>());
+    toggle->push(true);
+    toggle->push(true);
+    auto reactor = group(switch_(toggle, constant(5)), constant(0));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+  }
+
   TEST_CASE("a_completed_child_is_released") {
     auto first = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
     auto token = first.get_token();

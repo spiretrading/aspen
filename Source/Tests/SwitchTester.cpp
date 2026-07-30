@@ -134,6 +134,16 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
     REQUIRE(reactor.eval() == 5);
   }
+
+  TEST_CASE("a_series_that_completes_while_the_toggle_continues") {
+    auto toggle = Shared(Queue<bool>());
+    toggle->push(true);
+    toggle->push(true);
+    auto reactor = Switch(toggle, Constant(10));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+  }
+
   TEST_CASE("a_completed_toggle_is_released") {
     auto toggle = TrackedReactor<bool>(true, State::COMPLETE_EVALUATED);
     auto token = toggle.get_token();
