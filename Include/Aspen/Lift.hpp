@@ -3,10 +3,12 @@
 #include <cassert>
 #include <concepts>
 #include <cstdint>
+#include <exception>
 #include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
@@ -35,25 +37,25 @@ namespace Aspen {
     FunctionEvaluation();
 
     /**
-     * Constructs an evaluation resulting in a value and an EVAL.
+     * Constructs an evaluation resulting in a value and an EVALUATED state.
      * @param value The value returned by the function.
      */
     FunctionEvaluation(Maybe<Type> value);
 
     /**
-     * Constructs an evaluation resulting in a value and an EVAL.
+     * Constructs an evaluation resulting in a value and an EVALUATED state.
      * @param value The value returned by the function.
      */
     FunctionEvaluation(Type value);
 
     /**
-     * Constructs an evaluation resulting in a value and an EVAL.
+     * Constructs an evaluation resulting in a value if one is provided.
      * @param value The value returned by the function.
      */
     FunctionEvaluation(std::optional<Maybe<Type>> value);
 
     /**
-     * Constructs an evaluation resulting in a value and an EVAL.
+     * Constructs an evaluation resulting in a value if one is provided.
      * @param value The value returned by the function.
      */
     FunctionEvaluation(std::optional<Type> value);

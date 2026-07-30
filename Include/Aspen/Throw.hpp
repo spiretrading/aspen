@@ -25,14 +25,14 @@ namespace Aspen {
        * Constructs a Throw.
        * @param exception The exception to throw.
        */
-      explicit Throw(std::exception_ptr exception);
+      explicit Throw(std::exception_ptr exception) noexcept;
 
       /**
        * Constructs a Throw.
        * @param exception The exception to throw.
        */
       template<std::derived_from<std::exception> E>
-      explicit Throw(E exception);
+      explicit Throw(E exception) noexcept;
 
       State commit(std::uint64_t sequence) noexcept;
       eval_result_t<Type> eval() const;
@@ -53,12 +53,12 @@ namespace Aspen {
   }
 
   template<typename T>
-  Throw<T>::Throw(std::exception_ptr exception)
+  Throw<T>::Throw(std::exception_ptr exception) noexcept
     : m_exception(std::move(exception)) {}
 
   template<typename T>
   template<std::derived_from<std::exception> E>
-  Throw<T>::Throw(E exception)
+  Throw<T>::Throw(E exception) noexcept
     : Throw(std::make_exception_ptr(std::move(exception))) {}
 
   template<typename T>

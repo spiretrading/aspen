@@ -3,6 +3,7 @@
 #include <atomic>
 #include <concepts>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 #include "Aspen/CommitFlag.hpp"
 #include "Aspen/Reactor.hpp"

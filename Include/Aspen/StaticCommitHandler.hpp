@@ -1,6 +1,7 @@
 #ifndef ASPEN_STATIC_COMMIT_HANDLER_HPP
 #define ASPEN_STATIC_COMMIT_HANDLER_HPP
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <tuple>

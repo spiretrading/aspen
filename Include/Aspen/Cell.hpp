@@ -21,21 +21,23 @@ namespace Aspen {
       /** The type to evaluate to. */
       using Type = T;
 
-      /** Constructs a Cell with a default initial value. */
-      Cell();
+      /** Constructs a Cell with no initial value. */
+      Cell() noexcept;
 
       /**
        * Constructs a Cell with an initial value.
        * @param value The initial value to evaluate to.
        */
-      explicit Cell(Type value);
+      explicit Cell(Type value) noexcept(
+        std::is_nothrow_move_constructible_v<Type>);
 
       /**
        * Constructs a Cell by in-place constructing its initial value.
        * @param args The arguments to forward to the constructor of the value.
        */
       template<typename... A>
-      explicit Cell(std::in_place_t, A&&... args);
+      explicit Cell(std::in_place_t, A&&... args) noexcept(
+        std::is_nothrow_constructible_v<Type, A&&...>);
 
       Cell(const Cell& cell);
       Cell(Cell&& cell);
@@ -87,19 +89,21 @@ namespace Aspen {
   };
 
   template<typename T>
-  Cell<T>::Cell()
+  Cell<T>::Cell() noexcept
     : m_is_complete(false),
       m_flag(nullptr) {}
 
   template<typename T>
-  Cell<T>::Cell(Type value)
+  Cell<T>::Cell(Type value) noexcept(
+    std::is_nothrow_move_constructible_v<Type>)
     : m_is_complete(false),
       m_next(std::move(value)),
       m_flag(nullptr) {}
 
   template<typename T>
   template<typename... A>
-  Cell<T>::Cell(std::in_place_t, A&&... args)
+  Cell<T>::Cell(std::in_place_t, A&&... args) noexcept(
+    std::is_nothrow_constructible_v<Type, A&&...>)
     : m_is_complete(false),
       m_next(std::in_place, std::forward<A>(args)...),
       m_flag(nullptr) {}

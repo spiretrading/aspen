@@ -31,8 +31,8 @@ namespace Aspen {
       explicit Executor(R&& reactor);
 
       /**
-       * Repeatedly executes the reactor until it completes or evaluates to
-       * NONE.
+       * Repeatedly executes the reactor until it completes or no longer
+       * requires an immediate commit.
        */
       void run_until_none();
 

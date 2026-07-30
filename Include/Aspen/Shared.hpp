@@ -33,7 +33,7 @@ namespace Details {
     Sequence m_last_evaluation;
     CommitFlag m_flag;
 
-    SharedState();
+    SharedState() noexcept;
   };
 
   template<typename R>
@@ -44,7 +44,7 @@ namespace Details {
     std::optional<try_maybe_t<reactor_result_t<R>, !is_noexcept_reactor_v<R>>>
       m_evaluation;
 
-    SharedEvaluator(std::shared_ptr<SharedState> state);
+    explicit SharedEvaluator(std::shared_ptr<SharedState> state) noexcept;
   };
 
   inline Sequence::Sequence() noexcept
@@ -64,11 +64,12 @@ namespace Details {
     return right.m_is_set && (!left.m_is_set || left.m_value < right.m_value);
   }
 
-  inline SharedState::SharedState()
+  inline SharedState::SharedState() noexcept
     : m_state(State::NONE) {}
 
   template<typename R>
-  SharedEvaluator<R>::SharedEvaluator(std::shared_ptr<SharedState> state)
+  SharedEvaluator<R>::SharedEvaluator(
+    std::shared_ptr<SharedState> state) noexcept
     : m_state(std::move(state)) {}
 }
 
@@ -142,7 +143,7 @@ namespace Details {
         Details::Sequence& last_evaluation, CommitFlag* current);
 
       Shared(std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
-        std::shared_ptr<Reactor> reactor);
+        std::shared_ptr<Reactor> reactor) noexcept;
       void release() noexcept;
       void set_parent(CommitFlag* parent) noexcept;
   };
@@ -360,7 +361,7 @@ namespace Details {
   template<IsReactor R>
   Shared<R>::Shared(
     std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
-    std::shared_ptr<Reactor> reactor)
+    std::shared_ptr<Reactor> reactor) noexcept
     : m_evaluator(std::move(evaluator)),
       m_reactor(std::move(reactor)),
       m_parent(nullptr) {}

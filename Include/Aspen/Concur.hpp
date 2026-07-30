@@ -4,6 +4,7 @@
 #include <atomic>
 #include <bit>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <optional>

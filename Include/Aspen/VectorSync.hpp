@@ -1,5 +1,6 @@
 #ifndef ASPEN_VECTOR_SYNC_HPP
 #define ASPEN_VECTOR_SYNC_HPP
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <utility>

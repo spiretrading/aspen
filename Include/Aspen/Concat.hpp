@@ -2,6 +2,7 @@
 #define ASPEN_CONCAT_HPP
 #include <concepts>
 #include <cstdint>
+#include <iterator>
 #include <list>
 #include <optional>
 #include <type_traits>

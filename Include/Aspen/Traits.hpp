@@ -35,6 +35,7 @@ namespace Aspen {
   template<typename T>
   using reactor_result_t = typename reactor_result<T>::type;
 
+  /** Trait used to determine how a reactor's evaluation is returned. */
   template<typename T>
   struct eval_result {
     using type = const T&;
