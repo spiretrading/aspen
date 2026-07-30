@@ -69,8 +69,8 @@ namespace Aspen {
   }
 
   template<typename V, IsReactor... R>
-  const typename MultiSync<V, R...>::Type& MultiSync<V, R...>::eval() const
-      noexcept(is_noexcept) {
+  const typename MultiSync<V, R...>::Type& MultiSync<V, R...>::eval()
+      const noexcept(is_noexcept) {
     if constexpr(!is_noexcept) {
       if(this->m_exception) {
         std::rethrow_exception(this->m_exception);

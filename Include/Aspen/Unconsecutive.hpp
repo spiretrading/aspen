@@ -22,8 +22,8 @@ namespace Aspen {
   auto unconsecutive(Series&& series) {
     using Type = reactor_result_t<Series>;
     using Source = to_reactor_t<Series>;
-    return lift([previous = std::optional<Type>()] (const auto& value) mutable
-        noexcept -> FunctionEvaluation<Type> {
+    return lift([previous = std::optional<Type>()] (
+        const auto& value) mutable noexcept -> FunctionEvaluation<Type> {
       if constexpr(!is_noexcept_reactor_v<Source>) {
         if(value.has_exception()) {
           return Maybe<Type>(value.get_exception());

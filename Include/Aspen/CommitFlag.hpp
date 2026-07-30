@@ -195,8 +195,8 @@ namespace Details {
     m_kind = Kind::ROOT;
   }
 
-  inline void CommitFlag::set_slot(std::atomic_uint64_t* word,
-      std::uint8_t bit) noexcept {
+  inline void CommitFlag::set_slot(
+      std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
     m_word = word;
     m_bit = bit;
     if(m_word && is_raised()) {

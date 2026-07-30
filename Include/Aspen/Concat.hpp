@@ -52,8 +52,8 @@ namespace Aspen {
       bool m_is_child_complete;
   };
 
-  template<typename R> requires(!std::derived_from<std::remove_cvref_t<R>,
-    Concat<to_reactor_t<R>>>)
+  template<typename R> requires(
+    !std::derived_from<std::remove_cvref_t<R>, Concat<to_reactor_t<R>>>)
   Concat(R&&) -> Concat<to_reactor_t<R>>;
 
   /**

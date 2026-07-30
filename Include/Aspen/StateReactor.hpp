@@ -38,8 +38,8 @@ namespace Aspen {
       State m_value;
   };
 
-  template<typename R> requires(!std::derived_from<std::remove_cvref_t<R>,
-    StateReactor<to_reactor_t<R>>>)
+  template<typename R> requires(
+    !std::derived_from<std::remove_cvref_t<R>, StateReactor<to_reactor_t<R>>>)
   StateReactor(R&&) -> StateReactor<to_reactor_t<R>>;
 
   template<IsReactor R>

@@ -93,8 +93,8 @@ namespace Details {
 
   template<IsReactor R, typename V> requires
     std::is_assignable_v<V&, decltype(std::declval<const R&>().eval())>
-  const typename Sync<R, V>::Type& Sync<R, V>::eval() const
-      noexcept(is_noexcept) {
+  const typename Sync<R, V>::Type& Sync<R, V>::eval()
+      const noexcept(is_noexcept) {
     if constexpr(!is_noexcept) {
       if(this->m_exception) {
         std::rethrow_exception(this->m_exception);

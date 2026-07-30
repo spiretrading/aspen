@@ -97,8 +97,8 @@ namespace Details {
   }
 
   template<IsReactor R, typename V>
-  const typename VectorSync<R, V>::Type& VectorSync<R, V>::eval() const
-      noexcept(is_noexcept) {
+  const typename VectorSync<R, V>::Type& VectorSync<R, V>::eval()
+      const noexcept(is_noexcept) {
     if constexpr(!is_noexcept) {
       if(this->m_count != 0) {
         for(auto i = std::size_t(0); i != m_reactors.size(); ++i) {
