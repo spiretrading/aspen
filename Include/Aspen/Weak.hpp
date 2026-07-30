@@ -72,8 +72,11 @@ namespace Aspen {
   Weak<R>::Weak(Weak&& weak) noexcept
       : m_evaluator(std::move(weak.m_evaluator)),
         m_last_evaluation(weak.m_last_evaluation),
-        m_parent(weak.m_parent) {
-    weak.m_parent = nullptr;
+        m_parent(nullptr) {
+    if(weak.m_parent) {
+      m_evaluator->m_state->m_flag.remove_parent(*weak.m_parent);
+      weak.m_parent = nullptr;
+    }
   }
 
   template<IsReactor R>
@@ -106,8 +109,11 @@ namespace Aspen {
     }
     m_evaluator = std::move(weak.m_evaluator);
     m_last_evaluation = weak.m_last_evaluation;
-    m_parent = weak.m_parent;
-    weak.m_parent = nullptr;
+    m_parent = nullptr;
+    if(weak.m_parent) {
+      m_evaluator->m_state->m_flag.remove_parent(*weak.m_parent);
+      weak.m_parent = nullptr;
+    }
     return *this;
   }
 

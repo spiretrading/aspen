@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Branch.hpp"
@@ -96,6 +97,17 @@ TEST_SUITE("Branch") {
     cell->set(3);
     REQUIRE(moved.commit(3) == State::EVALUATED);
     REQUIRE(moved->eval() == 3);
+  }
+
+  TEST_CASE("destroying_a_moved_from_branch_preserves_propagation") {
+    auto cell = Shared(Cell(1));
+    auto branch = std::optional(Branch(cell));
+    REQUIRE(branch->commit(0) == State::EVALUATED);
+    auto moved = std::move(*branch);
+    branch.reset();
+    cell->set(2);
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved->eval() == 2);
   }
 
   TEST_CASE("assigning_a_branch_commits_it_again") {

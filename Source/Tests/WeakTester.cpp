@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 #include "Aspen/Box.hpp"
 #include "Aspen/Cell.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Weak.hpp"
@@ -136,4 +137,37 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 1);
   }
 
+  TEST_CASE("moving_a_weak_stops_reporting_to_the_old_flag") {
+    auto cell = Shared(Cell(1));
+    auto observer = Weak(cell);
+    auto flag = CommitFlag();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(observer.commit(0) == State::EVALUATED);
+    }
+    auto moved = std::move(observer);
+    flag.clear();
+    cell->set(2);
+    REQUIRE(!flag.is_raised());
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 2);
+  }
+
+  TEST_CASE("move_assigning_a_weak_stops_reporting_to_the_old_flag") {
+    auto cell = Shared(Cell(1));
+    auto other = Shared(Cell(0));
+    auto observer = Weak(cell);
+    auto flag = CommitFlag();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(observer.commit(0) == State::EVALUATED);
+    }
+    auto moved = Weak(other);
+    moved = std::move(observer);
+    flag.clear();
+    cell->set(2);
+    REQUIRE(!flag.is_raised());
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 2);
+  }
 }

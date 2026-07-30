@@ -228,8 +228,11 @@ namespace Details {
       : m_evaluator(std::move(shared.m_evaluator)),
         m_reactor(std::move(shared.m_reactor)),
         m_last_evaluation(shared.m_last_evaluation),
-        m_parent(shared.m_parent) {
-    shared.m_parent = nullptr;
+        m_parent(nullptr) {
+    if(shared.m_parent) {
+      m_evaluator->m_state->m_flag.remove_parent(*shared.m_parent);
+      shared.m_parent = nullptr;
+    }
   }
 
   template<IsReactor R>
@@ -300,8 +303,11 @@ namespace Details {
     m_evaluator = std::move(shared.m_evaluator);
     m_reactor = std::move(shared.m_reactor);
     m_last_evaluation = shared.m_last_evaluation;
-    m_parent = shared.m_parent;
-    shared.m_parent = nullptr;
+    m_parent = nullptr;
+    if(shared.m_parent) {
+      m_evaluator->m_state->m_flag.remove_parent(*shared.m_parent);
+      shared.m_parent = nullptr;
+    }
     return *this;
   }
 

@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Chain.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
@@ -136,6 +137,39 @@ TEST_SUITE("Shared") {
     REQUIRE(first.eval() == 5);
     REQUIRE(second.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(second.eval() == 5);
+  }
+
+  TEST_CASE("moving_a_shared_stops_reporting_to_the_old_flag") {
+    auto cell = Shared(Cell(1));
+    auto observer = cell;
+    auto flag = CommitFlag();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(observer.commit(0) == State::EVALUATED);
+    }
+    auto moved = std::move(observer);
+    flag.clear();
+    cell->set(2);
+    REQUIRE(!flag.is_raised());
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 2);
+  }
+
+  TEST_CASE("move_assigning_a_shared_stops_reporting_to_the_old_flag") {
+    auto cell = Shared(Cell(1));
+    auto observer = cell;
+    auto flag = CommitFlag();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(observer.commit(0) == State::EVALUATED);
+    }
+    auto moved = Shared(Cell(0));
+    moved = std::move(observer);
+    flag.clear();
+    cell->set(2);
+    REQUIRE(!flag.is_raised());
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 2);
   }
 
   TEST_CASE("copy_assigning_to_a_moved_from_shared") {
