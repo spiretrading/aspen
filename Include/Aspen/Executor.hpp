@@ -52,6 +52,7 @@ namespace Aspen {
       std::uint64_t m_sequence;
       Box<void> m_reactor;
       std::atomic_bool m_is_aborted;
+      bool m_is_complete;
       bool m_has_update;
 
       void on_update();
@@ -72,6 +73,7 @@ namespace Aspen {
         m_sequence(0),
         m_reactor(std::forward<R>(reactor)),
         m_is_aborted(false),
+        m_is_complete(false),
         m_has_update(false) {
     m_flag.set_trigger(&m_trigger);
   }
@@ -85,17 +87,26 @@ namespace Aspen {
     auto scope = CommitFlagScope(m_flag);
     auto state = m_reactor.commit(m_sequence);
     ++m_sequence;
+    if(is_complete(state)) {
+      m_is_complete = true;
+    }
     return state;
   }
 
   inline void Executor::run_until_none() {
+    if(m_is_complete) {
+      return;
+    }
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
-    while(has_continuation(commit()) && !is_aborted()) {}
+    while(!is_aborted() && !m_is_complete && has_continuation(commit())) {}
     Trigger::set_trigger(old_trigger);
   }
 
   inline void Executor::run_until_complete() {
+    if(m_is_complete) {
+      return;
+    }
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))

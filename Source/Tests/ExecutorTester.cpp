@@ -1,5 +1,6 @@
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -15,6 +16,27 @@
 #include "Aspen/Shared.hpp"
 
 using namespace Aspen;
+
+namespace {
+
+  /** Counts how many times it is committed. */
+  struct Counter {
+    using Type = int;
+    std::shared_ptr<int> m_commits;
+
+    Counter()
+      : m_commits(std::make_shared<int>(0)) {}
+
+    State commit(std::uint64_t sequence) noexcept {
+      ++*m_commits;
+      return State::COMPLETE_EVALUATED;
+    }
+
+    const int& eval() const noexcept {
+      return *m_commits;
+    }
+  };
+}
 
 TEST_SUITE("Executor") {
   TEST_CASE("run_until_none_empty") {
@@ -159,5 +181,31 @@ TEST_SUITE("Executor") {
     executor.abort();
     executor.run_until_complete();
     REQUIRE(counter->load() == 0);
+  }
+
+  TEST_CASE("running_until_none_twice_after_completing") {
+    auto counter = Counter();
+    auto executor = Executor(counter);
+    executor.run_until_none();
+    REQUIRE(*counter.m_commits == 1);
+    executor.run_until_none();
+    REQUIRE(*counter.m_commits == 1);
+  }
+
+  TEST_CASE("running_until_complete_twice") {
+    auto counter = Counter();
+    auto executor = Executor(counter);
+    executor.run_until_complete();
+    REQUIRE(*counter.m_commits == 1);
+    executor.run_until_complete();
+    REQUIRE(*counter.m_commits == 1);
+  }
+
+  TEST_CASE("running_until_none_after_aborting") {
+    auto counter = Counter();
+    auto executor = Executor(counter);
+    executor.abort();
+    executor.run_until_none();
+    REQUIRE(*counter.m_commits == 0);
   }
 }
