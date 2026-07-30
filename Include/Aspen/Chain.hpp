@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <utility>
+#include "Aspen/Branch.hpp"
 #include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -48,9 +49,8 @@ namespace Aspen {
         TRANSITIONING,
         CONTINUATION
       };
-      std::optional<A> m_initial;
-      [[no_unique_address]]
-      B m_continuation;
+      std::optional<Branch<A>> m_initial;
+      Branch<B> m_continuation;
       Status m_status;
   };
 
@@ -134,9 +134,9 @@ namespace Aspen {
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   typename Chain<A, B>::Result Chain<A, B>::eval() const noexcept(is_noexcept) {
     if(m_status == Status::CONTINUATION) {
-      return m_continuation.eval();
+      return m_continuation->eval();
     }
-    return m_initial->eval();
+    return (*m_initial)->eval();
   }
 }
 

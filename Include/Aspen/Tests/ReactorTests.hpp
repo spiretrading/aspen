@@ -109,6 +109,36 @@ namespace Aspen::Tests {
   };
 
   /**
+   * Implements a reactor counting how many times it is committed.
+   * @param <T> The type of value to evaluate to.
+   */
+  template<typename T>
+  class CountingReactor {
+    public:
+
+      /** The type to evaluate to. */
+      using Type = T;
+
+      /**
+       * Constructs a CountingReactor.
+       * @param value The value to evaluate to.
+       * @param state The state to report from every commit.
+       */
+      CountingReactor(T value, State state);
+
+      /** Returns the number of commits performed. */
+      int get_commits() const noexcept;
+
+      State commit(std::uint64_t sequence) noexcept;
+      const Type& eval() const;
+
+    private:
+      std::shared_ptr<int> m_commits;
+      T m_value;
+      State m_state;
+  };
+
+  /**
    * Tests that committing and evaluating a reactor does not evaluate to a
    * value that has already been destroyed.
    * @param reactor The reactor to commit and evaluate.
@@ -203,6 +233,28 @@ namespace Aspen::Tests {
 
   template<typename T>
   const typename TrackedReactor<T>::Type& TrackedReactor<T>::eval() const {
+    return m_value;
+  }
+
+  template<typename T>
+  CountingReactor<T>::CountingReactor(T value, State state)
+    : m_commits(std::make_shared<int>(0)),
+      m_value(std::move(value)),
+      m_state(state) {}
+
+  template<typename T>
+  int CountingReactor<T>::get_commits() const noexcept {
+    return *m_commits;
+  }
+
+  template<typename T>
+  State CountingReactor<T>::commit(std::uint64_t sequence) noexcept {
+    ++*m_commits;
+    return m_state;
+  }
+
+  template<typename T>
+  const typename CountingReactor<T>::Type& CountingReactor<T>::eval() const {
     return m_value;
   }
 }

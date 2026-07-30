@@ -1,6 +1,7 @@
 #include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Chain.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
@@ -147,6 +148,18 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
     REQUIRE(token.expired());
+  }
+
+  TEST_CASE("an_unraised_child_is_not_recommitted") {
+    auto flag = CommitFlag();
+    auto child = CountingReactor<int>(1, State::EVALUATED);
+    auto reactor = Chain(child, Constant(2));
+    auto scope = CommitFlagScope(flag);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(child.get_commits() == 1);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(child.get_commits() == 1);
   }
 
 }
