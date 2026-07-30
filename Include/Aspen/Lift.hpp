@@ -316,7 +316,7 @@ namespace Details {
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(std::optional<Maybe<Type>> value)
       : m_value(std::move(value)) {
-    if(m_value.has_value()) {
+    if(m_value) {
       m_state = State::EVALUATED;
     } else {
       m_state = State::NONE;
@@ -347,7 +347,7 @@ namespace Details {
   FunctionEvaluation<T>::FunctionEvaluation(
       std::optional<Maybe<Type>> value, State state)
       : m_value(std::move(value)) {
-    if(m_value.has_value()) {
+    if(m_value) {
       if(is_complete(state)) {
         m_state = State::COMPLETE_EVALUATED;
       } else if(has_continuation(state)) {
@@ -385,7 +385,7 @@ namespace Details {
   inline FunctionEvaluation<void>::FunctionEvaluation(
       std::optional<Maybe<Type>> value)
       : m_value(std::move(value)) {
-    if(m_value.has_value()) {
+    if(m_value) {
       m_state = State::EVALUATED;
     } else {
       m_state = State::NONE;
@@ -405,7 +405,7 @@ namespace Details {
   inline FunctionEvaluation<void>::FunctionEvaluation(
       std::optional<Maybe<Type>> value, State state)
       : m_value(std::move(value)) {
-    if(m_value.has_value()) {
+    if(m_value) {
       if(is_complete(state)) {
         m_state = State::COMPLETE_EVALUATED;
       } else {

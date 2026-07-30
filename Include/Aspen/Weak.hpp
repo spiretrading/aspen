@@ -36,7 +36,7 @@ namespace Aspen {
        * Constructs a Weak reactor observing an existing Shared reactor.
        * @param reactor The reactor to observe.
        */
-      explicit Weak(Shared<Reactor> reactor) noexcept;
+      explicit Weak(const Shared<Reactor>& reactor) noexcept;
 
       Weak(const Weak& weak) noexcept;
       Weak(Weak&& weak) noexcept;
@@ -57,8 +57,8 @@ namespace Aspen {
   };
 
   template<IsReactor R>
-  Weak<R>::Weak(Shared<Reactor> reactor) noexcept
-    : m_evaluator(std::move(reactor.m_evaluator)),
+  Weak<R>::Weak(const Shared<Reactor>& reactor) noexcept
+    : m_evaluator(reactor.m_evaluator),
       m_parent(nullptr) {}
 
   template<IsReactor R>

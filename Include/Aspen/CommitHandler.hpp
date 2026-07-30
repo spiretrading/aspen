@@ -63,10 +63,10 @@ namespace Aspen {
         explicit Child(R reactor);
         Child(Child&& child) noexcept;
       };
-      std::vector<Child> m_children;
-      std::vector<std::size_t> m_evaluated;
       std::unique_ptr<std::atomic_uint64_t[]> m_raised;
       std::size_t m_word_count;
+      std::vector<Child> m_children;
+      std::vector<std::size_t> m_evaluated;
       std::size_t m_completion_count;
       std::size_t m_evaluation_count;
       bool m_is_initializing;
@@ -104,10 +104,10 @@ namespace Aspen {
 
   template<IsReactor R>
   CommitHandler<R>::CommitHandler(CommitHandler&& handler) noexcept
-    : m_children(std::move(handler.m_children)),
-      m_evaluated(std::move(handler.m_evaluated)),
-      m_raised(std::move(handler.m_raised)),
+    : m_raised(std::move(handler.m_raised)),
       m_word_count(handler.m_word_count),
+      m_children(std::move(handler.m_children)),
+      m_evaluated(std::move(handler.m_evaluated)),
       m_completion_count(handler.m_completion_count),
       m_evaluation_count(handler.m_evaluation_count),
       m_is_initializing(handler.m_is_initializing),

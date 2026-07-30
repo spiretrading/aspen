@@ -52,11 +52,6 @@ namespace Aspen {
       static_cast<unsigned char>(State::COMPLETE)) != 0;
   }
 
-  /** Sets a state flag. */
-  constexpr State set(State state, State update) {
-    return combine(state, update);
-  }
-
   /** Resets a state flag. */
   constexpr State reset(State state, State update) {
     return static_cast<State>(static_cast<unsigned char>(state) &

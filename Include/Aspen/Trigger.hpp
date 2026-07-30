@@ -45,7 +45,7 @@ namespace Details {
       explicit Trigger(Slot slot);
 
       /** Signals an update is available. */
-      void signal();
+      void signal() noexcept;
 
     private:
       Slot m_slot;
@@ -74,7 +74,7 @@ namespace Details {
   inline Trigger::Trigger(Slot slot)
     : m_slot(std::move(slot)) {}
 
-  inline void Trigger::signal() {
+  inline void Trigger::signal() noexcept {
     m_slot();
   }
 }

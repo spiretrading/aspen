@@ -21,10 +21,6 @@ TEST_SUITE("State") {
     REQUIRE(combine(State::EVALUATED, State::COMPLETE) ==
       State::COMPLETE_EVALUATED);
     REQUIRE(combine(State::EVALUATED, State::EVALUATED) == State::EVALUATED);
-    REQUIRE(set(State::NONE, State::COMPLETE) == State::COMPLETE);
-    REQUIRE(set(State::EVALUATED, State::COMPLETE) ==
-      State::COMPLETE_EVALUATED);
-    REQUIRE(set(State::COMPLETE, State::COMPLETE) == State::COMPLETE);
   }
 
   TEST_CASE("resetting_states") {

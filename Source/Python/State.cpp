@@ -16,6 +16,5 @@ void Aspen::export_state(pybind11::module& module) {
   module.def("has_evaluation", has_evaluation);
   module.def("has_continuation", has_continuation);
   module.def("is_complete", is_complete);
-  module.def("set", set);
   module.def("reset", reset);
 }

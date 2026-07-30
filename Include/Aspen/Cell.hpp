@@ -180,6 +180,7 @@ namespace Aspen {
 
   template<typename T>
   eval_result_t<typename Cell<T>::Type> Cell<T>::eval() const noexcept {
+    auto lock = std::lock_guard(m_mutex);
     return *m_current;
   }
 

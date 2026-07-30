@@ -84,4 +84,15 @@ TEST_SUITE("Weak") {
     REQUIRE(moved.eval() == 10);
     REQUIRE(moved.lock());
   }
+  TEST_CASE("weak_from_a_moved_shared") {
+    auto shared = std::optional(Shared(Queue<int>()));
+    (*shared)->push(5);
+    REQUIRE(shared->commit(0) == State::EVALUATED);
+    REQUIRE(shared->eval() == 5);
+    auto weak = Weak(std::move(*shared));
+    shared = std::nullopt;
+    REQUIRE(weak.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(weak.eval() == 5);
+  }
+
 }
