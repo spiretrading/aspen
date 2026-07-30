@@ -114,11 +114,10 @@ namespace Aspen {
             add((*m_producer)->eval());
           } catch(...) {}
         }
-        if(has_continuation(producer_state)) {
-          return State::CONTINUE;
-        }
         if(is_complete(producer_state)) {
           m_producer = std::nullopt;
+        } else if(has_continuation(producer_state)) {
+          return State::CONTINUE;
         }
       }
       return State::NONE;
@@ -140,15 +139,15 @@ namespace Aspen {
         }
       } else {
         auto child_state = child.m_reactor.commit(sequence);
-        if(has_continuation(child_state)) {
-          state = combine(state, State::CONTINUE);
-        } else if(is_complete(child_state)) {
+        if(is_complete(child_state)) {
           child.m_is_complete = true;
           if(has_evaluation(child_state) || index == m_current) {
             raise_slot(index);
           } else {
             remove(index);
           }
+        } else if(has_continuation(child_state)) {
+          state = combine(state, State::CONTINUE);
         }
         if(has_evaluation(child_state)) {
           state = combine(state, State::EVALUATED);

@@ -83,7 +83,7 @@ namespace Aspen {
             m_children.emplace_back((*m_producer)->eval());
           } catch(...) {}
         }
-        if(has_continuation(producer_state)) {
+        if(has_continuation(producer_state) && !is_complete(producer_state)) {
           return State::CONTINUE;
         }
         if(is_complete(producer_state)) {

@@ -110,10 +110,10 @@ namespace Aspen {
             }
             return m_second->commit(sequence);
           }();
-          if(has_continuation(child_state)) {
-            state = combine(state, State::CONTINUE);
-          } else if(is_complete(child_state)) {
+          if(is_complete(child_state)) {
             m_completions |= 1 << m_position;
+          } else if(has_continuation(child_state)) {
+            state = combine(state, State::CONTINUE);
           }
           if(has_evaluation(child_state)) {
             state = combine(state, State::EVALUATED);

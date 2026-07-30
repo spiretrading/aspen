@@ -71,8 +71,8 @@ namespace Aspen {
       std::unique_ptr<BaseWrapper> m_reactor;
   };
 
-  template<typename R> requires(!std::derived_from<std::remove_cvref_t<R>,
-    Box<reactor_result_t<to_reactor_t<R>>>>)
+  template<typename R> requires(!std::derived_from<
+    std::remove_cvref_t<R>, Box<reactor_result_t<to_reactor_t<R>>>>)
   Box(R&& reactor) -> Box<reactor_result_t<to_reactor_t<R>>>;
 
   /**
