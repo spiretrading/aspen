@@ -2,6 +2,7 @@
 #define ASPEN_VECTOR_SYNC_HPP
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -47,6 +48,13 @@ namespace Details {
        */
       VectorSync(Type& value, std::vector<R> reactors);
 
+      /**
+       * Returns the exception thrown by one of the reactors, or nullptr for
+       * none.
+       * @param index The index of the reactor to check.
+       */
+      std::exception_ptr get_exception(std::size_t index) const noexcept;
+
       State commit(std::uint64_t sequence) noexcept;
       const Type& eval() const noexcept(is_noexcept);
 
@@ -70,6 +78,16 @@ namespace Details {
       }()) {
     if constexpr(!is_noexcept) {
       this->m_has_exception.resize(m_reactors.size());
+    }
+  }
+
+  template<IsReactor R, typename V>
+  std::exception_ptr VectorSync<R, V>::get_exception(
+      std::size_t index) const noexcept {
+    if constexpr(is_noexcept) {
+      return nullptr;
+    } else {
+      return m_reactors.get(index).get_exception();
     }
   }
 

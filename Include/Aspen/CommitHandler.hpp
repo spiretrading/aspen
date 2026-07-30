@@ -161,7 +161,7 @@ namespace Aspen {
         auto index = word * BITS + std::countr_zero(bits);
         bits &= bits - 1;
         auto& child = m_children[index];
-        if(is_complete(child.m_state) || !child.m_flag.is_raised()) {
+        if(is_complete(child.m_state)) {
           continue;
         }
         child.m_flag.clear();
