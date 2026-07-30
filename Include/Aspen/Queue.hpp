@@ -1,5 +1,6 @@
 #ifndef ASPEN_QUEUE_HPP
 #define ASPEN_QUEUE_HPP
+#include <concepts>
 #include <cstdint>
 #include <deque>
 #include <exception>
@@ -52,7 +53,7 @@ namespace Aspen {
        * Brings this reactor to a completion state by throwing an exception.
        * @param exception The exception to throw.
        */
-      template<typename E>
+      template<std::derived_from<std::exception> E>
       void set_complete(const E& exception);
 
       State commit(std::uint64_t sequence) noexcept;
@@ -111,12 +112,13 @@ namespace Aspen {
   template<typename T>
   void Queue<T>::set_complete(std::exception_ptr exception) {
     update([&] {
+      m_is_complete = true;
       m_exception = std::move(exception);
     });
   }
 
   template<typename T>
-  template<typename E>
+  template<std::derived_from<std::exception> E>
   void Queue<T>::set_complete(const E& exception) {
     set_complete(std::make_exception_ptr(exception));
   }

@@ -1,5 +1,6 @@
 #include <exception>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/CommitFlag.hpp"
@@ -148,4 +149,24 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(2) == State::EVALUATED);
     REQUIRE(queue.eval() == 2);
   }
+  TEST_CASE("completing_with_a_convertible_value") {
+    auto queue = Queue<std::string>();
+    queue.set_complete("done");
+    REQUIRE(queue.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(queue.eval() == "done");
+  }
+
+  TEST_CASE("completing_with_a_widening_value") {
+    auto queue = Queue<long>();
+    queue.set_complete(3);
+    REQUIRE(queue.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(queue.eval() == 3);
+  }
+
+  TEST_CASE("completing_with_a_null_exception") {
+    auto queue = Queue<int>();
+    queue.set_complete(std::exception_ptr());
+    REQUIRE(queue.commit(0) == State::COMPLETE);
+  }
+
 }
