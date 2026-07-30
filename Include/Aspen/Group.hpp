@@ -136,13 +136,13 @@ namespace Aspen {
     if(are_children_complete()) {
       state = combine(state, State::COMPLETE);
     }
-    if(m_has_evaluation) {
-      if(m_first && m_current != 0 && is_child_complete(0)) {
-        m_first = std::nullopt;
-      }
-      if(m_second && m_current != 1 && is_child_complete(1)) {
-        m_second = std::nullopt;
-      }
+    if(m_first && is_child_complete(0) &&
+        (!m_has_evaluation || m_current != 0)) {
+      m_first = std::nullopt;
+    }
+    if(m_second && is_child_complete(1) &&
+        (!m_has_evaluation || m_current != 1)) {
+      m_second = std::nullopt;
     }
     return state;
   }

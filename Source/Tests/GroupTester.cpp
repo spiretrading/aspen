@@ -110,6 +110,15 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.eval() == 0);
   }
 
+  TEST_CASE("a_child_completing_without_evaluating_is_released") {
+    auto first = TrackedReactor<int>(1, State::COMPLETE);
+    auto token = first.get_token();
+    auto second = Shared(Queue<int>());
+    auto reactor = group(std::move(first), second);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    REQUIRE(token.expired());
+  }
+
   TEST_CASE("a_completed_child_is_released") {
     auto first = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
     auto token = first.get_token();
