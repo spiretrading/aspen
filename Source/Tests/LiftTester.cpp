@@ -314,6 +314,25 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
+  TEST_CASE("lifting_a_function_returning_an_optional_evaluation") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([] (int value) {
+      return FunctionEvaluation<int>(std::optional(value), State::COMPLETE);
+    }, queue);
+    queue->push(5);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+  }
+
+  TEST_CASE("lifting_a_function_returning_an_empty_optional_evaluation") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([] (int value) {
+      return FunctionEvaluation<int>(std::optional<int>(), State::COMPLETE);
+    }, queue);
+    queue->push(5);
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
   TEST_CASE("a_function_asking_to_be_committed_again") {
     auto queue = Shared(Queue<int>());
     auto count = std::make_shared<int>(0);

@@ -377,7 +377,8 @@ namespace Details {
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(
     std::optional<Type> value, State state)
-    : FunctionEvaluation(std::optional(Maybe(std::move(value))), state) {}
+    : FunctionEvaluation(
+        std::optional<Maybe<Type>>(std::move(value)), state) {}
 
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(State state)
