@@ -130,7 +130,7 @@ namespace Details {
 
     private:
       template<IsReactor> friend class Shared;
-      template<typename> friend class Weak;
+      template<IsReactor> friend class Weak;
       std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
       std::shared_ptr<Reactor> m_reactor;
       Details::Sequence m_last_evaluation;

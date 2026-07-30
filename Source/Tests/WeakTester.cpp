@@ -1,5 +1,8 @@
 #include <optional>
+#include <utility>
 #include <doctest/doctest.h>
+#include "Aspen/Box.hpp"
+#include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Weak.hpp"
@@ -39,5 +42,46 @@ TEST_SUITE("Weak") {
     s2 = std::nullopt;
     REQUIRE(s3.commit(2) == State::COMPLETE);
     REQUIRE(s3.eval() == 10);
+  }
+
+  TEST_CASE("a_reactor_that_cannot_throw") {
+    auto shared = std::optional(Shared(Cell(1)));
+    auto weak = Weak(*shared);
+    REQUIRE(decltype(weak)::is_noexcept);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
+    REQUIRE(weak.eval() == 1);
+    (*shared)->set(2);
+    REQUIRE(weak.commit(1) == State::EVALUATED);
+    REQUIRE(weak.eval() == 2);
+    shared = std::nullopt;
+    REQUIRE(weak.commit(2) == State::COMPLETE);
+    REQUIRE(weak.eval() == 2);
+  }
+
+  TEST_CASE("locking_a_weak") {
+    auto shared = std::optional(Shared(Queue<int>()));
+    auto weak = Weak(*shared);
+    auto locked = weak.lock();
+    REQUIRE(locked);
+    (*locked)->push(5);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
+    REQUIRE(weak.eval() == 5);
+    locked = std::nullopt;
+    shared = std::nullopt;
+    REQUIRE(!weak.lock());
+  }
+
+  TEST_CASE("copying_and_moving_a_weak") {
+    auto shared = std::optional(Shared(Queue<int>()));
+    auto weak = Weak(*shared);
+    (*shared)->push(5);
+    auto copy = weak;
+    REQUIRE(copy.commit(0) == State::EVALUATED);
+    REQUIRE(copy.eval() == 5);
+    auto moved = std::move(copy);
+    (*shared)->push(10);
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 10);
+    REQUIRE(moved.lock());
   }
 }

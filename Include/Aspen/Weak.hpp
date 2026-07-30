@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 #include "Aspen/CommitFlag.hpp"
+#include "Aspen/Reactor.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
@@ -14,12 +16,20 @@ namespace Aspen {
    * Implements a weak reference to an existing shared reactor.
    * @param <R> The type of reactor to observe.
    */
-  template<typename R>
+  template<IsReactor R>
   class Weak {
     public:
+
+      /** The type of reactor being observed. */
       using Reactor = R;
+
+      /** The type to evaluate to. */
       using Type = reactor_result_t<Reactor>;
-      using Result = decltype(std::declval<Reactor>().eval());
+
+      /** The type returned by an evaluation. */
+      using Result = decltype(std::declval<Reactor&>().eval());
+
+      /** Whether this reactor's eval is noexcept. */
       static constexpr auto is_noexcept = is_noexcept_reactor_v<Reactor>;
 
       /**
@@ -29,16 +39,13 @@ namespace Aspen {
       explicit Weak(Shared<Reactor> reactor) noexcept;
 
       Weak(const Weak& weak) noexcept;
-
       Weak(Weak&& weak) noexcept;
-
       ~Weak();
 
       /** Returns a new Shared reactor to the reactor being observed. */
       std::optional<Shared<Reactor>> lock() const noexcept;
 
       State commit(std::uint64_t sequence) noexcept;
-
       Result eval() const noexcept(is_noexcept);
 
     private:
@@ -49,17 +56,17 @@ namespace Aspen {
       void set_parent(CommitFlag* parent) noexcept;
   };
 
-  template<typename R>
+  template<IsReactor R>
   Weak<R>::Weak(Shared<Reactor> reactor) noexcept
     : m_evaluator(std::move(reactor.m_evaluator)),
       m_parent(nullptr) {}
 
-  template<typename R>
+  template<IsReactor R>
   Weak<R>::Weak(const Weak& weak) noexcept
     : m_evaluator(weak.m_evaluator),
       m_parent(nullptr) {}
 
-  template<typename R>
+  template<IsReactor R>
   Weak<R>::Weak(Weak&& weak) noexcept
       : m_evaluator(std::move(weak.m_evaluator)),
         m_last_evaluation(weak.m_last_evaluation),
@@ -67,26 +74,26 @@ namespace Aspen {
     weak.m_parent = nullptr;
   }
 
-  template<typename R>
+  template<IsReactor R>
   Weak<R>::~Weak() {
-    if(m_evaluator != nullptr) {
+    if(m_evaluator) {
       set_parent(nullptr);
     }
   }
 
-  template<typename R>
+  template<IsReactor R>
   std::optional<Shared<R>> Weak<R>::lock() const noexcept {
     auto reactor = m_evaluator->m_reactor.lock();
-    if(reactor == nullptr) {
+    if(!reactor) {
       return std::nullopt;
     }
     return Shared(m_evaluator, std::move(reactor));
   }
 
-  template<typename R>
+  template<IsReactor R>
   State Weak<R>::commit(std::uint64_t sequence) noexcept {
     auto reactor = m_evaluator->m_reactor.lock();
-    if(reactor == nullptr) {
+    if(!reactor) {
       if(m_last_evaluation < m_evaluator->m_state->m_last_evaluation) {
         return State::COMPLETE_EVALUATED;
       }
@@ -101,16 +108,16 @@ namespace Aspen {
     return state;
   }
 
-  template<typename R>
+  template<IsReactor R>
   typename Weak<R>::Result Weak<R>::eval() const noexcept(is_noexcept) {
-    if(m_evaluator->m_evaluation.has_value()) {
-      return *m_evaluator->m_evaluation;
+    if(m_evaluator->m_evaluation) {
+      return **m_evaluator->m_evaluation;
     }
     auto reactor = m_evaluator->m_reactor.lock();
     return reactor->eval();
   }
 
-  template<typename R>
+  template<IsReactor R>
   void Weak<R>::set_parent(CommitFlag* parent) noexcept {
     auto& flag = m_evaluator->m_state->m_flag;
     if(parent == &flag) {
@@ -119,11 +126,11 @@ namespace Aspen {
     if(parent == m_parent) {
       return;
     }
-    if(m_parent != nullptr) {
+    if(m_parent) {
       flag.remove_parent(*m_parent);
     }
     m_parent = parent;
-    if(m_parent != nullptr) {
+    if(m_parent) {
       flag.add_parent(*m_parent);
     }
   }
