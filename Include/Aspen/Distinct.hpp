@@ -1,6 +1,7 @@
 #ifndef ASPEN_DISTINCT_HPP
 #define ASPEN_DISTINCT_HPP
 #include <concepts>
+#include <functional>
 #include <unordered_set>
 #include <utility>
 #include "Aspen/Lift.hpp"
@@ -16,7 +17,10 @@ namespace Aspen {
    * @return A reactor evaluating to the distinct values of the <i>source</i>.
    */
   template<typename Source> requires IsReactor<to_reactor_t<Source>> &&
-    std::equality_comparable<reactor_result_t<Source>>
+    std::equality_comparable<reactor_result_t<Source>> &&
+    requires(const reactor_result_t<Source>& value) {
+      std::hash<reactor_result_t<Source>>()(value);
+    }
   auto distinct(Source&& source) {
     using Type = reactor_result_t<Source>;
     return lift([production = std::unordered_set<Type>()] (

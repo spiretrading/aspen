@@ -2,6 +2,7 @@
 #define ASPEN_RANGE_HPP
 #include <algorithm>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include "Aspen/Constant.hpp"
 #include "Aspen/Lift.hpp"
@@ -26,7 +27,8 @@ namespace Aspen {
     IsReactor<to_reactor_t<S>> && IsReactor<to_reactor_t<E>> &&
     IsReactor<to_reactor_t<T>>
   auto range(S&& start, E&& stop, T&& step) {
-    using Type = reactor_result_t<S>;
+    using Type =
+      std::common_type_t<reactor_result_t<S>, reactor_result_t<T>>;
     auto start_reactor = Shared(std::forward<S>(start));
     auto start_updates = StateReactor(start_reactor);
     auto stop_reactor = Shared(std::forward<E>(stop));
@@ -37,12 +39,12 @@ namespace Aspen {
         const reactor_result_t<S>& start, State start_state,
         const reactor_result_t<E>& end, State end_state,
         const reactor_result_t<T>& step, State step_state) mutable noexcept {
-      auto current = [&] {
+      auto current = [&] () -> Type {
         if(!value) {
           return start;
         }
         auto increment = *value + step;
-        return std::max(start, increment);
+        return std::max<Type>(start, increment);
       }();
       if(current >= end) {
         if(is_complete(end_state)) {

@@ -97,9 +97,6 @@ namespace Aspen {
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   State Group<A, B>::commit(std::uint64_t sequence) noexcept {
-    if(m_position != m_current && is_child_complete(m_position)) {
-      m_position = next_position();
-    }
     auto state = State::NONE;
     if(!are_children_complete()) {
       auto start = m_position;

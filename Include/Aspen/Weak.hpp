@@ -41,6 +41,8 @@ namespace Aspen {
       Weak(const Weak& weak) noexcept;
       Weak(Weak&& weak) noexcept;
       ~Weak();
+      Weak& operator =(const Weak& weak) noexcept;
+      Weak& operator =(Weak&& weak) noexcept;
 
       /** Returns a new Shared reactor to the reactor being observed. */
       std::optional<Shared<Reactor>> lock() const noexcept;
@@ -79,6 +81,34 @@ namespace Aspen {
     if(m_evaluator) {
       set_parent(nullptr);
     }
+  }
+
+  template<IsReactor R>
+  Weak<R>& Weak<R>::operator =(const Weak& weak) noexcept {
+    if(this == &weak) {
+      return *this;
+    }
+    if(m_evaluator) {
+      set_parent(nullptr);
+    }
+    m_evaluator = weak.m_evaluator;
+    m_last_evaluation = Details::Sequence();
+    return *this;
+  }
+
+  template<IsReactor R>
+  Weak<R>& Weak<R>::operator =(Weak&& weak) noexcept {
+    if(this == &weak) {
+      return *this;
+    }
+    if(m_evaluator) {
+      set_parent(nullptr);
+    }
+    m_evaluator = std::move(weak.m_evaluator);
+    m_last_evaluation = weak.m_last_evaluation;
+    m_parent = weak.m_parent;
+    weak.m_parent = nullptr;
+    return *this;
   }
 
   template<IsReactor R>

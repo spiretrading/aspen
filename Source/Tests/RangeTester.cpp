@@ -123,4 +123,18 @@ TEST_SUITE("Range") {
     end_queue->set_complete();
     REQUIRE(reactor.commit(6) == State::COMPLETE);
   }
+  TEST_CASE("a_step_wider_than_the_start") {
+    auto reactor = range(0, 2.5, 0.5);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0.5);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1.0);
+    REQUIRE(reactor.commit(3) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1.5);
+    REQUIRE(reactor.commit(4) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 2.0);
+  }
+
 }

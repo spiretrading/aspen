@@ -95,4 +95,21 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
   }
 
+  TEST_CASE("assigning_a_weak") {
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    first->push(1);
+    second->push(2);
+    auto weak = Weak(first);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
+    REQUIRE(weak.eval() == 1);
+    weak = Weak(second);
+    REQUIRE(weak.commit(1) == State::EVALUATED);
+    REQUIRE(weak.eval() == 2);
+    auto moved = Weak(first);
+    weak = std::move(moved);
+    REQUIRE(weak.commit(2) == State::EVALUATED);
+    REQUIRE(weak.eval() == 1);
+  }
+
 }

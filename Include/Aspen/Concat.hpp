@@ -60,7 +60,8 @@ namespace Aspen {
    * @param producer The reactor producing the reactors to evaluate to.
    * @return A reactor evaluating to every value the <i>producer</i> produces.
    */
-  template<typename R> requires IsReactor<std::remove_cvref_t<R>>
+  template<typename R> requires IsReactor<std::remove_cvref_t<R>> &&
+    IsReactor<reactor_result_t<R>>
   auto concat(R&& producer) {
     return Concat(std::forward<R>(producer));
   }

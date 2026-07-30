@@ -12,7 +12,7 @@ namespace Aspen {
 
   /**
    * Implements a reactor that unconditionally throws.
-   * @param <T> The type of reactor to evaluate to.
+   * @param <T> The type of the value to evaluate to.
    */
   template<typename T>
   class Throw {
@@ -43,7 +43,7 @@ namespace Aspen {
 
   /**
    * Returns a reactor that always throws an exception.
-   * @param <T> The type of reactor to evaluate to.
+   * @param <T> The type of the value to evaluate to.
    * @param exception The exception to throw.
    * @return A reactor that throws the <i>exception</i>.
    */
