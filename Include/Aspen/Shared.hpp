@@ -40,6 +40,7 @@ namespace Details {
   struct SharedEvaluator {
     std::shared_ptr<SharedState> m_state;
     std::weak_ptr<R> m_reactor;
+    Sequence m_sequence;
     std::optional<try_maybe_t<reactor_result_t<R>, !is_noexcept_reactor_v<R>>>
       m_evaluation;
 
@@ -142,6 +143,7 @@ namespace Details {
 
       Shared(std::shared_ptr<Details::SharedEvaluator<Reactor>> evaluator,
         std::shared_ptr<Reactor> reactor);
+      void release() noexcept;
       void set_parent(CommitFlag* parent) noexcept;
   };
 
@@ -231,13 +233,8 @@ namespace Details {
 
   template<IsReactor R>
   Shared<R>::~Shared() {
-    if(!m_evaluator) {
-      return;
-    }
-    set_parent(nullptr);
-    if(m_reactor.use_count() == 1 &&
-        m_evaluator->m_state->m_last_evaluation.m_is_set) {
-      try_assign(m_evaluator->m_evaluation, *m_reactor);
+    if(m_evaluator) {
+      release();
     }
   }
 
@@ -283,7 +280,7 @@ namespace Details {
       return *this;
     }
     if(m_evaluator) {
-      set_parent(nullptr);
+      release();
     }
     m_evaluator = shared.m_evaluator;
     m_reactor = shared.m_reactor;
@@ -297,7 +294,7 @@ namespace Details {
       return *this;
     }
     if(m_evaluator) {
-      set_parent(nullptr);
+      release();
     }
     m_evaluator = std::move(shared.m_evaluator);
     m_reactor = std::move(shared.m_reactor);
@@ -311,8 +308,8 @@ namespace Details {
   State Shared<R>::commit_state(std::uint64_t sequence, Reactor& reactor,
       Details::SharedEvaluator<Reactor>& evaluator,
       Details::Sequence& last_evaluation, CommitFlag* current) {
-    if(evaluator.m_state->m_sequence.m_is_set &&
-        sequence <= evaluator.m_state->m_sequence.m_value) {
+    if(evaluator.m_sequence.m_is_set &&
+        sequence <= evaluator.m_sequence.m_value) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         return combine(evaluator.m_state->m_state, State::EVALUATED);
@@ -320,12 +317,12 @@ namespace Details {
       return evaluator.m_state->m_state;
     }
     auto& flag = evaluator.m_state->m_flag;
-    if(current != &flag && !flag.is_raised() &&
-        evaluator.m_state->m_sequence.m_is_set) {
+    if(current != &flag && !flag.is_raised() && evaluator.m_sequence.m_is_set) {
       auto skipped = reset(
         evaluator.m_state->m_state, combine(State::EVALUATED, State::CONTINUE));
       evaluator.m_state->m_state = skipped;
       evaluator.m_state->m_sequence.set(sequence);
+      evaluator.m_sequence.set(sequence);
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         return combine(skipped, State::EVALUATED);
@@ -340,6 +337,7 @@ namespace Details {
     if(has_continuation(reactor_state)) {
       flag.raise();
     }
+    evaluator.m_sequence.set(sequence);
     if(evaluator.m_state->m_sequence.is_at(sequence)) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
@@ -366,6 +364,15 @@ namespace Details {
     : m_evaluator(std::move(evaluator)),
       m_reactor(std::move(reactor)),
       m_parent(nullptr) {}
+
+  template<IsReactor R>
+  void Shared<R>::release() noexcept {
+    set_parent(nullptr);
+    if(m_reactor.use_count() == 1 &&
+        m_evaluator->m_state->m_last_evaluation.m_is_set) {
+      try_assign(m_evaluator->m_evaluation, *m_reactor);
+    }
+  }
 
   template<IsReactor R>
   void Shared<R>::set_parent(CommitFlag* parent) noexcept {

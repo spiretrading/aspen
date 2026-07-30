@@ -95,6 +95,30 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
   }
 
+  TEST_CASE("copy_assigning_an_observed_shared") {
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    auto weak = Weak(first);
+    first->push(5);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
+    REQUIRE(weak.eval() == 5);
+    first = second;
+    REQUIRE(weak.commit(1) == State::COMPLETE);
+    REQUIRE(weak.eval() == 5);
+  }
+
+  TEST_CASE("move_assigning_an_observed_shared") {
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    auto weak = Weak(first);
+    first->push(5);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
+    REQUIRE(weak.eval() == 5);
+    first = std::move(second);
+    REQUIRE(weak.commit(1) == State::COMPLETE);
+    REQUIRE(weak.eval() == 5);
+  }
+
   TEST_CASE("assigning_a_weak") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());

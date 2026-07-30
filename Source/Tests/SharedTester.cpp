@@ -6,8 +6,10 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Shared") {
   TEST_CASE("shared_chain") {
@@ -115,6 +117,16 @@ TEST_SUITE("Shared") {
     a.commit(3);
     REQUIRE(b.commit(3) == State::COMPLETE_EVALUATED);
     REQUIRE(b.eval() == 321);
+  }
+
+  TEST_CASE("a_boxed_shared_caches_its_own_evaluation") {
+    auto reactor = Shared(ByValueReactor(5));
+    auto first = shared_box(reactor);
+    auto second = shared_box(reactor);
+    REQUIRE(first.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(first.eval() == 5);
+    REQUIRE(second.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(second.eval() == 5);
   }
 
   TEST_CASE("copy_assigning_to_a_moved_from_shared") {
