@@ -79,6 +79,30 @@ TEST_SUITE("When") {
     REQUIRE(reactor.eval() == 9);
   }
 
+  TEST_CASE("a_series_evaluating_by_value") {
+    auto reactor = When(Constant(true), ByValueReactor(CountedValue(1)));
+    test_evaluation_lifetime(reactor);
+  }
+
+  TEST_CASE("a_series_evaluating_by_value_after_the_condition_turns_true") {
+    auto condition = Shared(Queue<bool>());
+    auto reactor = When(condition, ByValueReactor(CountedValue(1)));
+    REQUIRE(reactor.commit(0) == State::NONE);
+    condition->push(true);
+    REQUIRE(has_evaluation(reactor.commit(1)));
+    CountedValue::reset_counts();
+    [[maybe_unused]] const auto& value = reactor.eval();
+    REQUIRE(CountedValue::get_destructions() == 0);
+  }
+
+  TEST_CASE("a_series_evaluating_by_reference_does_not_copy") {
+    auto reactor = When(Constant(true), Constant(CountedValue(1)));
+    REQUIRE(has_evaluation(reactor.commit(0)));
+    CountedValue::reset_counts();
+    [[maybe_unused]] const auto& value = reactor.eval();
+    REQUIRE(CountedValue::get_copies() == 0);
+  }
+
   TEST_CASE("a_completed_condition_is_released") {
     auto condition = TrackedReactor<bool>(true, State::COMPLETE_EVALUATED);
     auto token = condition.get_token();

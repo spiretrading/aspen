@@ -25,8 +25,11 @@ namespace Aspen {
       /** The type to evaluate to. */
       using Type = reactor_result_t<T>;
 
+      /** The type returned by an evaluation. */
+      using Result = common_evaluation_t<T>;
+
       /** Whether this reactor's eval is noexcept. */
-      static constexpr auto is_noexcept = is_noexcept_reactor_v<T>;
+      static constexpr auto is_noexcept = is_noexcept_evaluation_v<T>;
 
       /**
        * Constructs a When reactor.
@@ -39,7 +42,7 @@ namespace Aspen {
       When(CF&& condition, TF&& series);
 
       State commit(std::uint64_t sequence) noexcept;
-      eval_result_t<Type> eval() const noexcept(is_noexcept);
+      Result eval() const noexcept(is_noexcept);
 
     private:
       std::optional<Branch<C>> m_condition;
@@ -120,8 +123,7 @@ namespace Aspen {
 
   template<IsReactor C, IsReactor T> requires
     std::convertible_to<reactor_result_t<C>, bool>
-  eval_result_t<typename When<C, T>::Type> When<C, T>::eval()
-      const noexcept(is_noexcept) {
+  typename When<C, T>::Result When<C, T>::eval() const noexcept(is_noexcept) {
     return m_series->eval();
   }
 }
