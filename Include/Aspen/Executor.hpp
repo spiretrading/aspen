@@ -56,7 +56,7 @@ namespace Aspen {
       Box<void> m_reactor;
       std::atomic_bool m_is_aborted;
       bool m_is_complete;
-      bool m_has_update;
+      std::atomic_bool m_has_update;
 
       void on_update();
       bool is_aborted() const noexcept;
@@ -86,6 +86,7 @@ namespace Aspen {
   }
 
   inline State Executor::commit() {
+    m_has_update.store(false, std::memory_order_release);
     m_flag.clear();
     auto scope = CommitFlagScope(m_flag);
     auto state = m_reactor.commit(m_sequence);
@@ -133,7 +134,6 @@ namespace Aspen {
         m_update_condition.wait(lock, [&] {
           return m_has_update || is_aborted();
         });
-        m_has_update = false;
       }
     }
     {

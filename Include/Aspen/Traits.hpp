@@ -1,6 +1,7 @@
 #ifndef ASPEN_TRAITS_HPP
 #define ASPEN_TRAITS_HPP
 #include <concepts>
+#include <exception>
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -107,8 +108,14 @@ namespace Aspen {
       } else {
         value = reactor.eval();
       }
-    } else {
+    } else if constexpr(std::is_same_v<reactor_result_t<R>, void>) {
       value = try_call([&] { return reactor.eval(); });
+    } else {
+      try {
+        value = reactor.eval();
+      } catch(...) {
+        value = std::current_exception();
+      }
     }
   }
 }

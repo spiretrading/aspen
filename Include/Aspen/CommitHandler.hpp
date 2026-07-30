@@ -2,6 +2,7 @@
 #define ASPEN_COMMIT_HANDLER_HPP
 #include <atomic>
 #include <bit>
+#include <concepts>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -60,7 +61,8 @@ namespace Aspen {
         State m_state;
         bool m_has_evaluation;
 
-        explicit Child(R reactor);
+        template<typename U> requires std::constructible_from<R, U>
+        explicit Child(U&& reactor);
         Child(Child&& child) noexcept;
       };
       std::unique_ptr<std::atomic_uint64_t[]> m_raised;
@@ -76,8 +78,9 @@ namespace Aspen {
   };
 
   template<IsReactor R>
-  CommitHandler<R>::Child::Child(R reactor)
-    : m_reactor(std::move(reactor)),
+  template<typename U> requires std::constructible_from<R, U>
+  CommitHandler<R>::Child::Child(U&& reactor)
+    : m_reactor(std::forward<U>(reactor)),
       m_state(State::NONE),
       m_has_evaluation(false) {}
 

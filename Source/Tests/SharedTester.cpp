@@ -1,3 +1,4 @@
+#include <optional>
 #include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
@@ -117,6 +118,14 @@ TEST_SUITE("Shared") {
     a.commit(3);
     REQUIRE(b.commit(3) == State::COMPLETE_EVALUATED);
     REQUIRE(b.eval() == 321);
+  }
+
+  TEST_CASE("destroying_an_unobserved_shared_does_not_evaluate") {
+    auto reactor = std::optional(Shared(Constant(CountedValue(1))));
+    REQUIRE(has_evaluation(reactor->commit(0)));
+    CountedValue::reset_counts();
+    reactor = std::nullopt;
+    REQUIRE(CountedValue::get_copies() == 0);
   }
 
   TEST_CASE("a_boxed_shared_caches_its_own_evaluation") {
