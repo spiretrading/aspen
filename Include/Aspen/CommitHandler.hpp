@@ -69,6 +69,7 @@ namespace Aspen {
       std::size_t m_word_count;
       std::size_t m_completion_count;
       std::size_t m_evaluation_count;
+      bool m_is_complete;
       bool m_is_initializing;
       bool m_is_linked;
 
@@ -93,6 +94,7 @@ namespace Aspen {
       : m_word_count((children.size() + BITS - 1) / BITS),
         m_completion_count(0),
         m_evaluation_count(0),
+        m_is_complete(false),
         m_is_initializing(true),
         m_is_linked(false) {
     m_children.reserve(children.size());
@@ -110,6 +112,7 @@ namespace Aspen {
       m_word_count(handler.m_word_count),
       m_completion_count(handler.m_completion_count),
       m_evaluation_count(handler.m_evaluation_count),
+      m_is_complete(handler.m_is_complete),
       m_is_initializing(handler.m_is_initializing),
       m_is_linked(false) {}
 
@@ -122,6 +125,7 @@ namespace Aspen {
     m_word_count = handler.m_word_count;
     m_completion_count = handler.m_completion_count;
     m_evaluation_count = handler.m_evaluation_count;
+    m_is_complete = handler.m_is_complete;
     m_is_initializing = handler.m_is_initializing;
     m_is_linked = false;
     return *this;
@@ -140,7 +144,8 @@ namespace Aspen {
 
   template<IsReactor R>
   State CommitHandler<R>::commit(std::uint64_t sequence) noexcept {
-    if(m_children.empty()) {
+    if(m_children.empty() || m_is_complete) {
+      m_evaluated.clear();
       return State::COMPLETE;
     }
     if(!m_is_linked) {
@@ -175,6 +180,7 @@ namespace Aspen {
         if(is_complete(child.m_state)) {
           ++m_completion_count;
           if(!child.m_has_evaluation) {
+            m_is_complete = true;
             return State::COMPLETE;
           }
         } else if(has_continuation(child.m_state)) {
@@ -193,6 +199,7 @@ namespace Aspen {
       state = combine(state, State::EVALUATED);
     }
     if(m_completion_count == m_children.size()) {
+      m_is_complete = true;
       state = combine(state, State::COMPLETE);
     } else if(has_continue) {
       state = combine(state, State::CONTINUE);
