@@ -116,4 +116,24 @@ TEST_SUITE("Shared") {
     REQUIRE(b.commit(3) == State::COMPLETE_EVALUATED);
     REQUIRE(b.eval() == 321);
   }
+
+  TEST_CASE("copy_assigning_to_a_moved_from_shared") {
+    auto source = Shared(Queue<int>());
+    auto moved = std::move(source);
+    source = moved;
+    moved->push(5);
+    REQUIRE(source.commit(0) == State::EVALUATED);
+    REQUIRE(source.eval() == 5);
+  }
+
+  TEST_CASE("move_assigning_to_a_moved_from_shared") {
+    auto source = Shared(Queue<int>());
+    auto moved = std::move(source);
+    auto other = Shared(Queue<int>());
+    source = std::move(other);
+    source->push(7);
+    REQUIRE(source.commit(0) == State::EVALUATED);
+    REQUIRE(source.eval() == 7);
+  }
+
 }

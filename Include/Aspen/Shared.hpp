@@ -282,7 +282,9 @@ namespace Details {
     if(this == &shared) {
       return *this;
     }
-    set_parent(nullptr);
+    if(m_evaluator) {
+      set_parent(nullptr);
+    }
     m_evaluator = shared.m_evaluator;
     m_reactor = shared.m_reactor;
     m_last_evaluation = Details::Sequence();
@@ -294,7 +296,9 @@ namespace Details {
     if(this == &shared) {
       return *this;
     }
-    set_parent(nullptr);
+    if(m_evaluator) {
+      set_parent(nullptr);
+    }
     m_evaluator = std::move(shared.m_evaluator);
     m_reactor = std::move(shared.m_reactor);
     m_last_evaluation = shared.m_last_evaluation;
