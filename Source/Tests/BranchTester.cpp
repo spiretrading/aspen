@@ -4,6 +4,7 @@
 #include <doctest/doctest.h>
 #include "Aspen/Branch.hpp"
 #include "Aspen/Cell.hpp"
+#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Shared.hpp"
 
@@ -114,6 +115,25 @@ TEST_SUITE("Branch") {
     REQUIRE(branch.commit(4) == State::EVALUATED);
     REQUIRE(branch->eval() == 3);
     REQUIRE(branch.commit(5) == State::NONE);
+  }
+
+  TEST_CASE("a_branch_reports_to_the_flag_it_was_committed_under") {
+    auto cell = Shared(Cell(1));
+    auto branch = Branch(cell);
+    auto first = CommitFlag();
+    {
+      auto scope = CommitFlagScope(first);
+      REQUIRE(branch.commit(0) == State::EVALUATED);
+    }
+    cell->set(2);
+    auto second = CommitFlag();
+    {
+      auto scope = CommitFlagScope(second);
+      REQUIRE(branch.commit(1) == State::EVALUATED);
+    }
+    second.clear();
+    cell->set(3);
+    REQUIRE(second.is_raised());
   }
 
   TEST_CASE("copying_a_branch_preserves_propagation") {

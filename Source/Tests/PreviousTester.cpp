@@ -2,6 +2,7 @@
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
+#include "Aspen/Distinct.hpp"
 #include "Aspen/Previous.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
@@ -86,6 +87,19 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
+
+  TEST_CASE("a_source_that_stops_evaluating") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = previous(distinct(queue));
+    queue->push(5);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    queue->push(6);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    queue->push(6);
+    REQUIRE(reactor.commit(2) == State::NONE);
+  }
+
   TEST_CASE("completing_with_the_last_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);

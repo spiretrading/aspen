@@ -1,3 +1,4 @@
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <doctest/doctest.h>
@@ -90,6 +91,35 @@ TEST_SUITE("Fold") {
     queue->set_complete(std::runtime_error("fail"));
     REQUIRE(f.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(f.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("fold_a_series_that_fails_before_producing") {
+    auto queue = Shared(Queue<int>());
+    auto f = fold(Accumulator(), queue);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(f.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(f.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("fold_an_evaluator_asking_to_be_committed_again") {
+    auto queue = Shared(Queue<int>());
+    auto left = make_fold_argument<int>();
+    auto right = make_fold_argument<int>();
+    auto count = std::make_shared<int>(0);
+    auto f = Fold(Lift([count] (const auto& left, const auto& right) {
+      ++*count;
+      if(*count == 1) {
+        return FunctionEvaluation<int>(*left + *right, State::CONTINUE);
+      }
+      return FunctionEvaluation<int>(100);
+    }, left, right), left, right, queue);
+    queue->push(1);
+    REQUIRE(f.commit(0) == State::NONE);
+    queue->push(2);
+    REQUIRE(f.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(f.eval() == 3);
+    REQUIRE(f.commit(2) == State::EVALUATED);
+    REQUIRE(f.eval() == 100);
   }
 
   TEST_CASE("fold_does_not_continue_when_its_evaluator_completes") {

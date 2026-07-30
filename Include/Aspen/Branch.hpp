@@ -54,7 +54,6 @@ namespace Aspen {
       [[no_unique_address]]
       Reactor m_reactor;
       State m_state;
-      bool m_is_linked;
   };
 
   template<typename R>
@@ -62,27 +61,23 @@ namespace Aspen {
 
   template<IsReactor R>
   Branch<R>::Branch()
-    : m_state(State::NONE),
-      m_is_linked(false) {}
+    : m_state(State::NONE) {}
 
   template<IsReactor R>
   template<typename A> requires std::constructible_from<R, A>
   Branch<R>::Branch(A&& reactor)
     : m_reactor(std::forward<A>(reactor)),
-      m_state(State::NONE),
-      m_is_linked(false) {}
+      m_state(State::NONE) {}
 
   template<IsReactor R>
   Branch<R>::Branch(const Branch& branch)
     : m_reactor(branch.m_reactor),
-      m_state(branch.m_state),
-      m_is_linked(false) {}
+      m_state(branch.m_state) {}
 
   template<IsReactor R>
   Branch<R>::Branch(Branch&& branch) noexcept
     : m_reactor(std::move(branch.m_reactor)),
-      m_state(branch.m_state),
-      m_is_linked(false) {}
+      m_state(branch.m_state) {}
 
   template<IsReactor R>
   void Branch<R>::set_slot(
@@ -102,10 +97,7 @@ namespace Aspen {
 
   template<IsReactor R>
   State Branch<R>::commit(std::uint64_t sequence) noexcept {
-    if(!m_is_linked) {
-      m_is_linked = true;
-      m_flag.set_parent(CommitFlag::get_current());
-    }
+    m_flag.set_parent(CommitFlag::get_current());
     if(!m_flag.is_raised()) {
       return reset(m_state, combine(State::EVALUATED, State::CONTINUE));
     }

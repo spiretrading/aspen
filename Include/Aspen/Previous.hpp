@@ -45,6 +45,9 @@ namespace Aspen {
         }
         return std::move(*previous);
       }
+      if(!has_evaluation(state)) {
+        return State::NONE;
+      }
       if(!previous) {
         previous.emplace(value);
         return State::NONE;

@@ -76,6 +76,7 @@ namespace Aspen {
       S m_series;
       Maybe<Type> m_value;
       bool m_has_value;
+      bool m_has_continuation;
   };
 
   template<typename E, typename S>
@@ -163,22 +164,27 @@ namespace Aspen {
       m_left(std::move(left)),
       m_right(std::move(right)),
       m_series(std::forward<SF>(series)),
-      m_has_value(false) {}
+      m_has_value(false),
+      m_has_continuation(false) {}
 
   template<IsReactor E, IsReactor S>
   State Fold<E, S>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto series_state = m_series.commit(sequence);
-    if(has_evaluation(series_state)) {
+    if(has_evaluation(series_state) || m_has_continuation) {
       if(!m_has_value) {
-        if(!is_complete(series_state)) {
-          m_value = try_call([&] { return m_series.eval(); });
-          m_has_value = true;
+        m_value = try_call([&] { return m_series.eval(); });
+        m_has_value = true;
+        if(is_complete(series_state) && m_value.has_exception()) {
+          state = State::EVALUATED;
         }
       } else {
-        m_left->update(m_value);
-        m_right->update(try_call([&] { return m_series.eval(); }));
+        if(has_evaluation(series_state)) {
+          m_left->update(m_value);
+          m_right->update(try_call([&] { return m_series.eval(); }));
+        }
         state = m_evaluator.commit(sequence);
+        m_has_continuation = has_continuation(state);
         if(has_evaluation(state)) {
           m_value = try_call([&] { return m_evaluator.eval(); });
         }
