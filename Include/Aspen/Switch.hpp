@@ -20,8 +20,7 @@ namespace Aspen {
    *            commit/evaluate.
    * @param <S> The type of reactor to commit/evaluate to based on the toggle.
    */
-  template<IsReactor T, IsReactor S> requires
-    std::convertible_to<reactor_result_t<T>, bool>
+  template<IsReactorOf<bool> T, IsReactor S>
   class Switch {
     public:
 
@@ -66,14 +65,13 @@ namespace Aspen {
    * @return A reactor evaluating to the <i>series</i> while the <i>toggle</i>
    *         evaluates to <code>true</code>.
    */
-  template<typename T, typename S> requires IsReactor<to_reactor_t<T>> &&
-    IsReactor<to_reactor_t<S>>
+  template<typename T, typename S> requires
+    IsReactorOf<to_reactor_t<T>, bool> && IsReactor<to_reactor_t<S>>
   auto switch_(T&& toggle, S&& series) {
     return Switch(std::forward<T>(toggle), std::forward<S>(series));
   }
 
-  template<IsReactor T, IsReactor S> requires
-    std::convertible_to<reactor_result_t<T>, bool>
+  template<IsReactorOf<bool> T, IsReactor S>
   template<typename TF, typename SF> requires
     std::constructible_from<T, TF> && std::constructible_from<S, SF>
   Switch<T, S>::Switch(TF&& toggle, SF&& series)
@@ -83,8 +81,7 @@ namespace Aspen {
       m_has_evaluation(false),
       m_is_on(false) {}
 
-  template<IsReactor T, IsReactor S> requires
-    std::convertible_to<reactor_result_t<T>, bool>
+  template<IsReactorOf<bool> T, IsReactor S>
   State Switch<T, S>::commit(std::uint64_t sequence) noexcept {
     auto was_off = !m_is_on;
     auto toggle_state = State::NONE;
@@ -127,8 +124,7 @@ namespace Aspen {
     return state;
   }
 
-  template<IsReactor T, IsReactor S> requires
-    std::convertible_to<reactor_result_t<T>, bool>
+  template<IsReactorOf<bool> T, IsReactor S>
   eval_result_t<typename Switch<T, S>::Type> Switch<T, S>::eval()
       const noexcept(is_noexcept) {
     return *m_value;

@@ -17,8 +17,7 @@ namespace Aspen {
    * @param <C> The type of reactor used as the condition.
    * @param <T> The type of reactor to evaluate to.
    */
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   class Until {
     public:
 
@@ -60,13 +59,12 @@ namespace Aspen {
    *         <i>condition</i> is reached.
    */
   template<typename C, typename T> requires
-    IsReactor<to_reactor_t<C>> && IsReactor<to_reactor_t<T>>
+    IsReactorOf<to_reactor_t<C>, bool> && IsReactor<to_reactor_t<T>>
   auto until(C&& condition, T&& series) {
     return Until(std::forward<C>(condition), std::forward<T>(series));
   }
 
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   template<typename CF, typename TF> requires
     std::constructible_from<C, CF> && std::constructible_from<T, TF>
   Until<C, T>::Until(CF&& condition, TF&& series)
@@ -74,8 +72,7 @@ namespace Aspen {
       m_series(std::forward<TF>(series)),
       m_is_condition_complete(false) {}
 
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   State Until<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto has_condition_continuation = false;
@@ -121,8 +118,7 @@ namespace Aspen {
     return state;
   }
 
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   eval_result_t<typename Until<C, T>::Type> Until<C, T>::eval()
       const noexcept(is_noexcept) {
     return *m_value;

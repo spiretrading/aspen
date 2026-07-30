@@ -17,8 +17,7 @@ namespace Aspen {
    * @param <C> The type of reactor used as the condition.
    * @param <T> The type of reactor to evaluate to.
    */
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   class When {
     public:
 
@@ -62,14 +61,13 @@ namespace Aspen {
    * @return A reactor evaluating to the <i>series</i> once the
    *         <i>condition</i> evaluates to <code>true</code>.
    */
-  template<typename C, typename T> requires IsReactor<to_reactor_t<C>> &&
-    IsReactor<to_reactor_t<T>>
+  template<typename C, typename T> requires
+    IsReactorOf<to_reactor_t<C>, bool> && IsReactor<to_reactor_t<T>>
   auto when(C&& condition, T&& series) {
     return When(std::forward<C>(condition), std::forward<T>(series));
   }
 
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   template<typename CF, typename TF> requires
     std::constructible_from<C, CF> && std::constructible_from<T, TF>
   When<C, T>::When(CF&& condition, TF&& series)
@@ -77,8 +75,7 @@ namespace Aspen {
       m_series(std::forward<TF>(series)),
       m_is_triggered(false) {}
 
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   State When<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     if(!m_is_triggered && m_condition) {
@@ -121,8 +118,7 @@ namespace Aspen {
     return state;
   }
 
-  template<IsReactor C, IsReactor T> requires
-    std::convertible_to<reactor_result_t<C>, bool>
+  template<IsReactorOf<bool> C, IsReactor T>
   typename When<C, T>::Result When<C, T>::eval() const noexcept(is_noexcept) {
     return m_series->eval();
   }

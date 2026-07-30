@@ -1,6 +1,5 @@
 #ifndef ASPEN_DISCARD_HPP
 #define ASPEN_DISCARD_HPP
-#include <concepts>
 #include <optional>
 #include <utility>
 #include "Aspen/Lift.hpp"
@@ -19,21 +18,14 @@ namespace Aspen {
    *         <i>toggle</i> is false.
    */
   template<typename Toggle, typename Series> requires
-    IsReactor<to_reactor_t<Toggle>> && IsReactor<to_reactor_t<Series>> &&
-    std::convertible_to<reactor_result_t<Toggle>, bool>
+    IsReactorOf<to_reactor_t<Toggle>, bool> && IsReactor<to_reactor_t<Series>>
   auto discard(Toggle&& toggle, Series&& series) {
     using Type = reactor_result_t<Series>;
     return lift([] (const auto& toggle, const auto& series) noexcept(
         is_noexcept_reactor_v<to_reactor_t<Toggle>> &&
         is_noexcept_reactor_v<to_reactor_t<Series>>) -> std::optional<Type> {
-      if constexpr(is_noexcept_reactor_v<to_reactor_t<Toggle>>) {
-        if(toggle) {
-          return std::nullopt;
-        }
-      } else {
-        if(*toggle) {
-          return std::nullopt;
-        }
+      if(toggle) {
+        return std::nullopt;
       }
       return series;
     }, std::forward<Toggle>(toggle), std::forward<Series>(series));
