@@ -47,6 +47,28 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
+  TEST_CASE("a_child_that_continues") {
+    auto reactor = StaticCommitHandler(Queue<int>(), constant(5));
+    reactor.get<0>().push(1);
+    reactor.get<0>().push(2);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.get<0>().eval() == 1);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.get<0>().eval() == 2);
+    REQUIRE(reactor.commit(2) == State::NONE);
+  }
+
+  TEST_CASE("a_completion_suppresses_a_continuation") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = StaticCommitHandler(queue, constant(5));
+    queue->push(1);
+    queue->push(2);
+    queue->set_complete();
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.get<0>()->eval() == 2);
+  }
+
   TEST_CASE("copying_a_handler") {
     auto handler = StaticCommitHandler(constant(1), constant(2));
     auto copy = StaticCommitHandler<Constant<int>, Constant<int>>(handler);

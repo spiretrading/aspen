@@ -40,6 +40,26 @@ TEST_SUITE("When") {
     REQUIRE(reactor.eval() == 2);
   }
 
+  TEST_CASE("a_condition_that_continues") {
+    auto condition = Shared(Queue<bool>());
+    condition->push(false);
+    condition->push(false);
+    auto reactor = when(condition, Constant(5));
+    REQUIRE(reactor.commit(0) == State::CONTINUE);
+    REQUIRE(reactor.commit(1) == State::NONE);
+  }
+
+  TEST_CASE("a_series_that_continues") {
+    auto series = Shared(Queue<int>());
+    series->push(1);
+    series->push(2);
+    auto reactor = when(Constant(true), series);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
   TEST_CASE("a_condition_that_fails") {
     auto condition = Shared(Queue<bool>());
     auto reactor = when(condition, Constant(5));

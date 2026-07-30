@@ -136,6 +136,30 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 5);
   }
 
+  TEST_CASE("a_toggle_that_continues") {
+    auto toggle = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    toggle->push(true);
+    toggle->push(true);
+    series->push(5);
+    auto reactor = Switch(toggle, series);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(reactor.eval() == 5);
+  }
+
+  TEST_CASE("a_series_that_continues") {
+    auto series = Shared(Queue<int>());
+    series->push(1);
+    series->push(2);
+    auto reactor = Switch(Constant(true), series);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
   TEST_CASE("a_series_evaluating_to_nothing") {
     auto reactor = switch_(Constant(true), perpetual());
     REQUIRE(decltype(reactor)::is_noexcept);

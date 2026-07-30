@@ -33,6 +33,29 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 2);
   }
 
+  TEST_CASE("a_condition_that_continues") {
+    auto condition = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    condition->push(false);
+    condition->push(false);
+    series->push(5);
+    auto reactor = Until(condition, series);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(reactor.commit(1) == State::NONE);
+  }
+
+  TEST_CASE("a_series_that_continues") {
+    auto series = Shared(Queue<int>());
+    series->push(1);
+    series->push(2);
+    auto reactor = Until(Constant(false), series);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
   TEST_CASE("a_series_completing_first") {
     auto condition = Shared(Queue<bool>());
     auto reactor = until(condition, Constant(5));
