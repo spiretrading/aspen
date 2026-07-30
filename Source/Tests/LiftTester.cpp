@@ -235,6 +235,14 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval().m_value == 7);
   }
 
+  TEST_CASE("lifting_from_a_type_without_a_default") {
+    auto reactor = Lift([] (const Required& value) noexcept {
+      return value.m_value;
+    }, Constant(Required(5)));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+  }
+
   TEST_CASE("an_evaluation_does_not_copy_its_arguments") {
     auto left = Shared(Cell(Counted(1)));
     auto right = Shared(Cell(Counted(2)));

@@ -8,7 +8,6 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 #include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
@@ -189,8 +188,9 @@ namespace Details {
   };
 
   template<typename A>
-  using lift_argument_t = const unwrap_local_ptr_t<
-    try_maybe_t<reactor_result_t<A>, !is_noexcept_reactor_v<A>>>&;
+  using lift_argument_t = const std::conditional_t<
+    is_noexcept_reactor_v<A> && !std::is_same_v<reactor_result_t<A>, void>,
+    reactor_result_t<A>, Maybe<reactor_result_t<A>>>&;
 
   template<typename F, typename... A>
   struct is_lift_noexcept : std::bool_constant<
