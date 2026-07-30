@@ -158,4 +158,15 @@ TEST_SUITE("Cell") {
     REQUIRE(!first.is_raised());
     REQUIRE(second.is_raised());
   }
+  TEST_CASE("assigning_a_cell_takes_effect_on_the_next_commit") {
+    auto destination = Cell(1);
+    REQUIRE(destination.commit(0) == State::EVALUATED);
+    REQUIRE(destination.eval() == 1);
+    auto source = Cell(2);
+    destination = source;
+    REQUIRE(destination.eval() == 1);
+    REQUIRE(destination.commit(1) == State::EVALUATED);
+    REQUIRE(destination.eval() == 2);
+  }
+
 }

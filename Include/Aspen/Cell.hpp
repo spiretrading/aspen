@@ -180,7 +180,6 @@ namespace Aspen {
 
   template<typename T>
   eval_result_t<typename Cell<T>::Type> Cell<T>::eval() const noexcept {
-    auto lock = std::lock_guard(m_mutex);
     return *m_current;
   }
 
@@ -192,8 +191,11 @@ namespace Aspen {
     auto flag = [&] {
       auto lock = std::scoped_lock(m_mutex, cell.m_mutex);
       m_is_complete = cell.m_is_complete;
-      m_current = cell.m_current;
-      m_next = cell.m_next;
+      if(cell.m_next) {
+        m_next = cell.m_next;
+      } else {
+        m_next = cell.m_current;
+      }
       return m_flag;
     }();
     if(flag) {
@@ -210,8 +212,11 @@ namespace Aspen {
     auto flag = [&] {
       auto lock = std::scoped_lock(m_mutex, cell.m_mutex);
       m_is_complete = cell.m_is_complete;
-      m_current = std::move(cell.m_current);
-      m_next = std::move(cell.m_next);
+      if(cell.m_next) {
+        m_next = std::move(cell.m_next);
+      } else {
+        m_next = std::move(cell.m_current);
+      }
       return m_flag;
     }();
     if(flag) {
