@@ -21,19 +21,26 @@ namespace Aspen {
     using Type = reactor_result_t<Source>;
     using Series = to_reactor_t<Source>;
     auto source_reactor = Shared(std::forward<Source>(source));
-    return lift([previous = std::optional<Type>()] (const auto& value,
-        State state) mutable noexcept -> FunctionEvaluation<Type> {
+    return lift([previous = std::optional<Type>(), is_absorbed = false] (
+        const auto& value, State state) mutable noexcept ->
+          FunctionEvaluation<Type> {
       if constexpr(!is_noexcept_reactor_v<Series>) {
         if(value.has_exception()) {
           return Maybe<Type>(value.get_exception());
         }
       }
       if(is_complete(state)) {
-        if(!previous) {
-          if(has_evaluation(state)) {
+        if(has_evaluation(state) && !is_absorbed) {
+          is_absorbed = true;
+          if(!previous) {
             previous.emplace(value);
             return State::CONTINUE;
           }
+          auto result = std::move(*previous);
+          *previous = value;
+          return FunctionEvaluation(std::move(result), State::CONTINUE);
+        }
+        if(!previous) {
           return State::NONE;
         }
         return std::move(*previous);
