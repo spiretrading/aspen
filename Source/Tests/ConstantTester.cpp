@@ -8,8 +8,6 @@ using namespace Aspen;
 using namespace std::string_literals;
 
 namespace {
-
-  /** A value whose move constructor may throw. */
   struct Throwing {
     Throwing() = default;
     Throwing(const Throwing&) {}

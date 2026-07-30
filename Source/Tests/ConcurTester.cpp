@@ -11,7 +11,6 @@ using namespace Aspen::Tests;
 namespace {
   using Producer = Shared<Queue<SharedBox<int>>>;
 
-  /** Commits a reactor a number of times, discarding its state. */
   template<typename R>
   void absorb(R& reactor, std::uint64_t& sequence, std::size_t count) {
     for(auto i = std::size_t(0); i != count; ++i) {

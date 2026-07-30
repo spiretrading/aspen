@@ -75,5 +75,4 @@ TEST_SUITE("Proxy") {
     reactor.set_reactor(ByValueReactor(CountedValue(1)));
     test_evaluation_lifetime(reactor);
   }
-
 }

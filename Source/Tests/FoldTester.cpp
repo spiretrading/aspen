@@ -91,6 +91,7 @@ TEST_SUITE("Fold") {
     REQUIRE(f.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(f.eval(), std::runtime_error);
   }
+
   TEST_CASE("fold_does_not_complete_with_a_continuation") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
@@ -101,5 +102,4 @@ TEST_SUITE("Fold") {
     REQUIRE(f.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE(f.eval() == 3);
   }
-
 }

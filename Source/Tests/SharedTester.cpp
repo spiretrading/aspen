@@ -135,5 +135,4 @@ TEST_SUITE("Shared") {
     REQUIRE(source.commit(0) == State::EVALUATED);
     REQUIRE(source.eval() == 7);
   }
-
 }

@@ -96,5 +96,4 @@ TEST_SUITE("Group") {
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_copies() == 0);
   }
-
 }

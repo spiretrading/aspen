@@ -9,8 +9,6 @@
 using namespace Aspen;
 
 namespace {
-
-  /** A reactor returning its evaluation by value. */
   struct ByValue {
     using Type = int;
 
@@ -23,7 +21,6 @@ namespace {
     }
   };
 
-  /** A reactor returning its evaluation by value that throws. */
   struct ThrowingByValue {
     using Type = int;
 

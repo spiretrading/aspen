@@ -131,5 +131,4 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
     REQUIRE(reactor.eval() == 5);
   }
-
 }

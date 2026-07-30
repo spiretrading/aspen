@@ -12,8 +12,6 @@
 using namespace Aspen;
 
 namespace {
-
-  /** A reactor that counts how many times it has been committed. */
   template<typename T>
   class Counter {
     public:
