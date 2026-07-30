@@ -142,7 +142,11 @@ namespace Aspen {
           state = combine(state, State::CONTINUE);
         } else if(is_complete(child_state)) {
           child.m_is_complete = true;
-          raise_slot(index);
+          if(has_evaluation(child_state) || index == m_current) {
+            raise_slot(index);
+          } else {
+            remove(index);
+          }
         }
         if(has_evaluation(child_state)) {
           state = combine(state, State::EVALUATED);

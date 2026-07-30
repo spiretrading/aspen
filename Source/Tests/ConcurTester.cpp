@@ -37,9 +37,8 @@ TEST_SUITE("Concur") {
     queue->set_complete();
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
-    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
     REQUIRE(reactor.eval() == 123);
-    REQUIRE(reactor.commit(2) == State::COMPLETE);
   }
 
   TEST_CASE("children_are_evaluated_in_turn") {
@@ -276,6 +275,14 @@ TEST_SUITE("Concur") {
   TEST_CASE("concur_children_evaluating_by_value") {
     auto reactor = Concur(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
+  }
+
+  TEST_CASE("a_child_completing_without_evaluating") {
+    auto queue = Shared(Queue<SharedBox<int>>());
+    auto reactor = concur(queue);
+    queue->push(shared_box(None<int>()));
+    queue->set_complete();
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
 }
