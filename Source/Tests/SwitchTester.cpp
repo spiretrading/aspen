@@ -109,4 +109,26 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 10);
   }
+  TEST_CASE("only_the_series_decides_whether_evaluating_can_throw") {
+    auto toggle = Shared(Queue<bool>());
+    auto series = Shared(Cell(5));
+    auto reactor = switch_(toggle, series);
+    REQUIRE(decltype(reactor)::is_noexcept);
+    toggle->push(true);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+  }
+
+  TEST_CASE("a_toggle_that_throws_keeps_the_held_value") {
+    auto toggle = Shared(Queue<bool>());
+    auto series = Shared(Cell(5));
+    auto reactor = switch_(toggle, series);
+    toggle->push(true);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    toggle->set_complete(std::runtime_error("bad"));
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
+    REQUIRE(reactor.eval() == 5);
+  }
+
 }

@@ -29,7 +29,7 @@ namespace Aspen {
       using Type = reactor_result_t<S>;
 
       /** Whether this reactor's eval is noexcept. */
-      static constexpr auto is_noexcept = is_noexcept_reactor_v<T, S>;
+      static constexpr auto is_noexcept = is_noexcept_reactor_v<S>;
 
       /**
        * Constructs a Switch reactor.

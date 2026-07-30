@@ -75,4 +75,14 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.commit(2) == State::COMPLETE);
     REQUIRE(reactor.eval() == 8);
   }
+  TEST_CASE("only_the_series_decides_whether_evaluating_can_throw") {
+    auto condition = Shared(Queue<bool>());
+    auto series = Shared(Cell(5));
+    auto reactor = until(condition, series);
+    REQUIRE(decltype(reactor)::is_noexcept);
+    condition->push(false);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+  }
+
 }

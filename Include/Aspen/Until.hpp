@@ -26,7 +26,7 @@ namespace Aspen {
       using Type = reactor_result_t<T>;
 
       /** Whether this reactor's eval is noexcept. */
-      static constexpr auto is_noexcept = is_noexcept_reactor_v<C, T>;
+      static constexpr auto is_noexcept = is_noexcept_reactor_v<T>;
 
       /**
        * Constructs an Until.
