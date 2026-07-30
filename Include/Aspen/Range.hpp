@@ -25,15 +25,15 @@ namespace Aspen {
    */
   template<typename S, typename E, typename T> requires
     IsReactor<to_reactor_t<S>> && IsReactor<to_reactor_t<E>> &&
-    IsReactor<to_reactor_t<T>>
+    IsReactor<to_reactor_t<T>> &&
+    std::same_as<reactor_result_t<S>, reactor_result_t<E>> &&
+    std::same_as<reactor_result_t<S>, reactor_result_t<T>>
   auto range(S&& start, E&& stop, T&& step) {
-    using Type =
-      std::common_type_t<reactor_result_t<S>, reactor_result_t<T>>;
+    using Type = reactor_result_t<S>;
     auto stop_reactor = Shared(std::forward<E>(stop));
     auto stop_updates = StateReactor(stop_reactor);
-    return lift([value = std::optional<Type>()] (
-        const reactor_result_t<S>& start, const reactor_result_t<E>& end,
-        State end_state, const reactor_result_t<T>& step) mutable noexcept {
+    return lift([value = std::optional<Type>()] (const Type& start,
+        const Type& end, State end_state, const Type& step) mutable noexcept {
       auto current = [&] () -> Type {
         if(!value) {
           return start;
@@ -73,7 +73,8 @@ namespace Aspen {
   template<typename S, typename E> requires IsReactor<to_reactor_t<S>> &&
     IsReactor<to_reactor_t<E>>
   auto range(S&& start, E&& stop) {
-    return range(std::forward<S>(start), std::forward<E>(stop), 1);
+    return range(std::forward<S>(start), std::forward<E>(stop),
+      static_cast<reactor_result_t<S>>(1));
   }
 }
 

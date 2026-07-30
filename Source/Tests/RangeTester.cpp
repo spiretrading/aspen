@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
@@ -7,6 +8,13 @@
 #include "Aspen/Shared.hpp"
 
 using namespace Aspen;
+
+namespace {
+  template<typename S, typename E, typename T>
+  concept CanRange = requires {
+    range(std::declval<S>(), std::declval<E>(), std::declval<T>());
+  };
+}
 
 TEST_SUITE("Range") {
   TEST_CASE("backward_range") {
@@ -124,7 +132,9 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.commit(6) == State::COMPLETE);
   }
   TEST_CASE("a_step_wider_than_the_start") {
-    auto reactor = range(0, 2.5, 0.5);
+    static_assert(!CanRange<int, double, double>);
+    static_assert(CanRange<double, double, double>);
+    auto reactor = range(0.0, 2.5, 0.5);
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 0);
     REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
