@@ -1,3 +1,4 @@
+#include <utility>
 #include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
@@ -6,8 +7,10 @@
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/Switch.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Switch") {
   TEST_CASE("empty_switch") {
@@ -131,4 +134,15 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
     REQUIRE(reactor.eval() == 5);
   }
+  TEST_CASE("a_completed_toggle_is_released") {
+    auto toggle = TrackedReactor<bool>(true, State::COMPLETE_EVALUATED);
+    auto token = toggle.get_token();
+    auto series = Shared(Queue<int>());
+    auto reactor = switch_(std::move(toggle), series);
+    series->push(5);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(token.expired());
+  }
+
 }

@@ -1,3 +1,4 @@
+#include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
@@ -136,4 +137,16 @@ TEST_SUITE("Chain") {
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_destructions() == 0);
   }
+  TEST_CASE("a_completed_initial_is_released") {
+    auto initial = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
+    auto token = initial.get_token();
+    auto reactor = Chain(std::move(initial), Constant(2));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(!token.expired());
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(token.expired());
+  }
+
 }

@@ -42,7 +42,7 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      Branch<C> m_condition;
+      std::optional<Branch<C>> m_condition;
       std::optional<Branch<T>> m_series;
       try_maybe_t<Type, !is_noexcept> m_value;
       bool m_is_condition_complete;
@@ -79,15 +79,15 @@ namespace Aspen {
   State Until<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto has_condition_continuation = false;
-    if(!m_is_condition_complete) {
-      auto condition_state = m_condition.commit(sequence);
+    if(!m_is_condition_complete && m_condition) {
+      auto condition_state = m_condition->commit(sequence);
       if(has_evaluation(condition_state)) {
         auto is_reached = [&] {
           if constexpr(is_noexcept_reactor_v<C>) {
-            return static_cast<bool>(m_condition->eval());
+            return static_cast<bool>((*m_condition)->eval());
           } else {
             try {
-              return static_cast<bool>(m_condition->eval());
+              return static_cast<bool>((*m_condition)->eval());
             } catch(...) {
               return false;
             }
@@ -100,6 +100,9 @@ namespace Aspen {
       }
       m_is_condition_complete = is_complete(condition_state);
       has_condition_continuation = has_continuation(condition_state);
+      if(m_is_condition_complete || !m_series) {
+        m_condition = std::nullopt;
+      }
     }
     if(m_series) {
       auto series_state = m_series->commit(sequence);
@@ -109,6 +112,8 @@ namespace Aspen {
       }
       if(is_complete(series_state)) {
         state = combine(state, State::COMPLETE);
+        m_series = std::nullopt;
+        m_condition = std::nullopt;
       } else if(has_condition_continuation || has_continuation(series_state)) {
         state = combine(state, State::CONTINUE);
       }

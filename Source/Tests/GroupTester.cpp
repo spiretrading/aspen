@@ -1,3 +1,4 @@
+#include <utility>
 #include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
@@ -96,4 +97,18 @@ TEST_SUITE("Group") {
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_copies() == 0);
   }
+  TEST_CASE("a_completed_child_is_released") {
+    auto first = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
+    auto token = first.get_token();
+    auto second = Shared(Queue<int>());
+    auto reactor = group(std::move(first), second);
+    REQUIRE(has_evaluation(reactor.commit(0)));
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(!token.expired());
+    second->push(2);
+    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(token.expired());
+  }
+
 }

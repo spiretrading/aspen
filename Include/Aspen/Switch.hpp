@@ -46,8 +46,8 @@ namespace Aspen {
       eval_result_t<Type> eval() const noexcept(is_noexcept);
 
     private:
-      Branch<T> m_toggle;
-      Branch<S> m_series;
+      std::optional<Branch<T>> m_toggle;
+      std::optional<Branch<S>> m_series;
       bool m_is_toggle_complete;
       bool m_has_evaluation;
       bool m_is_on;
@@ -89,30 +89,37 @@ namespace Aspen {
     auto was_off = !m_is_on;
     auto toggle_state = State::NONE;
     if(!m_is_toggle_complete) {
-      toggle_state = m_toggle.commit(sequence);
+      toggle_state = m_toggle->commit(sequence);
       if(has_evaluation(toggle_state)) {
         if constexpr(is_noexcept_reactor_v<T>) {
-          m_is_on = m_toggle->eval();
+          m_is_on = (*m_toggle)->eval();
         } else {
           try {
-            m_is_on = m_toggle->eval();
+            m_is_on = (*m_toggle)->eval();
           } catch(...) {
             m_is_on = false;
           }
         }
       }
       m_is_toggle_complete = is_complete(toggle_state);
+      if(m_is_toggle_complete) {
+        m_toggle = std::nullopt;
+      }
     }
     auto state = State::NONE;
     if(m_is_on) {
-      state = m_series.commit(sequence);
+      state = m_series->commit(sequence);
       if(has_evaluation(state) || m_has_evaluation && was_off) {
-        try_assign(m_value, *m_series);
+        try_assign(m_value, **m_series);
         state = combine(state, State::EVALUATED);
         m_has_evaluation = true;
       }
+      if(is_complete(state)) {
+        m_series = std::nullopt;
+      }
     } else if(m_is_toggle_complete) {
       state = combine(state, State::COMPLETE);
+      m_series = std::nullopt;
     }
     if(has_continuation(toggle_state)) {
       state = combine(state, State::CONTINUE);

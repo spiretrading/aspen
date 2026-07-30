@@ -1,12 +1,15 @@
+#include <utility>
 #include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 #include "Aspen/Until.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Until") {
   TEST_CASE("until_none") {
@@ -85,4 +88,26 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 5);
   }
+  TEST_CASE("a_completed_condition_is_released") {
+    auto condition = TrackedReactor<bool>(false, State::COMPLETE_EVALUATED);
+    auto token = condition.get_token();
+    auto series = Shared(Queue<int>());
+    auto reactor = until(std::move(condition), series);
+    series->push(5);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(token.expired());
+  }
+
+  TEST_CASE("a_completed_series_is_released") {
+    auto series = TrackedReactor<int>(5, State::COMPLETE_EVALUATED);
+    auto token = series.get_token();
+    auto condition = Shared(Queue<bool>());
+    auto reactor = until(condition, std::move(series));
+    condition->push(false);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(token.expired());
+  }
+
 }

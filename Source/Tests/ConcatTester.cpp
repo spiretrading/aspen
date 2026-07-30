@@ -1,3 +1,4 @@
+#include <utility>
 #include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Box.hpp"
@@ -114,4 +115,14 @@ TEST_SUITE("Concat") {
     auto reactor = Concat(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
   }
+  TEST_CASE("a_completed_producer_is_released") {
+    auto producer = TrackedReactor<SharedBox<int>>(
+      shared_box(Constant(5)), State::COMPLETE_EVALUATED);
+    auto token = producer.get_token();
+    auto reactor = Concat(std::move(producer));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(token.expired());
+  }
+
 }

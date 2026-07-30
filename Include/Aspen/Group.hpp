@@ -2,6 +2,7 @@
 #define ASPEN_GROUP_HPP
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include "Aspen/Branch.hpp"
 #include "Aspen/Reactor.hpp"
@@ -41,11 +42,12 @@ namespace Aspen {
       Result eval() const noexcept(is_noexcept);
 
     private:
-      Branch<A> m_first;
-      Branch<B> m_second;
+      std::optional<Branch<A>> m_first;
+      std::optional<Branch<B>> m_second;
       std::uint8_t m_completions;
       std::uint8_t m_current;
       std::uint8_t m_position;
+      bool m_has_evaluation;
 
       std::uint8_t next_position() const noexcept;
       bool is_child_complete(std::uint8_t position) const noexcept;
@@ -90,7 +92,8 @@ namespace Aspen {
       m_second(std::forward<BF>(second)),
       m_completions(0),
       m_current(0),
-      m_position(0) {}
+      m_position(0),
+      m_has_evaluation(false) {}
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   State Group<A, B>::commit(std::uint64_t sequence) noexcept {
@@ -106,9 +109,9 @@ namespace Aspen {
         } else {
           auto child_state = [&] {
             if(m_position == 0) {
-              return m_first.commit(sequence);
+              return m_first->commit(sequence);
             }
-            return m_second.commit(sequence);
+            return m_second->commit(sequence);
           }();
           if(has_continuation(child_state)) {
             state = combine(state, State::CONTINUE);
@@ -121,6 +124,7 @@ namespace Aspen {
               state = combine(state, State::CONTINUE);
             }
             m_current = m_position;
+            m_has_evaluation = true;
             m_position = next_position();
             break;
           } else {
@@ -135,15 +139,23 @@ namespace Aspen {
     if(are_children_complete()) {
       state = combine(state, State::COMPLETE);
     }
+    if(m_has_evaluation) {
+      if(m_first && m_current != 0 && is_child_complete(0)) {
+        m_first = std::nullopt;
+      }
+      if(m_second && m_current != 1 && is_child_complete(1)) {
+        m_second = std::nullopt;
+      }
+    }
     return state;
   }
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   typename Group<A, B>::Result Group<A, B>::eval() const noexcept(is_noexcept) {
     if(m_current == 0) {
-      return m_first->eval();
+      return (*m_first)->eval();
     }
-    return m_second->eval();
+    return (*m_second)->eval();
   }
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>

@@ -2,6 +2,7 @@
 #define ASPEN_CHAIN_HPP
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include "Aspen/Reactor.hpp"
 #include "Aspen/State.hpp"
@@ -47,8 +48,7 @@ namespace Aspen {
         TRANSITIONING,
         CONTINUATION
       };
-      [[no_unique_address]]
-      A m_initial;
+      std::optional<A> m_initial;
       [[no_unique_address]]
       B m_continuation;
       Status m_status;
@@ -95,7 +95,7 @@ namespace Aspen {
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   State Chain<A, B>::commit(std::uint64_t sequence) noexcept {
     if(m_status == Status::START) {
-      auto state = m_initial.commit(sequence);
+      auto state = m_initial->commit(sequence);
       if(has_evaluation(state)) {
         if(is_complete(state)) {
           m_status = Status::TRANSITIONING;
@@ -105,12 +105,13 @@ namespace Aspen {
         return state;
       } else if(is_complete(state)) {
         m_status = Status::CONTINUATION;
+        m_initial = std::nullopt;
         return m_continuation.commit(sequence);
       } else {
         return state;
       }
     } else if(m_status == Status::INITIAL) {
-      auto state = m_initial.commit(sequence);
+      auto state = m_initial->commit(sequence);
       if(is_complete(state)) {
         m_status = Status::TRANSITIONING;
         if(has_evaluation(state)) {
@@ -125,6 +126,7 @@ namespace Aspen {
     auto state = m_continuation.commit(sequence);
     if(has_evaluation(state)) {
       m_status = Status::CONTINUATION;
+      m_initial = std::nullopt;
     }
     return state;
   }
@@ -134,7 +136,7 @@ namespace Aspen {
     if(m_status == Status::CONTINUATION) {
       return m_continuation.eval();
     }
-    return m_initial.eval();
+    return m_initial->eval();
   }
 }
 
