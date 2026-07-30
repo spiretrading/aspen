@@ -29,16 +29,11 @@ namespace Aspen {
   auto range(S&& start, E&& stop, T&& step) {
     using Type =
       std::common_type_t<reactor_result_t<S>, reactor_result_t<T>>;
-    auto start_reactor = Shared(std::forward<S>(start));
-    auto start_updates = StateReactor(start_reactor);
     auto stop_reactor = Shared(std::forward<E>(stop));
     auto stop_updates = StateReactor(stop_reactor);
-    auto step_reactor = Shared(std::forward<T>(step));
-    auto step_updates = StateReactor(step_reactor);
     return lift([value = std::optional<Type>()] (
-        const reactor_result_t<S>& start, State start_state,
-        const reactor_result_t<E>& end, State end_state,
-        const reactor_result_t<T>& step, State step_state) mutable noexcept {
+        const reactor_result_t<S>& start, const reactor_result_t<E>& end,
+        State end_state, const reactor_result_t<T>& step) mutable noexcept {
       auto current = [&] () -> Type {
         if(!value) {
           return start;
@@ -60,9 +55,8 @@ namespace Aspen {
         return FunctionEvaluation(*value);
       }
       return FunctionEvaluation(*value, State::CONTINUE_EVALUATED);
-    }, std::move(start_reactor), std::move(start_updates),
-      std::move(stop_reactor), std::move(stop_updates), std::move(step_reactor),
-      std::move(step_updates));
+    }, std::forward<S>(start), std::move(stop_reactor),
+      std::move(stop_updates), std::forward<T>(step));
   }
 
   /**

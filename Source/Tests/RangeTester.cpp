@@ -137,4 +137,44 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.eval() == 2.0);
   }
 
+  TEST_CASE("a_start_that_increases_catches_up") {
+    auto start = Shared(Cell(0));
+    auto reactor = range(start, 100, 1);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    start->set(20);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 20);
+    REQUIRE(reactor.commit(3) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 21);
+  }
+
+  TEST_CASE("a_start_behind_the_evaluation_is_ignored") {
+    auto start = Shared(Cell(10));
+    auto reactor = range(start, 100, 5);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 15);
+    start->set(12);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 20);
+  }
+
+  TEST_CASE("a_step_that_changes_takes_effect") {
+    auto step = Shared(Cell(1));
+    auto reactor = range(0, 100, step);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    step->set(5);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 6);
+    REQUIRE(reactor.commit(3) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 11);
+  }
+
 }
