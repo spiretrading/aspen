@@ -1,6 +1,8 @@
 #ifndef ASPEN_MAYBE_HPP
 #define ASPEN_MAYBE_HPP
+#include <concepts>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -61,7 +63,7 @@ namespace Details {
        * Converts a Maybe of one type to this Maybe.
        * @param maybe The Maybe to convert.
        */
-      template<typename U>
+      template<typename U> requires std::constructible_from<T, const U&>
       Maybe(const Maybe<U>& maybe) noexcept(
         std::is_nothrow_constructible_v<Type, const U&>);
 
@@ -69,7 +71,7 @@ namespace Details {
        * Moves a Maybe of one type to this Maybe.
        * @param maybe The Maybe to convert.
        */
-      template<typename U>
+      template<typename U> requires std::constructible_from<T, U&&>
       Maybe(Maybe<U>&& maybe) noexcept(
         std::is_nothrow_constructible_v<Type, U&&>);
 
@@ -94,13 +96,14 @@ namespace Details {
       auto* operator ->(this auto&& self);
       Maybe& operator =(const Maybe&) = default;
       Maybe& operator =(Maybe&&) = default;
-      template<typename U>
+      template<typename U> requires std::constructible_from<T, const U&>
       Maybe& operator =(const Maybe<U>& maybe) noexcept(
         std::is_nothrow_assignable_v<Type&, const U&>);
-      template<typename U>
+      template<typename U> requires std::constructible_from<T, U&&>
       Maybe& operator =(Maybe<U>&& maybe) noexcept(
         std::is_nothrow_assignable_v<Type&, U&&>);
-      template<typename U> requires(!IsMaybe<U>)
+      template<typename U> requires(!IsMaybe<U>) && std::is_assignable_v<
+        std::variant<std::exception_ptr, T>&, U>
       Maybe& operator =(U&& value) noexcept(
         std::is_nothrow_assignable_v<Type&, U>);
 
@@ -166,7 +169,9 @@ namespace Details {
   template<typename T, bool C>
   struct try_maybe {
     using type = std::conditional_t<C, Maybe<T>,
-      std::conditional_t<std::is_same_v<T, void>, Maybe<void>, LocalPtr<T>>>;
+      std::conditional_t<std::is_same_v<T, void>, Maybe<void>,
+        std::conditional_t<std::is_default_constructible_v<T>, LocalPtr<T>,
+          std::optional<T>>>>;
   };
 
   template<typename T, bool C>
@@ -216,7 +221,7 @@ namespace Details {
     : m_value(std::move(exception)) {}
 
   template<typename T>
-  template<typename U>
+  template<typename U> requires std::constructible_from<T, const U&>
   Maybe<T>::Maybe(const Maybe<U>& maybe) noexcept(
     std::is_nothrow_constructible_v<Type, const U&>)
     : m_value([&] () -> std::variant<std::exception_ptr, Type> {
@@ -228,7 +233,7 @@ namespace Details {
       }()) {}
 
   template<typename T>
-  template<typename U>
+  template<typename U> requires std::constructible_from<T, U&&>
   Maybe<T>::Maybe(Maybe<U>&& maybe) noexcept(
     std::is_nothrow_constructible_v<Type, U&&>)
     : m_value([&] () -> std::variant<std::exception_ptr, Type> {
@@ -290,7 +295,7 @@ namespace Details {
   }
 
   template<typename T>
-  template<typename U>
+  template<typename U> requires std::constructible_from<T, const U&>
   Maybe<T>& Maybe<T>::operator =(const Maybe<U>& maybe) noexcept(
       std::is_nothrow_assignable_v<Type&, const U&>) {
     if(maybe.has_value()) {
@@ -302,7 +307,7 @@ namespace Details {
   }
 
   template<typename T>
-  template<typename U>
+  template<typename U> requires std::constructible_from<T, U&&>
   Maybe<T>& Maybe<T>::operator =(Maybe<U>&& maybe) noexcept(
       std::is_nothrow_assignable_v<Type&, U&&>) {
     if(maybe.has_value()) {
@@ -314,7 +319,8 @@ namespace Details {
   }
 
   template<typename T>
-  template<typename U> requires(!IsMaybe<U>)
+  template<typename U> requires(!IsMaybe<U>) && std::is_assignable_v<
+    std::variant<std::exception_ptr, T>&, U>
   Maybe<T>& Maybe<T>::operator =(U&& value) noexcept(
       std::is_nothrow_assignable_v<Type&, U>) {
     m_value = std::forward<U>(value);

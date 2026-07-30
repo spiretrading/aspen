@@ -141,20 +141,6 @@ namespace Details {
     });
   }
 
-  template<typename T, bool C>
-  struct lift_value {
-    using type = std::conditional_t<
-      std::is_default_constructible_v<T>, LocalPtr<T>, std::optional<T>>;
-  };
-
-  template<typename T>
-  struct lift_value<T, true> {
-    using type = Maybe<T>;
-  };
-
-  template<typename T, bool C>
-  using lift_value_t = typename lift_value<T, C>::type;
-
   template<typename T>
   struct FunctionEvaluator {
     State operator ()(auto& value, auto& function, const auto& pack) const {
@@ -247,8 +233,7 @@ namespace Details {
       [[no_unique_address]]
       Function m_function;
       StaticCommitHandler<A...> m_handler;
-      Details::lift_value_t<Type, std::is_same_v<Type, void> || !is_noexcept>
-        m_value;
+      try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
       bool m_has_continuation;
 
       State invoke();
@@ -284,8 +269,7 @@ namespace Details {
     private:
       [[no_unique_address]]
       Function m_function;
-      Details::lift_value_t<Type, std::is_same_v<Type, void> || !is_noexcept>
-        m_value;
+      try_maybe_t<Type, std::is_same_v<Type, void> || !is_noexcept> m_value;
 
       State invoke();
   };

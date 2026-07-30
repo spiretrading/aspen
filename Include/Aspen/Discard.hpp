@@ -26,8 +26,14 @@ namespace Aspen {
     return lift([] (const auto& toggle, const auto& series) noexcept(
         is_noexcept_reactor_v<to_reactor_t<Toggle>> &&
         is_noexcept_reactor_v<to_reactor_t<Series>>) -> std::optional<Type> {
-      if(toggle) {
-        return std::nullopt;
+      if constexpr(is_noexcept_reactor_v<to_reactor_t<Toggle>>) {
+        if(toggle) {
+          return std::nullopt;
+        }
+      } else {
+        if(*toggle) {
+          return std::nullopt;
+        }
       }
       return series;
     }, std::forward<Toggle>(toggle), std::forward<Series>(series));

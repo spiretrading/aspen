@@ -51,7 +51,7 @@ namespace Aspen {
       bool m_is_toggle_complete;
       bool m_has_evaluation;
       bool m_is_on;
-      std::conditional_t<is_noexcept, std::optional<Type>, Maybe<Type>> m_value;
+      try_maybe_t<Type, !is_noexcept> m_value;
   };
 
   template<typename T, typename S>

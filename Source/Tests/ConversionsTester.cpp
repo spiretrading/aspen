@@ -11,6 +11,26 @@
 
 using namespace Aspen;
 
+namespace {
+  struct Checked {
+    int m_value;
+
+    explicit Checked(int value)
+        : m_value(value) {
+      if(value < 0) {
+        throw std::runtime_error("negative");
+      }
+    }
+  };
+
+  struct Required {
+    int m_value;
+
+    explicit Required(int value) noexcept
+      : m_value(value) {}
+  };
+}
+
 TEST_SUITE("Conversions") {
   TEST_CASE("converting_an_evaluation") {
     auto reactor = ConversionReactor(Constant(5), [] (int value) noexcept {
@@ -97,6 +117,22 @@ TEST_SUITE("Conversions") {
     REQUIRE((std::is_same_v<decltype(reactor)::Type, double>));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 5.0);
+  }
+
+  TEST_CASE("converting_to_a_type_without_a_default") {
+    auto reactor = ConversionReactor(Constant(5), [] (int value) noexcept {
+      return Required(value);
+    });
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval().m_value == 5);
+  }
+
+  TEST_CASE("casting_through_a_conversion_that_throws") {
+    auto reactor = static_reactor_cast<Checked>(Constant(-1));
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
   TEST_CASE("casting_to_the_same_type") {

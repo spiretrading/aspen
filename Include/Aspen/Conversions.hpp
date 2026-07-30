@@ -64,7 +64,8 @@ namespace Aspen {
       return std::forward<decltype(reactor)>(reactor);
     } else {
       return ConversionReactor(std::forward<decltype(reactor)>(reactor),
-        [] (auto&& value) noexcept {
+        [] (auto&& value) noexcept(noexcept(
+            static_cast<T>(std::forward<decltype(value)>(value)))) {
           return static_cast<T>(std::forward<decltype(value)>(value));
         });
     }

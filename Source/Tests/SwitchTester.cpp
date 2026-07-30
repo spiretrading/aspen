@@ -4,6 +4,7 @@
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
+#include "Aspen/Perpetual.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/Switch.hpp"
@@ -133,6 +134,13 @@ TEST_SUITE("Switch") {
     toggle->set_complete(std::runtime_error("bad"));
     REQUIRE(reactor.commit(1) == State::COMPLETE);
     REQUIRE(reactor.eval() == 5);
+  }
+
+  TEST_CASE("a_series_evaluating_to_nothing") {
+    auto reactor = switch_(Constant(true), perpetual());
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    reactor.eval();
   }
 
   TEST_CASE("a_series_that_completes_while_the_toggle_continues") {
