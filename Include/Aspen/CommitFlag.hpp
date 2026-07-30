@@ -41,6 +41,9 @@ namespace Details {
       /** Returns <code>true</code> iff a commit is required. */
       bool is_raised() const noexcept;
 
+      /** Returns <code>true</code> iff a bit is raised along with this flag. */
+      bool has_slot() const noexcept;
+
       /** Indicates that a commit is required. */
       void raise() noexcept;
 
@@ -145,6 +148,10 @@ namespace Details {
 
   inline bool CommitFlag::is_raised() const noexcept {
     return (m_flags.load(std::memory_order_acquire) & RAISED) != 0;
+  }
+
+  inline bool CommitFlag::has_slot() const noexcept {
+    return m_kind != Kind::HUB && m_word;
   }
 
   inline void CommitFlag::raise() noexcept {

@@ -139,10 +139,12 @@ TEST_SUITE("VectorSync") {
     reactors.push_back(box(first));
     reactors.push_back(box(second));
     auto reactor = VectorSync(list, std::move(reactors));
+    REQUIRE(reactor.get_exception() == nullptr);
     first->push(1);
     second->set_complete(std::runtime_error("fail"));
     REQUIRE(has_evaluation(reactor.commit(0)));
     REQUIRE(reactor.get_exception(0) == nullptr);
     REQUIRE(reactor.get_exception(1) != nullptr);
+    REQUIRE(reactor.get_exception() == reactor.get_exception(1));
   }
 }

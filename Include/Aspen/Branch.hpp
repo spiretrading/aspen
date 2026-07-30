@@ -99,7 +99,7 @@ namespace Aspen {
   template<IsReactor R>
   State Branch<R>::commit(std::uint64_t sequence) noexcept {
     m_flag.set_parent(CommitFlag::get_current());
-    if(!m_flag.is_raised()) {
+    if(!m_flag.has_slot() && !m_flag.is_raised()) {
       return reset(m_state, combine(State::EVALUATED, State::CONTINUE));
     }
     m_flag.clear();

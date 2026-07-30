@@ -49,6 +49,12 @@ namespace Details {
       VectorSync(Type& value, std::vector<R> reactors);
 
       /**
+       * Returns the exception thrown by the first reactor to fail, or nullptr
+       * for none.
+       */
+      std::exception_ptr get_exception() const noexcept;
+
+      /**
        * Returns the exception thrown by one of the reactors, or nullptr for
        * none.
        * @param index The index of the reactor to check.
@@ -79,6 +85,20 @@ namespace Details {
     if constexpr(!is_noexcept) {
       this->m_has_exception.resize(m_reactors.size());
     }
+  }
+
+  template<IsReactor R, typename V>
+  std::exception_ptr VectorSync<R, V>::get_exception() const noexcept {
+    if constexpr(!is_noexcept) {
+      if(this->m_count != 0) {
+        for(auto i = std::size_t(0); i != m_reactors.size(); ++i) {
+          if(this->m_has_exception[i]) {
+            return m_reactors.get(i).get_exception();
+          }
+        }
+      }
+    }
+    return nullptr;
   }
 
   template<IsReactor R, typename V>
