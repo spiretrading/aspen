@@ -109,9 +109,9 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
   }
+
   TEST_CASE("concat_children_evaluating_by_value") {
     auto reactor = Concat(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
   }
-
 }

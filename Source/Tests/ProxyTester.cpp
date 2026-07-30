@@ -69,6 +69,7 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
   }
+
   TEST_CASE("proxy_a_reactor_evaluating_by_value") {
     auto reactor = Proxy<ByValueReactor<CountedValue>>();
     reactor.set_reactor(ByValueReactor(CountedValue(1)));

@@ -149,6 +149,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(2) == State::EVALUATED);
     REQUIRE(queue.eval() == 2);
   }
+
   TEST_CASE("completing_with_a_convertible_value") {
     auto queue = Queue<std::string>();
     queue.set_complete("done");
