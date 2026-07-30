@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#if defined WIN32
+#if defined(_WIN32)
   #include <windows.h>
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
   #include <signal.h>
@@ -45,6 +45,9 @@ namespace Aspen {
     private:
       static inline std::mutex m_abort_mutex;
       static inline std::vector<Executor*> m_running_executors;
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+      static inline void (*m_previous_handler)(int) = nullptr;
+#endif
       std::mutex m_mutex;
       std::condition_variable m_update_condition;
       Trigger m_trigger;
@@ -58,7 +61,7 @@ namespace Aspen {
       void on_update();
       bool is_aborted() const noexcept;
       State commit();
-#if defined WIN32
+#if defined(_WIN32)
       static BOOL __stdcall ctrl_handler(DWORD ctrl);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
       static void ctrl_handler(int);
@@ -109,16 +112,15 @@ namespace Aspen {
     }
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-    auto previous_handler = static_cast<void (*)(int)>(nullptr);
-#endif
     {
       auto lock = std::lock_guard(m_abort_mutex);
-#if defined WIN32
-      ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
+      if(m_running_executors.empty()) {
+#if defined(_WIN32)
+        ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-      previous_handler = ::signal(SIGINT, &ctrl_handler);
+        m_previous_handler = ::signal(SIGINT, &ctrl_handler);
 #endif
+      }
       m_running_executors.push_back(this);
     }
     while(!is_aborted()) {
@@ -137,11 +139,13 @@ namespace Aspen {
     {
       auto lock = std::lock_guard(m_abort_mutex);
       std::erase(m_running_executors, this);
-#if defined WIN32
-      ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
+      if(m_running_executors.empty()) {
+#if defined(_WIN32)
+        ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-      ::signal(SIGINT, previous_handler);
+        ::signal(SIGINT, m_previous_handler);
 #endif
+      }
     }
     Trigger::set_trigger(old_trigger);
   }
@@ -162,7 +166,7 @@ namespace Aspen {
     m_update_condition.notify_one();
   }
 
-#if defined WIN32
+#if defined(_WIN32)
   inline BOOL __stdcall Executor::ctrl_handler(DWORD ctrl) {
     if(ctrl != CTRL_C_EVENT) {
       return FALSE;

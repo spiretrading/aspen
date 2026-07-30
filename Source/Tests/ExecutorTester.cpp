@@ -208,4 +208,22 @@ TEST_SUITE("Executor") {
     executor.run_until_none();
     REQUIRE(*counter.m_commits == 0);
   }
+  TEST_CASE("aborting_an_overlapping_run") {
+    auto first_queue = Shared(Queue<int>());
+    auto second_queue = Shared(Queue<int>());
+    auto first = Executor(first_queue);
+    auto second = Executor(second_queue);
+    auto first_thread = std::thread([&] {
+      first.run_until_complete();
+    });
+    auto second_thread = std::thread([&] {
+      second.run_until_complete();
+    });
+    first_queue->set_complete(1);
+    first_thread.join();
+    second_queue->push(2);
+    second.abort();
+    second_thread.join();
+  }
+
 }
