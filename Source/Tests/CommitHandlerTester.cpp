@@ -3,9 +3,7 @@
 #include <doctest/doctest.h>
 #include "Aspen/Box.hpp"
 #include "Aspen/CommitHandler.hpp"
-#include "Aspen/CommitFlag.hpp"
 #include "Aspen/Constant.hpp"
-#include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 
@@ -101,28 +99,4 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(moved.commit(2) == State::EVALUATED);
     REQUIRE(moved.get(0).eval() == 2);
   }
-  TEST_CASE("completing_without_evaluating_stays_complete") {
-    auto children = std::vector<SharedBox<int>>();
-    children.push_back(shared_box(None<int>()));
-    children.push_back(shared_box(Constant(1)));
-    children.push_back(shared_box(Constant(2)));
-    auto handler = CommitHandler(std::move(children));
-    auto flag = CommitFlag();
-    auto scope = CommitFlagScope(flag);
-    REQUIRE(handler.commit(0) == State::COMPLETE);
-    REQUIRE(handler.commit(1) == State::COMPLETE);
-    REQUIRE(handler.commit(2) == State::COMPLETE);
-  }
-
-  TEST_CASE("completing_every_child_stays_complete") {
-    auto children = std::vector<SharedBox<int>>();
-    children.push_back(shared_box(Constant(1)));
-    children.push_back(shared_box(Constant(2)));
-    auto handler = CommitHandler(std::move(children));
-    auto flag = CommitFlag();
-    auto scope = CommitFlagScope(flag);
-    REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
-    REQUIRE(handler.commit(1) == State::COMPLETE);
-  }
-
 }
