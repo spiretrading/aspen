@@ -35,10 +35,10 @@ TEST_SUITE("Throw") {
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_WITH_AS(reactor.eval(), "fail", std::runtime_error);
   }
+
   TEST_CASE("throw_a_null_exception") {
     auto reactor = Throw<int>(std::exception_ptr());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
-
 }

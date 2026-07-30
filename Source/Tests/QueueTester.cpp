@@ -190,5 +190,4 @@ TEST_SUITE("Queue") {
     REQUIRE(destination.commit(2) == State::EVALUATED);
     REQUIRE(destination.eval() == 10);
   }
-
 }

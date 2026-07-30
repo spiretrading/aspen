@@ -8,8 +8,6 @@
 using namespace Aspen;
 
 namespace {
-
-  /** Records which constructor and assignment operator was selected. */
   struct Path {
     std::string m_value;
 
@@ -42,7 +40,6 @@ namespace {
     }
   };
 
-  /** Counts how many times its value is allocated. */
   struct Allocation {
     static inline auto count = 0;
 
@@ -64,7 +61,6 @@ namespace {
     }
   };
 
-  /** Distinguishes noexcept operations from throwing ones. */
   struct Throws {
     Throws() {}
 

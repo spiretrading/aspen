@@ -272,6 +272,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
   }
+
   TEST_CASE("concur_children_evaluating_by_value") {
     auto reactor = Concur(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
@@ -284,5 +285,4 @@ TEST_SUITE("Concur") {
     queue->set_complete();
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
-
 }

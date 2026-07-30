@@ -184,10 +184,10 @@ namespace Aspen {
         }
       }
     }
-    if(has_continuation(series_state)) {
+    if(is_complete(series_state)) {
+      state = combine(reset(state, State::CONTINUE), State::COMPLETE);
+    } else if(has_continuation(series_state)) {
       state = combine(state, State::CONTINUE);
-    } else if(is_complete(series_state)) {
-      state = combine(state, State::COMPLETE);
     }
     return state;
   }

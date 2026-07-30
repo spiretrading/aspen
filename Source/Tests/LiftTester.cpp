@@ -24,7 +24,6 @@ namespace {
     return x * x;
   }
 
-  /** Counts how many times it is copied. */
   struct Counted {
     static inline auto copies = 0;
 
@@ -56,7 +55,6 @@ namespace {
     }
   };
 
-  /** A value that cannot be default constructed. */
   struct Required {
     int m_value;
 

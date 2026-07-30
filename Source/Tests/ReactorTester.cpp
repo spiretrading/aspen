@@ -13,15 +13,12 @@
 using namespace Aspen;
 
 namespace {
-
-  /** Reports a State but evaluates to nothing. */
   struct Commiter {
     State commit(std::uint64_t sequence) noexcept {
       return State::NONE;
     }
   };
 
-  /** Evaluates to a type its Type alias disagrees with. */
   struct Mismatched {
     using Type = int;
 

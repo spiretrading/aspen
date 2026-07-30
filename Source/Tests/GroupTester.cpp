@@ -81,6 +81,7 @@ TEST_SUITE("Group") {
     auto mixed = group(Shared(Cell(1)), Shared(Queue<int>()));
     REQUIRE(!decltype(mixed)::is_noexcept);
   }
+
   TEST_CASE("group_children_evaluating_by_value") {
     auto reactor = Group(
       ByValueReactor(CountedValue(1)), ByValueReactor(CountedValue(2)));

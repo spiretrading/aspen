@@ -18,8 +18,6 @@
 using namespace Aspen;
 
 namespace {
-
-  /** Counts how many times it is committed. */
   struct Counter {
     using Type = int;
     std::shared_ptr<int> m_commits;
@@ -208,6 +206,7 @@ TEST_SUITE("Executor") {
     executor.run_until_none();
     REQUIRE(*counter.m_commits == 0);
   }
+
   TEST_CASE("aborting_an_overlapping_run") {
     auto first_queue = Shared(Queue<int>());
     auto second_queue = Shared(Queue<int>());
@@ -225,5 +224,4 @@ TEST_SUITE("Executor") {
     second.abort();
     second_thread.join();
   }
-
 }

@@ -109,6 +109,7 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 10);
   }
+
   TEST_CASE("only_the_series_decides_whether_evaluating_can_throw") {
     auto toggle = Shared(Queue<bool>());
     auto series = Shared(Cell(5));

@@ -7,8 +7,6 @@
 using namespace Aspen;
 
 namespace {
-
-  /** Records whether it has been moved from. */
   struct Tracker {
     bool m_is_moved;
     int m_value;
