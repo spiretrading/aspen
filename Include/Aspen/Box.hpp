@@ -75,6 +75,18 @@ namespace Aspen {
     std::remove_cvref_t<R>, Box<reactor_result_t<to_reactor_t<R>>>>)
   Box(R&& reactor) -> Box<reactor_result_t<to_reactor_t<R>>>;
 
+namespace Details {
+  template<typename T>
+  struct is_box : std::false_type {};
+
+  template<typename T>
+  struct is_box<Box<T>> : std::true_type {};
+}
+
+  /** Concept for a type that is a Box. */
+  template<typename T>
+  concept IsBox = Details::is_box<std::remove_cvref_t<T>>::value;
+
   /**
    * Boxes a reactor into a generic interface.
    * @param reactor The reactor to wrap.

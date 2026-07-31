@@ -1,6 +1,7 @@
 #include <optional>
 #include <utility>
 #include <doctest/doctest.h>
+#include "Aspen/Box.hpp"
 #include "Aspen/Cell.hpp"
 #include "Aspen/Chain.hpp"
 #include "Aspen/CommitFlag.hpp"
@@ -8,6 +9,7 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/StateReactor.hpp"
 #include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
@@ -152,6 +154,18 @@ TEST_SUITE("Shared") {
     REQUIRE(first.eval() == 2.0);
     REQUIRE(second.commit(1) == State::EVALUATED);
     REQUIRE(second.eval() == 2.0);
+  }
+
+  TEST_CASE("only_a_box_shares_the_state_of_the_reactor_it_wraps") {
+    static_assert(IsBox<Box<int>>);
+    static_assert(!IsBox<Cell<int>>);
+    auto cell = Shared(Cell(1));
+    auto states = Shared<StateReactor<Shared<Cell<int>>>>(cell);
+    REQUIRE(states.commit(0) == State::EVALUATED);
+    REQUIRE(states.eval() == State::EVALUATED);
+    cell->set(2);
+    REQUIRE(states.commit(1) == State::EVALUATED);
+    REQUIRE(states.eval() == State::EVALUATED);
   }
 
   TEST_CASE("moving_a_shared_stops_reporting_to_the_old_flag") {

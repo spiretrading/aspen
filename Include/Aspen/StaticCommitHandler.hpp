@@ -64,7 +64,7 @@ namespace Details {
         bool m_has_evaluation;
 
         template<typename CF> requires std::constructible_from<C, CF>
-        Child(CF&& reactor);
+        explicit Child(CF&& reactor);
         Child(const Child& child);
         Child(Child&& child) noexcept;
         Child& operator =(const Child& child);

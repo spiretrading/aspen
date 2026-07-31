@@ -115,7 +115,7 @@ namespace Details {
        * Constructs a Shared reactor from an existing Shared reactor.
        * @param reactor The reactor to share ownership with.
        */
-      template<typename U>
+      template<typename U> requires IsBox<R>
       Shared(Shared<U> reactor);
 
       Shared(const Shared& shared) noexcept;
@@ -213,7 +213,7 @@ namespace Details {
   }
 
   template<IsReactor R>
-  template<typename U>
+  template<typename U> requires IsBox<R>
   Shared<R>::Shared(Shared<U> reactor)
     : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
         reactor.m_evaluator->m_state), std::make_shared<Reactor>(reactor)) {
@@ -250,7 +250,7 @@ namespace Details {
 
   template<IsReactor R>
   const typename Shared<R>::Reactor* Shared<R>::operator ->() const noexcept {
-    return &*m_reactor;
+    return m_reactor.get();
   }
 
   template<IsReactor R>
@@ -260,7 +260,7 @@ namespace Details {
 
   template<IsReactor R>
   typename Shared<R>::Reactor* Shared<R>::operator ->() noexcept {
-    return &*m_reactor;
+    return m_reactor.get();
   }
 
   template<IsReactor R>
