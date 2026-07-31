@@ -1,5 +1,6 @@
 #ifndef ASPEN_FOLD_HPP
 #define ASPEN_FOLD_HPP
+#include <concepts>
 #include <cstdint>
 #include <optional>
 #include <utility>

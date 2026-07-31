@@ -2,7 +2,6 @@
 #define ASPEN_TRAITS_HPP
 #include <concepts>
 #include <exception>
-#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>

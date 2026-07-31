@@ -3,7 +3,6 @@
 #include <concepts>
 #include <cstdint>
 #include <optional>
-#include <type_traits>
 #include <utility>
 #include "Aspen/Branch.hpp"
 #include "Aspen/Maybe.hpp"

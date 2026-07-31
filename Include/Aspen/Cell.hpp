@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <mutex>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"

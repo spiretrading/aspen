@@ -3,6 +3,7 @@
 #include <utility>
 #include "Aspen/Lift.hpp"
 #include "Aspen/Reactor.hpp"
+#include "Aspen/State.hpp"
 #include "Aspen/Traits.hpp"
 
 namespace Aspen {
