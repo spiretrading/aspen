@@ -2,6 +2,7 @@
 #define ASPEN_COMMIT_FLAG_HPP
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <vector>
 #include "Aspen/Python/DllExports.hpp"
@@ -192,16 +193,19 @@ namespace Details {
   }
 
   inline void CommitFlag::set_parent(CommitFlag* parent) noexcept {
+    assert(m_kind != Kind::ROOT);
     m_parent = parent;
   }
 
   inline void CommitFlag::set_trigger(Trigger* trigger) noexcept {
+    assert(m_kind == Kind::PLAIN && !m_parent);
     m_trigger = trigger;
     m_kind = Kind::ROOT;
   }
 
   inline void CommitFlag::set_slot(
       std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
+    assert(m_kind != Kind::HUB);
     m_word = word;
     m_bit = bit;
     if(m_word && is_raised()) {
@@ -210,6 +214,7 @@ namespace Details {
   }
 
   inline void CommitFlag::add_parent(CommitFlag& parent) {
+    assert(!has_slot());
     if(m_kind != Kind::HUB) {
       m_kind = Kind::HUB;
       m_parents = nullptr;

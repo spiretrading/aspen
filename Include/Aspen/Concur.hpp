@@ -188,14 +188,19 @@ namespace Aspen {
     auto index = std::size_t(0);
     if(m_free.empty()) {
       index = m_children.size();
-      if(index % BITS == 0) {
-        m_raised.emplace_back(0);
-      }
       if(m_free.capacity() < index + 1) {
         m_free.reserve(std::max(2 * (index + 1), std::size_t(4)));
       }
       m_children.emplace_back(
         std::in_place, std::forward<decltype(reactor)>(reactor));
+      if(index % BITS == 0) {
+        try {
+          m_raised.emplace_back(0);
+        } catch(...) {
+          m_children.pop_back();
+          throw;
+        }
+      }
     } else {
       index = m_free.back();
       m_children[index].emplace(std::forward<decltype(reactor)>(reactor));

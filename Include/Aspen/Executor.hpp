@@ -43,10 +43,23 @@ namespace Aspen {
       void abort();
 
     private:
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+      using SignalAction = struct ::sigaction;
+#endif
+      struct RunningScope {
+        Executor* m_executor;
+        Trigger* m_previous;
+
+        explicit RunningScope(Executor& executor);
+        ~RunningScope();
+
+        RunningScope(const RunningScope&) = delete;
+        RunningScope& operator =(const RunningScope&) = delete;
+      };
       static inline std::mutex m_abort_mutex;
       static inline std::vector<Executor*> m_running_executors;
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-      static inline void (*m_previous_handler)(int) = nullptr;
+      static inline auto m_previous_action = SignalAction();
 #endif
       std::mutex m_mutex;
       std::condition_variable m_update_condition;
@@ -111,19 +124,7 @@ namespace Aspen {
     if(m_is_complete) {
       return;
     }
-    auto old_trigger = Trigger::get_trigger();
-    Trigger::set_trigger(m_trigger);
-    {
-      auto lock = std::lock_guard(m_abort_mutex);
-      if(m_running_executors.empty()) {
-#if defined(_WIN32)
-        ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
-#elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-        m_previous_handler = ::signal(SIGINT, &ctrl_handler);
-#endif
-      }
-      m_running_executors.push_back(this);
-    }
+    auto scope = RunningScope(*this);
     while(!is_aborted()) {
       auto state = commit();
       if(is_complete(state)) {
@@ -136,18 +137,40 @@ namespace Aspen {
         });
       }
     }
+  }
+
+  inline Executor::RunningScope::RunningScope(Executor& executor)
+      : m_executor(&executor),
+        m_previous(Trigger::get_trigger()) {
     {
       auto lock = std::lock_guard(m_abort_mutex);
-      std::erase(m_running_executors, this);
-      if(m_running_executors.empty()) {
+      m_running_executors.push_back(&executor);
+      if(m_running_executors.size() == 1) {
 #if defined(_WIN32)
-        ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
+        ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-        ::signal(SIGINT, m_previous_handler);
+        auto action = SignalAction();
+        action.sa_handler = &ctrl_handler;
+        ::sigemptyset(&action.sa_mask);
+        action.sa_flags = SA_RESTART;
+        ::sigaction(SIGINT, &action, &m_previous_action);
 #endif
       }
     }
-    Trigger::set_trigger(old_trigger);
+    Trigger::set_trigger(executor.m_trigger);
+  }
+
+  inline Executor::RunningScope::~RunningScope() {
+    Trigger::set_trigger(m_previous);
+    auto lock = std::lock_guard(m_abort_mutex);
+    std::erase(m_running_executors, m_executor);
+    if(m_running_executors.empty()) {
+#if defined(_WIN32)
+      ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
+#elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+      ::sigaction(SIGINT, &m_previous_action, nullptr);
+#endif
+    }
   }
 
   inline void Executor::abort() {
