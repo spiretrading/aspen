@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <vector>
 #include "Aspen/Python/DllExports.hpp"
 #include "Aspen/Trigger.hpp"
@@ -36,8 +37,6 @@ namespace Details {
 
       /** Constructs a raised CommitFlag with no dependents. */
       CommitFlag() noexcept;
-
-      ~CommitFlag();
 
       /** Returns <code>true</code> iff a commit is required. */
       bool is_raised() const noexcept;
@@ -93,17 +92,16 @@ namespace Details {
         HUB,
         ROOT
       };
+      using Parents = std::vector<CommitFlag*>;
       union {
-        CommitFlag* m_parent;
-        Trigger* m_trigger;
+        std::atomic<CommitFlag*> m_parent;
+        std::atomic<Trigger*> m_trigger;
       };
-      union {
-        std::vector<CommitFlag*>* m_parents;
-        std::atomic_uint64_t* m_word;
-      };
+      std::atomic<std::atomic_uint64_t*> m_word;
+      std::atomic<std::shared_ptr<const Parents>> m_parents;
       std::atomic_uint8_t m_flags;
-      std::uint8_t m_bit;
-      Kind m_kind;
+      std::atomic<std::uint8_t> m_bit;
+      std::atomic<Kind> m_kind;
 
       CommitFlag(const CommitFlag&) = delete;
       CommitFlag(CommitFlag&&) = delete;
@@ -141,32 +139,27 @@ namespace Details {
       m_bit(0),
       m_kind(Kind::PLAIN) {}
 
-  inline CommitFlag::~CommitFlag() {
-    if(m_kind == Kind::HUB) {
-      delete m_parents;
-    }
-  }
-
   inline bool CommitFlag::is_raised() const noexcept {
     return (m_flags.load(std::memory_order_acquire) & RAISED) != 0;
   }
 
   inline bool CommitFlag::has_slot() const noexcept {
-    return m_kind != Kind::HUB && m_word;
+    return m_kind.load(std::memory_order_acquire) != Kind::HUB &&
+      m_word.load(std::memory_order_acquire);
   }
 
   inline void CommitFlag::raise() noexcept {
-    if(m_kind == Kind::HUB) {
+    if(m_kind.load(std::memory_order_acquire) == Kind::HUB) {
       auto previous =
         m_flags.fetch_or(RAISED | PROPAGATED, std::memory_order_acq_rel);
       if((previous & PROPAGATED) != 0) {
         return;
       }
-      if(m_parent) {
-        m_parent->raise();
+      if(auto parent = m_parent.load(std::memory_order_acquire)) {
+        parent->raise();
       }
-      if(m_parents) {
-        for(auto parent : *m_parents) {
+      if(auto parents = m_parents.load(std::memory_order_acquire)) {
+        for(auto parent : *parents) {
           parent->raise();
         }
       }
@@ -175,15 +168,17 @@ namespace Details {
       if((previous & RAISED) != 0) {
         return;
       }
-      if(m_word) {
-        m_word->fetch_or(std::uint64_t(1) << m_bit, std::memory_order_release);
+      if(auto word = m_word.load(std::memory_order_acquire)) {
+        word->fetch_or(
+          std::uint64_t(1) << m_bit.load(std::memory_order_acquire),
+          std::memory_order_release);
       }
-      if(m_kind == Kind::ROOT) {
-        if(m_trigger) {
-          m_trigger->signal();
+      if(m_kind.load(std::memory_order_acquire) == Kind::ROOT) {
+        if(auto trigger = m_trigger.load(std::memory_order_acquire)) {
+          trigger->signal();
         }
-      } else if(m_parent) {
-        m_parent->raise();
+      } else if(auto parent = m_parent.load(std::memory_order_acquire)) {
+        parent->raise();
       }
     }
   }
@@ -193,39 +188,42 @@ namespace Details {
   }
 
   inline void CommitFlag::set_parent(CommitFlag* parent) noexcept {
-    assert(m_kind != Kind::ROOT);
-    m_parent = parent;
+    assert(m_kind.load(std::memory_order_relaxed) != Kind::ROOT);
+    m_parent.store(parent, std::memory_order_release);
   }
 
   inline void CommitFlag::set_trigger(Trigger* trigger) noexcept {
-    assert(m_kind == Kind::PLAIN && !m_parent);
-    m_trigger = trigger;
-    m_kind = Kind::ROOT;
+    assert(m_kind.load(std::memory_order_relaxed) == Kind::PLAIN &&
+      !m_parent.load(std::memory_order_relaxed));
+    m_trigger.store(trigger, std::memory_order_release);
+    m_kind.store(Kind::ROOT, std::memory_order_release);
   }
 
   inline void CommitFlag::set_slot(
       std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
-    assert(m_kind != Kind::HUB);
-    m_word = word;
-    m_bit = bit;
-    if(m_word && is_raised()) {
-      m_word->fetch_or(std::uint64_t(1) << m_bit, std::memory_order_release);
+    assert(m_kind.load(std::memory_order_relaxed) != Kind::HUB);
+    m_bit.store(bit, std::memory_order_release);
+    m_word.store(word, std::memory_order_release);
+    if(word && is_raised()) {
+      word->fetch_or(std::uint64_t(1) << bit, std::memory_order_release);
     }
   }
 
   inline void CommitFlag::add_parent(CommitFlag& parent) {
     assert(!has_slot());
-    if(m_kind != Kind::HUB) {
-      m_kind = Kind::HUB;
-      m_parents = nullptr;
-    }
-    if(!m_parent) {
-      m_parent = &parent;
+    m_kind.store(Kind::HUB, std::memory_order_release);
+    if(!m_parent.load(std::memory_order_relaxed)) {
+      m_parent.store(&parent, std::memory_order_release);
     } else {
-      if(!m_parents) {
-        m_parents = new std::vector<CommitFlag*>();
-      }
-      m_parents->push_back(&parent);
+      auto parents = m_parents.load(std::memory_order_relaxed);
+      auto updated = [&] {
+        if(parents) {
+          return std::make_shared<Parents>(*parents);
+        }
+        return std::make_shared<Parents>();
+      }();
+      updated->push_back(&parent);
+      m_parents.store(std::move(updated), std::memory_order_release);
     }
     if(is_raised()) {
       parent.raise();
@@ -233,21 +231,26 @@ namespace Details {
   }
 
   inline void CommitFlag::remove_parent(CommitFlag& parent) noexcept {
-    if(m_parent == &parent) {
-      if(m_parents && !m_parents->empty()) {
-        m_parent = m_parents->back();
-        m_parents->pop_back();
+    auto parents = m_parents.load(std::memory_order_relaxed);
+    if(m_parent.load(std::memory_order_relaxed) == &parent) {
+      if(parents && !parents->empty()) {
+        auto updated = std::make_shared<Parents>(*parents);
+        m_parent.store(updated->back(), std::memory_order_release);
+        updated->pop_back();
+        m_parents.store(std::move(updated), std::memory_order_release);
       } else {
-        m_parent = nullptr;
+        m_parent.store(nullptr, std::memory_order_release);
       }
       return;
     }
-    if(!m_parents) {
+    if(!parents) {
       return;
     }
-    auto i = std::find(m_parents->begin(), m_parents->end(), &parent);
-    if(i != m_parents->end()) {
-      m_parents->erase(i);
+    auto i = std::find(parents->begin(), parents->end(), &parent);
+    if(i != parents->end()) {
+      auto updated = std::make_shared<Parents>(*parents);
+      updated->erase(updated->begin() + (i - parents->begin()));
+      m_parents.store(std::move(updated), std::memory_order_release);
     }
   }
 
