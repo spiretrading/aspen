@@ -12,7 +12,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Count") {
-  TEST_CASE("count_chain") {
+  TEST_CASE("chain") {
     auto counter = count(chain(5, 6));
     REQUIRE((std::is_same_v<decltype(counter)::Type, std::uint64_t>));
     REQUIRE(decltype(counter)::is_noexcept);
@@ -22,13 +22,13 @@ TEST_SUITE("Count") {
     REQUIRE(counter.eval() == 2);
   }
 
-  TEST_CASE("count_constant") {
+  TEST_CASE("constant") {
     auto counter = count(Constant(5));
     REQUIRE(counter.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(counter.eval() == 1);
   }
 
-  TEST_CASE("count_a_noexcept_source") {
+  TEST_CASE("noexcept_source") {
     auto cell = Shared(Cell(1));
     auto counter = count(cell);
     REQUIRE(decltype(counter)::is_noexcept);
@@ -39,7 +39,7 @@ TEST_SUITE("Count") {
     REQUIRE(counter.eval() == 2);
   }
 
-  TEST_CASE("count_only_advances_on_an_evaluation") {
+  TEST_CASE("advancing") {
     auto queue = Shared(Queue<int>());
     auto counter = count(queue);
     REQUIRE(!decltype(counter)::is_noexcept);
@@ -57,7 +57,7 @@ TEST_SUITE("Count") {
     REQUIRE(counter.eval() == 2);
   }
 
-  TEST_CASE("count_propagates_an_exception") {
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto counter = count(queue);
     queue->push(10);

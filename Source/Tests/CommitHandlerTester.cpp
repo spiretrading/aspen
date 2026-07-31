@@ -6,23 +6,25 @@
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("CommitHandler") {
-  TEST_CASE("commit_empty_commit") {
+  TEST_CASE("no_children") {
     auto reactor = CommitHandler<Box<void>>({});
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("commit_immediate_complete") {
+  TEST_CASE("immediate_completion") {
     auto queue = Shared(Queue<int>());
     auto reactor = CommitHandler(std::vector{queue});
     queue->set_complete();
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("commit_complete") {
+  TEST_CASE("completion") {
     auto queue = Shared(Queue<int>());
     auto reactor = CommitHandler(std::vector{queue, queue});
     queue->push(1);
@@ -31,7 +33,7 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("commit_empty_and_evaluated") {
+  TEST_CASE("initial_evaluation") {
     auto queue_a = Shared(Queue<int>());
     auto queue_b = Shared(Queue<int>());
     auto reactor = CommitHandler(std::vector{queue_a, queue_b});
@@ -42,7 +44,7 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(reactor.commit(2) == State::EVALUATED);
   }
 
-  TEST_CASE("commit_delayed_evaluation") {
+  TEST_CASE("delayed_evaluation") {
     auto queue = Shared(Queue<int>());
     auto children = std::vector<Box<int>>();
     children.push_back(box(queue));
@@ -54,7 +56,7 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
-  TEST_CASE("committing_a_child_that_continues") {
+  TEST_CASE("continuing_child") {
     auto queue = Shared(Queue<int>());
     auto reactor = CommitHandler(std::vector{queue});
     queue->push(1);
@@ -64,7 +66,7 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
-  TEST_CASE("committing_more_children_than_a_word_holds") {
+  TEST_CASE("more_children_than_a_word") {
     auto queues = std::vector<Shared<Queue<int>>>();
     auto children = std::vector<Box<int>>();
     for(auto i = 0; i != 100; ++i) {
@@ -88,7 +90,7 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(reactor.get(70).eval() == 7);
   }
 
-  TEST_CASE("moving_a_handler_preserves_propagation") {
+  TEST_CASE("move_construction") {
     auto queue = Shared(Queue<int>());
     auto reactor = CommitHandler(std::vector{queue});
     queue->push(1);
@@ -98,5 +100,36 @@ TEST_SUITE("CommitHandler") {
     queue->push(2);
     REQUIRE(moved.commit(2) == State::EVALUATED);
     REQUIRE(moved.get(0).eval() == 2);
+  }
+
+  TEST_CASE("move_assignment") {
+    auto first = Shared(Queue<int>());
+    auto second = Shared(Queue<int>());
+    auto reactor = CommitHandler(std::vector{first});
+    first->push(1);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.get(0).eval() == 1);
+    reactor = CommitHandler(std::vector{second});
+    second->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.get(0).eval() == 2);
+  }
+
+  TEST_CASE("excluding_a_completed_child") {
+    auto first = CountingReactor<int>(1, State::COMPLETE_EVALUATED);
+    auto second = Shared(Queue<int>());
+    auto children = std::vector<Box<int>>();
+    children.push_back(box(first));
+    children.push_back(box(second));
+    auto reactor = CommitHandler(std::move(children));
+    second->push(2);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(first.get_commits() == 1);
+    second->push(3);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(first.get_commits() == 1);
+    second->push(4);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(first.get_commits() == 1);
   }
 }

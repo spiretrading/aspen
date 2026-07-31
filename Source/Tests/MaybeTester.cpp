@@ -1,12 +1,21 @@
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <doctest/doctest.h>
+#include "Aspen/LocalPtr.hpp"
 #include "Aspen/Maybe.hpp"
 
 using namespace Aspen;
 
 namespace {
+  struct Required {
+    int m_value;
+
+    explicit Required(int value)
+      : m_value(value) {}
+  };
+
   struct Tracker {
     bool m_is_moved;
     int m_value;
@@ -39,7 +48,7 @@ namespace {
 }
 
 TEST_SUITE("Maybe") {
-  TEST_CASE("empty_maybe") {
+  TEST_CASE("default_construction") {
     auto maybe = Maybe<int>();
     REQUIRE(maybe.has_exception());
     REQUIRE(!maybe.has_value());
@@ -47,7 +56,7 @@ TEST_SUITE("Maybe") {
     REQUIRE_THROWS_AS(maybe.get(), std::runtime_error);
   }
 
-  TEST_CASE("value_maybe") {
+  TEST_CASE("value") {
     auto maybe = Maybe(123);
     REQUIRE(maybe.has_value());
     REQUIRE(!maybe.has_exception());
@@ -55,7 +64,7 @@ TEST_SUITE("Maybe") {
     REQUIRE(maybe == 123);
   }
 
-  TEST_CASE("exception_maybe") {
+  TEST_CASE("exception") {
     auto maybe = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
     REQUIRE(!maybe.has_value());
     REQUIRE(maybe.has_exception());
@@ -64,14 +73,14 @@ TEST_SUITE("Maybe") {
     REQUIRE(maybe.get_exception());
   }
 
-  TEST_CASE("converting_maybe_exception") {
+  TEST_CASE("converting_an_exception") {
     auto maybe_int = Maybe<int>(
       std::make_exception_ptr(std::runtime_error("")));
     auto maybe_double = Maybe<double>(maybe_int);
     REQUIRE(maybe_double.has_exception());
   }
 
-  TEST_CASE("assigning_a_value_does_not_move_an_lvalue") {
+  TEST_CASE("assign_from_an_lvalue") {
     auto value = Tracker(1);
     auto maybe = Maybe(Tracker(2));
     maybe = value;
@@ -81,7 +90,7 @@ TEST_SUITE("Maybe") {
     REQUIRE(maybe.get().m_value == 3);
   }
 
-  TEST_CASE("assigning_a_maybe_does_not_move_an_lvalue") {
+  TEST_CASE("assign_from_a_maybe_lvalue") {
     auto source = Maybe(Tracker(1));
     auto destination = Maybe(Tracker(2));
     destination = source;
@@ -91,7 +100,7 @@ TEST_SUITE("Maybe") {
     REQUIRE(source.get().m_is_moved);
   }
 
-  TEST_CASE("assigning_a_maybe_holding_an_exception") {
+  TEST_CASE("assign_from_a_maybe_exception") {
     auto source = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
     auto destination = Maybe(123);
     destination = source;
@@ -99,7 +108,7 @@ TEST_SUITE("Maybe") {
     REQUIRE_THROWS_AS(destination.get(), std::runtime_error);
   }
 
-  TEST_CASE("assigning_a_maybe_of_another_type") {
+  TEST_CASE("assign_from_another_type") {
     auto source = Maybe(123);
     auto destination = Maybe(1.5);
     destination = source;
@@ -109,14 +118,14 @@ TEST_SUITE("Maybe") {
     REQUIRE(destination.has_exception());
   }
 
-  TEST_CASE("assignment_is_noexcept_when_the_value_is") {
+  TEST_CASE("noexcept_assignment") {
     REQUIRE((std::is_nothrow_assignable_v<Maybe<int>&, int>));
     REQUIRE((std::is_nothrow_assignable_v<Maybe<int>&, const int&>));
     REQUIRE(!(std::is_nothrow_assignable_v<Maybe<Tracker>&, const Tracker&>));
     REQUIRE((std::is_nothrow_assignable_v<Maybe<Tracker>&, Tracker>));
   }
 
-  TEST_CASE("dereferencing_propagates_constness") {
+  TEST_CASE("const_dereferencing") {
     auto maybe = Maybe(123);
     REQUIRE((std::is_same_v<decltype(*maybe), int&>));
     REQUIRE((std::is_same_v<decltype(maybe.get()), int&>));
@@ -129,7 +138,7 @@ TEST_SUITE("Maybe") {
     REQUIRE(constant.get() == 7);
   }
 
-  TEST_CASE("identifying_a_maybe") {
+  TEST_CASE("is_maybe") {
     REQUIRE(IsMaybe<Maybe<int>>);
     REQUIRE(IsMaybe<const Maybe<int>&>);
     REQUIRE(IsMaybe<Maybe<void>>);
@@ -137,7 +146,7 @@ TEST_SUITE("Maybe") {
     REQUIRE(!IsMaybe<LocalPtr<int>>);
   }
 
-  TEST_CASE("deducing_a_maybe") {
+  TEST_CASE("deduction") {
     auto value = Maybe(123);
     REQUIRE((std::is_same_v<decltype(value), Maybe<int>>));
     auto copy = Maybe(value);
@@ -147,7 +156,7 @@ TEST_SUITE("Maybe") {
     REQUIRE_THROWS_AS(failure.get(), std::runtime_error);
   }
 
-  TEST_CASE("void_maybe") {
+  TEST_CASE("void_specialization") {
     auto maybe = Maybe<void>();
     REQUIRE(!maybe.has_exception());
     REQUIRE(!maybe.get_exception());
@@ -161,7 +170,33 @@ TEST_SUITE("Maybe") {
     REQUIRE(!maybe.has_exception());
   }
 
-  TEST_CASE("moving_a_value_out_of_a_maybe") {
+  TEST_CASE("try_maybe_trait") {
+    static_assert(std::is_same_v<try_maybe_t<int, true>, Maybe<int>>);
+    static_assert(std::is_same_v<try_maybe_t<void, true>, Maybe<void>>);
+    static_assert(std::is_same_v<try_maybe_t<void, false>, Maybe<void>>);
+    static_assert(std::is_same_v<try_maybe_t<int, false>, LocalPtr<int>>);
+    static_assert(
+      std::is_same_v<try_maybe_t<Required, false>, std::optional<Required>>);
+  }
+
+  TEST_CASE("try_call_function") {
+    static_assert(std::is_same_v<decltype(try_call([] () noexcept ->
+      const int& { static const auto value = 5; return value; })),
+      const int&>);
+    static_assert(
+      std::is_same_v<decltype(try_call([] () noexcept {})), Maybe<void>>);
+    static_assert(
+      std::is_same_v<decltype(try_call([] { return 5; })), Maybe<int>>);
+    static_assert(std::is_same_v<decltype(try_call([] {})), Maybe<void>>);
+    auto caught = try_call([] () -> int {
+      throw std::runtime_error("fail");
+    });
+    REQUIRE(caught.has_exception());
+    REQUIRE_THROWS_AS(caught.get(), std::runtime_error);
+    REQUIRE(try_call([] { return 5; }).get() == 5);
+  }
+
+  TEST_CASE("moving_out_a_value") {
     auto maybe = Maybe(Tracker(5));
     REQUIRE((std::is_lvalue_reference_v<decltype(maybe.get())>));
     REQUIRE((std::is_rvalue_reference_v<decltype(std::move(maybe).get())>));

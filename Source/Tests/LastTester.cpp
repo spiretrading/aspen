@@ -10,24 +10,24 @@
 using namespace Aspen;
 
 TEST_SUITE("Last") {
-  TEST_CASE("last_constant") {
+  TEST_CASE("constant") {
     auto reactor = last(Constant(123));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("last_value") {
+  TEST_CASE("value") {
     auto reactor = last(123);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("last_none") {
+  TEST_CASE("none") {
     auto reactor = last(None<int>());
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("last_multiple") {
+  TEST_CASE("completion_with_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = last(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -40,7 +40,7 @@ TEST_SUITE("Last") {
     REQUIRE(reactor.eval() == 30);
   }
 
-  TEST_CASE("last_delayed_complete") {
+  TEST_CASE("completion_after_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = last(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -55,7 +55,7 @@ TEST_SUITE("Last") {
     REQUIRE(reactor.eval() == 30);
   }
 
-  TEST_CASE("last_completing_without_a_value") {
+  TEST_CASE("completion_without_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = last(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -63,7 +63,7 @@ TEST_SUITE("Last") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("last_a_noexcept_source") {
+  TEST_CASE("noexcept_source") {
     auto cell = Shared(Cell(1));
     auto reactor = last(cell);
     REQUIRE(decltype(reactor)::is_noexcept);
@@ -75,7 +75,7 @@ TEST_SUITE("Last") {
     REQUIRE(reactor.eval() == 3);
   }
 
-  TEST_CASE("last_propagates_an_exception") {
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = last(queue);
     queue->push(10);

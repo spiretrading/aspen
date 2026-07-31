@@ -16,7 +16,7 @@ namespace {
 }
 
 TEST_SUITE("Constant") {
-  TEST_CASE("evaluating_a_constant") {
+  TEST_CASE("evaluation") {
     auto integer = Constant(123);
     REQUIRE(integer.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(integer.eval() == 123);
@@ -28,7 +28,7 @@ TEST_SUITE("Constant") {
     REQUIRE(text.eval() == "hello world"s);
   }
 
-  TEST_CASE("wrapping_a_value") {
+  TEST_CASE("constant_function") {
     auto value = 123;
     auto integer = constant(value);
     REQUIRE((std::is_same_v<decltype(integer), Constant<int>>));
@@ -42,7 +42,7 @@ TEST_SUITE("Constant") {
     REQUIRE(literal.eval() == "hello world"s);
   }
 
-  TEST_CASE("wrapping_a_move_only_value") {
+  TEST_CASE("move_only_value") {
     auto pointer = std::make_unique<int>(123);
     auto address = pointer.get();
     auto reactor = constant(std::move(pointer));
@@ -53,13 +53,13 @@ TEST_SUITE("Constant") {
     REQUIRE(*reactor.eval() == 123);
   }
 
-  TEST_CASE("evaluating_at_compile_time") {
+  TEST_CASE("constexpr_evaluation") {
     constexpr auto reactor = Constant(123);
     static_assert(reactor.eval() == 123);
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("constructing_is_noexcept_when_the_move_is") {
+  TEST_CASE("noexcept_construction") {
     REQUIRE((std::is_nothrow_constructible_v<Constant<int>, int>));
     REQUIRE(
       (std::is_nothrow_constructible_v<Constant<std::string>, std::string>));

@@ -11,24 +11,24 @@
 using namespace Aspen;
 
 TEST_SUITE("First") {
-  TEST_CASE("first_constant") {
+  TEST_CASE("constant") {
     auto reactor = first(Constant(123));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("first_value") {
+  TEST_CASE("value") {
     auto reactor = first(123);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("first_none") {
+  TEST_CASE("none") {
     auto reactor = first(None<int>());
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("first_multiple") {
+  TEST_CASE("delayed_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = first(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -37,7 +37,7 @@ TEST_SUITE("First") {
     REQUIRE(reactor.eval() == 10);
   }
 
-  TEST_CASE("first_a_noexcept_source") {
+  TEST_CASE("noexcept_source") {
     auto cell = Shared(Cell(1));
     auto reactor = first(cell);
     REQUIRE(decltype(reactor)::is_noexcept);
@@ -45,13 +45,13 @@ TEST_SUITE("First") {
     REQUIRE(reactor.eval() == 1);
   }
 
-  TEST_CASE("first_ignores_a_continuation") {
+  TEST_CASE("continuation") {
     auto reactor = first(chain(1, 2));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
   }
 
-  TEST_CASE("first_propagates_an_exception") {
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = first(queue);
     REQUIRE(!decltype(reactor)::is_noexcept);

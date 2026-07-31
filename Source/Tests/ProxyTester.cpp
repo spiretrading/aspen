@@ -1,6 +1,8 @@
 #include <stdexcept>
 #include <doctest/doctest.h>
+#include "Aspen/Box.hpp"
 #include "Aspen/Cell.hpp"
+#include "Aspen/Lift.hpp"
 #include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
@@ -10,13 +12,13 @@ using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("Proxy") {
-  TEST_CASE("proxy_without_a_reactor") {
+  TEST_CASE("without_a_reactor") {
     auto reactor = proxy<Shared<Queue<int>>>();
     REQUIRE(reactor.commit(0) == State::NONE);
     REQUIRE(reactor.commit(1) == State::NONE);
   }
 
-  TEST_CASE("proxy_forwards_to_its_reactor") {
+  TEST_CASE("forwarding") {
     auto queue = Shared(Queue<int>());
     auto reactor = Proxy<Shared<Queue<int>>>();
     reactor.set_reactor(queue);
@@ -30,7 +32,7 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("proxy_stays_complete") {
+  TEST_CASE("completion") {
     auto queue = Shared(Queue<int>());
     auto reactor = Proxy<Shared<Queue<int>>>();
     reactor.set_reactor(queue);
@@ -39,7 +41,7 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("proxy_set_after_a_commit") {
+  TEST_CASE("set_after_a_commit") {
     auto queue = Shared(Queue<int>());
     auto reactor = Proxy<Shared<Queue<int>>>();
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -49,7 +51,7 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.eval() == 7);
   }
 
-  TEST_CASE("proxy_a_reactor_that_fails") {
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = Proxy<Shared<Queue<int>>>();
     reactor.set_reactor(queue);
@@ -58,7 +60,7 @@ TEST_SUITE("Proxy") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("proxy_a_reactor_that_cannot_throw") {
+  TEST_CASE("noexcept_reactor") {
     auto cell = Shared(Cell(1));
     auto reactor = Proxy<Shared<Cell<int>>>();
     REQUIRE(decltype(reactor)::is_noexcept);
@@ -70,7 +72,16 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("proxy_a_reactor_evaluating_by_value") {
+  TEST_CASE("cyclic_reactor") {
+    auto reactor = Shared(Proxy<SharedBox<int>>());
+    reactor->set_reactor(shared_box(lift([] (int value) noexcept {
+      return value + 1;
+    }, reactor)));
+    REQUIRE(reactor.commit(0) == State::NONE);
+    REQUIRE(reactor.commit(1) == State::NONE);
+  }
+
+  TEST_CASE("by_value_reactor") {
     auto reactor = Proxy<ByValueReactor<CountedValue>>();
     reactor.set_reactor(ByValueReactor(CountedValue(1)));
     test_evaluation_lifetime(reactor);

@@ -12,12 +12,12 @@ using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("Until") {
-  TEST_CASE("until_none") {
+  TEST_CASE("no_values") {
     auto reactor = Until(Constant(true), Constant(10));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("a_condition_reached_later") {
+  TEST_CASE("condition_reached_later") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     auto reactor = until(condition, series);
@@ -33,7 +33,7 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_condition_that_continues") {
+  TEST_CASE("continuing_condition") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     condition->push(false);
@@ -45,7 +45,7 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.commit(1) == State::NONE);
   }
 
-  TEST_CASE("a_series_that_continues") {
+  TEST_CASE("continuing_series") {
     auto series = Shared(Queue<int>());
     series->push(1);
     series->push(2);
@@ -56,7 +56,21 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_series_completing_first") {
+  TEST_CASE("condition_completing_unreached") {
+    auto condition = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    auto reactor = until(condition, series);
+    condition->push(false);
+    condition->set_complete();
+    series->push(1);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    series->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("series_completing_first") {
     auto condition = Shared(Queue<bool>());
     auto reactor = until(condition, Constant(5));
     condition->push(false);
@@ -64,7 +78,7 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("a_condition_that_fails_keeps_the_last_value") {
+  TEST_CASE("condition_exception") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     auto reactor = until(condition, series);
@@ -77,7 +91,7 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 1);
   }
 
-  TEST_CASE("a_series_that_fails") {
+  TEST_CASE("series_exception") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     auto reactor = until(condition, series);
@@ -87,7 +101,7 @@ TEST_SUITE("Until") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("children_that_cannot_throw") {
+  TEST_CASE("noexcept_children") {
     auto condition = Shared(Cell(false));
     auto series = Shared(Cell(7));
     auto reactor = until(condition, series);
@@ -102,7 +116,7 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 8);
   }
 
-  TEST_CASE("only_the_series_decides_whether_evaluating_can_throw") {
+  TEST_CASE("noexcept_series") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Cell(5));
     auto reactor = until(condition, series);
@@ -111,7 +125,7 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 5);
   }
-  TEST_CASE("a_completed_condition_is_released") {
+  TEST_CASE("releasing_a_completed_condition") {
     auto condition = TrackedReactor<bool>(false, State::COMPLETE_EVALUATED);
     auto token = condition.get_token();
     auto series = Shared(Queue<int>());
@@ -122,7 +136,7 @@ TEST_SUITE("Until") {
     REQUIRE(token.expired());
   }
 
-  TEST_CASE("a_completed_series_is_released") {
+  TEST_CASE("releasing_a_completed_series") {
     auto series = TrackedReactor<int>(5, State::COMPLETE_EVALUATED);
     auto token = series.get_token();
     auto condition = Shared(Queue<bool>());

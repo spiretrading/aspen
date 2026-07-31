@@ -20,21 +20,21 @@ namespace {
 }
 
 TEST_SUITE("Fold") {
-  TEST_CASE("fold_empty") {
+  TEST_CASE("no_values") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto f = Fold(Lift(Accumulator(), left, right), left, right, none<int>());
     REQUIRE(f.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("fold_single_value") {
+  TEST_CASE("single_value") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto f = Fold(Lift(Accumulator(), left, right), left, right, constant(5));
     REQUIRE(f.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("fold_two_values") {
+  TEST_CASE("two_values") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto f = Fold(Lift(Accumulator(), left, right), left, right,
@@ -44,7 +44,7 @@ TEST_SUITE("Fold") {
     REQUIRE(f.eval() == 15);
   }
 
-  TEST_CASE("fold_three_values") {
+  TEST_CASE("three_values") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto f = Fold(Lift(Accumulator(), left, right), left, right,
@@ -56,7 +56,7 @@ TEST_SUITE("Fold") {
     REQUIRE(f.eval() == 35);
   }
 
-  TEST_CASE("fold_through_the_free_function") {
+  TEST_CASE("fold_function") {
     auto f = fold(Accumulator(), chain(1, chain(2, 3)));
     REQUIRE(f.commit(0) == State::CONTINUE);
     REQUIRE(f.commit(1) == State::CONTINUE_EVALUATED);
@@ -65,7 +65,7 @@ TEST_SUITE("Fold") {
     REQUIRE(f.eval() == 6);
   }
 
-  TEST_CASE("fold_keeps_its_value_when_the_evaluator_does_not_evaluate") {
+  TEST_CASE("evaluator_without_a_value") {
     auto blank = std::string();
     auto head = std::string(32, 'a');
     auto tail = std::string(32, 'b');
@@ -83,7 +83,7 @@ TEST_SUITE("Fold") {
     REQUIRE(f.eval() == head + tail);
   }
 
-  TEST_CASE("fold_propagates_an_exception") {
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto f = fold(Accumulator(), queue);
     queue->push(1);
@@ -93,7 +93,7 @@ TEST_SUITE("Fold") {
     REQUIRE_THROWS_AS(f.eval(), std::runtime_error);
   }
 
-  TEST_CASE("fold_a_series_that_fails_before_producing") {
+  TEST_CASE("exception_before_a_value") {
     auto queue = Shared(Queue<int>());
     auto f = fold(Accumulator(), queue);
     queue->set_complete(std::runtime_error("fail"));
@@ -101,7 +101,7 @@ TEST_SUITE("Fold") {
     REQUIRE_THROWS_AS(f.eval(), std::runtime_error);
   }
 
-  TEST_CASE("fold_an_evaluator_asking_to_be_committed_again") {
+  TEST_CASE("continuing_evaluator") {
     auto queue = Shared(Queue<int>());
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
@@ -122,7 +122,7 @@ TEST_SUITE("Fold") {
     REQUIRE(f.eval() == 100);
   }
 
-  TEST_CASE("fold_does_not_continue_when_its_evaluator_completes") {
+  TEST_CASE("completing_evaluator") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto queue = Shared(Queue<int>());
@@ -137,7 +137,39 @@ TEST_SUITE("Fold") {
     REQUIRE(f.eval() == 3);
   }
 
-  TEST_CASE("fold_does_not_complete_with_a_continuation") {
+  TEST_CASE("deferred_final_evaluation") {
+    auto left = make_fold_argument<int>();
+    auto right = make_fold_argument<int>();
+    auto count = std::make_shared<int>(0);
+    auto f = Fold(Lift([count] (const auto& left, const auto& right) {
+      ++*count;
+      if(*count == 1) {
+        return FunctionEvaluation<int>(State::CONTINUE);
+      }
+      return FunctionEvaluation<int>(*left + *right);
+    }, left, right), left, right, chain(1, 2));
+    REQUIRE(f.commit(0) == State::CONTINUE);
+    REQUIRE(f.commit(1) == State::COMPLETE);
+  }
+
+  TEST_CASE("value_arriving_during_a_continuation") {
+    auto queue = Shared(Queue<int>());
+    auto left = make_fold_argument<int>();
+    auto right = make_fold_argument<int>();
+    auto f = Fold(Lift([] (const auto& left, const auto& right) {
+      return FunctionEvaluation<int>(*left + *right, State::CONTINUE);
+    }, left, right), left, right, queue);
+    queue->push(1);
+    REQUIRE(f.commit(0) == State::NONE);
+    queue->push(2);
+    REQUIRE(f.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(f.eval() == 3);
+    queue->push(10);
+    REQUIRE(f.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(f.eval() == 13);
+  }
+
+  TEST_CASE("completion_with_a_continuation") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto f = Fold(Lift([] (const auto& left, const auto& right) {

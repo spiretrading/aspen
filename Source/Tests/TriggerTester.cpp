@@ -5,7 +5,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Trigger") {
-  TEST_CASE("signalling_a_slot") {
+  TEST_CASE("signalling") {
     auto count = 0;
     auto trigger = Trigger([&] {
       ++count;
@@ -22,7 +22,7 @@ TEST_SUITE("Trigger") {
     trigger.signal();
   }
 
-  TEST_CASE("the_trigger_in_use") {
+  TEST_CASE("current_trigger") {
     auto previous = Trigger::get_trigger();
     auto trigger = Trigger();
     Trigger::set_trigger(trigger);
@@ -34,7 +34,7 @@ TEST_SUITE("Trigger") {
     Trigger::set_trigger(previous);
   }
 
-  TEST_CASE("the_trigger_in_use_is_per_thread") {
+  TEST_CASE("current_trigger_per_thread") {
     auto previous = Trigger::get_trigger();
     auto trigger = Trigger();
     Trigger::set_trigger(trigger);

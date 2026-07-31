@@ -12,18 +12,18 @@ using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("When") {
-  TEST_CASE("a_condition_already_true") {
+  TEST_CASE("condition_that_is_true") {
     auto reactor = when(Constant(true), Constant(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("a_condition_already_false") {
+  TEST_CASE("condition_that_is_false") {
     auto reactor = when(Constant(false), Constant(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("a_condition_turning_true_later") {
+  TEST_CASE("condition_turning_true") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     auto reactor = when(condition, series);
@@ -40,7 +40,18 @@ TEST_SUITE("When") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_condition_that_continues") {
+  TEST_CASE("trigger_without_a_pending_value") {
+    auto condition = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    auto reactor = when(condition, series);
+    condition->push(true);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    series->push(7);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 7);
+  }
+
+  TEST_CASE("continuing_condition") {
     auto condition = Shared(Queue<bool>());
     condition->push(false);
     condition->push(false);
@@ -49,7 +60,7 @@ TEST_SUITE("When") {
     REQUIRE(reactor.commit(1) == State::NONE);
   }
 
-  TEST_CASE("a_series_that_continues") {
+  TEST_CASE("continuing_series") {
     auto series = Shared(Queue<int>());
     series->push(1);
     series->push(2);
@@ -60,14 +71,14 @@ TEST_SUITE("When") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_condition_that_fails") {
+  TEST_CASE("condition_exception") {
     auto condition = Shared(Queue<bool>());
     auto reactor = when(condition, Constant(5));
     condition->set_complete(std::runtime_error("bad"));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("a_series_that_fails") {
+  TEST_CASE("series_exception") {
     auto series = Shared(Queue<int>());
     auto reactor = when(Constant(true), series);
     series->set_complete(std::runtime_error("fail"));
@@ -75,7 +86,7 @@ TEST_SUITE("When") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("children_that_cannot_throw") {
+  TEST_CASE("noexcept_children") {
     auto condition = Shared(Cell(false));
     auto series = Shared(Cell(9));
     auto reactor = when(condition, series);
@@ -89,7 +100,7 @@ TEST_SUITE("When") {
     REQUIRE(reactor.eval() == 10);
   }
 
-  TEST_CASE("only_the_series_decides_whether_evaluating_can_throw") {
+  TEST_CASE("noexcept_series") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Cell(9));
     auto reactor = when(condition, series);
@@ -99,12 +110,12 @@ TEST_SUITE("When") {
     REQUIRE(reactor.eval() == 9);
   }
 
-  TEST_CASE("a_series_evaluating_by_value") {
+  TEST_CASE("by_value_series") {
     auto reactor = When(Constant(true), ByValueReactor(CountedValue(1)));
     test_evaluation_lifetime(reactor);
   }
 
-  TEST_CASE("a_series_evaluating_by_value_after_the_condition_turns_true") {
+  TEST_CASE("by_value_series_after_the_trigger") {
     auto condition = Shared(Queue<bool>());
     auto reactor = When(condition, ByValueReactor(CountedValue(1)));
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -115,7 +126,7 @@ TEST_SUITE("When") {
     REQUIRE(CountedValue::get_destructions() == 0);
   }
 
-  TEST_CASE("a_series_evaluating_by_reference_does_not_copy") {
+  TEST_CASE("by_reference_series") {
     auto reactor = When(Constant(true), Constant(CountedValue(1)));
     REQUIRE(has_evaluation(reactor.commit(0)));
     CountedValue::reset_counts();
@@ -123,7 +134,7 @@ TEST_SUITE("When") {
     REQUIRE(CountedValue::get_copies() == 0);
   }
 
-  TEST_CASE("a_completed_condition_is_released") {
+  TEST_CASE("releasing_a_completed_condition") {
     auto condition = TrackedReactor<bool>(true, State::COMPLETE_EVALUATED);
     auto token = condition.get_token();
     auto reactor = when(std::move(condition), Constant(5));

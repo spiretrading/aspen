@@ -4,13 +4,16 @@
 #include <doctest/doctest.h>
 #include "Aspen/Constant.hpp"
 #include "Aspen/Reactor.hpp"
+#include "Aspen/Shared.hpp"
+#include "Aspen/Tests/ReactorTests.hpp"
 #include "Aspen/Throw.hpp"
 #include "Aspen/Unique.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 TEST_SUITE("Unique") {
-  TEST_CASE("unique_constant") {
+  TEST_CASE("constant") {
     static_assert(IsReactorOf<Unique<Constant<int>>, int>);
     auto reactor = Unique(new Constant(123));
     REQUIRE(is_noexcept_reactor_v<decltype(reactor)>);
@@ -23,27 +26,40 @@ TEST_SUITE("Unique") {
     REQUIRE(reference->eval() == 123);
   }
 
-  TEST_CASE("unique_from_a_unique_ptr") {
+  TEST_CASE("from_a_unique_ptr") {
     auto reactor = Unique(std::make_unique<Constant<int>>(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("moving_a_unique") {
+  TEST_CASE("move_construction") {
     auto reactor = Unique(new Constant(7));
     auto moved = std::move(reactor);
     REQUIRE(moved.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(moved.eval() == 7);
   }
 
-  TEST_CASE("assigning_into_an_uninitialized_unique") {
+  TEST_CASE("move_assignment") {
     auto reactor = Unique<Constant<int>>();
     reactor = Unique(new Constant(9));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 9);
   }
 
-  TEST_CASE("a_reactor_that_fails") {
+  TEST_CASE("transferring_ownership_to_a_shared") {
+    auto reactor =
+      Unique(new TrackedReactor<int>(1, State::COMPLETE_EVALUATED));
+    auto token = reactor->get_token();
+    auto shared =
+      std::optional(Shared<TrackedReactor<int>>(std::move(reactor)));
+    REQUIRE(!token.expired());
+    REQUIRE(shared->commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(shared->eval() == 1);
+    shared = std::nullopt;
+    REQUIRE(token.expired());
+  }
+
+  TEST_CASE("exception") {
     auto reactor = Unique(new Throw<int>(std::runtime_error("fail")));
     REQUIRE(!is_noexcept_reactor_v<decltype(reactor)>);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);

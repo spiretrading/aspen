@@ -42,10 +42,22 @@ namespace {
       return 0;
     }
   };
+
+  struct Mutating {
+    using Type = int;
+
+    State commit(std::uint64_t sequence) noexcept {
+      return State::NONE;
+    }
+
+    int eval() noexcept {
+      return 0;
+    }
+  };
 }
 
 TEST_SUITE("Reactor") {
-  TEST_CASE("identifying_a_reactor") {
+  TEST_CASE("is_reactor") {
     REQUIRE(IsReactor<Constant<int>>);
     REQUIRE(IsReactor<None<int>>);
     REQUIRE(IsReactor<Perpetual>);
@@ -56,13 +68,13 @@ TEST_SUITE("Reactor") {
     REQUIRE(!IsReactor<std::string>);
   }
 
-  TEST_CASE("a_type_that_only_commits_is_not_a_reactor") {
+  TEST_CASE("type_without_an_evaluation") {
     REQUIRE(!IsReactor<Commiter>);
     REQUIRE(!IsReactor<Branch<Constant<int>>>);
     REQUIRE(!IsReactor<CommitHandler<Constant<int>>>);
   }
 
-  TEST_CASE("identifying_what_a_reactor_evaluates_to") {
+  TEST_CASE("is_reactor_of") {
     REQUIRE((IsReactorOf<Constant<int>, int>));
     REQUIRE((IsReactorOf<None<std::string>, std::string>));
     REQUIRE((IsReactorOf<Box<int>, int>));
@@ -72,25 +84,37 @@ TEST_SUITE("Reactor") {
     REQUIRE(!(IsReactorOf<int, int>));
   }
 
-  TEST_CASE("a_reactor_evaluating_to_nothing") {
+  TEST_CASE("void_reactor") {
     REQUIRE((IsReactorOf<Perpetual, void>));
     REQUIRE((IsReactorOf<Box<void>, void>));
     REQUIRE(!(IsReactorOf<Perpetual, int>));
   }
 
-  TEST_CASE("a_reactor_evaluating_by_value") {
+  TEST_CASE("by_value_reactor") {
     REQUIRE((IsReactorOf<StateReactor<Constant<int>>, State>));
     REQUIRE(!(IsReactorOf<StateReactor<Constant<int>>, int>));
   }
 
-  TEST_CASE("a_type_that_can_throw_when_committed_is_not_a_reactor") {
+  TEST_CASE("type_with_a_throwing_commit") {
     REQUIRE(!IsReactor<Throwing>);
     REQUIRE(!(IsReactorOf<Throwing, int>));
   }
 
-  TEST_CASE("a_type_disagreeing_with_its_own_type_is_not_a_reactor") {
+  TEST_CASE("type_with_a_mismatched_evaluation") {
     REQUIRE(!IsReactor<Mismatched>);
     REQUIRE(!(IsReactorOf<Mismatched, int>));
     REQUIRE(!(IsReactorOf<Mismatched, double>));
+  }
+
+  TEST_CASE("type_with_a_non_const_evaluation") {
+    REQUIRE(!IsReactor<Mutating>);
+    REQUIRE(!(IsReactorOf<Mutating, int>));
+  }
+
+  TEST_CASE("qualified_reactor_type") {
+    REQUIRE(!IsReactor<Constant<int>&>);
+    REQUIRE(!IsReactor<const Constant<int>&>);
+    REQUIRE(!IsReactor<const Constant<int>>);
+    REQUIRE(!IsReactor<Constant<int>&&>);
   }
 }

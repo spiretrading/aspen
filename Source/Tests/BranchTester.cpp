@@ -41,7 +41,7 @@ namespace {
 }
 
 TEST_SUITE("Branch") {
-  TEST_CASE("an_unraised_branch_is_skipped") {
+  TEST_CASE("unraised_branch") {
     auto counter = Counter(State::NONE);
     auto count = counter.get_count();
     auto branch = Branch(std::move(counter));
@@ -53,7 +53,7 @@ TEST_SUITE("Branch") {
     REQUIRE(*count == 1);
   }
 
-  TEST_CASE("raising_a_branch_commits_it_again") {
+  TEST_CASE("raising") {
     auto cell = Shared(Cell(1));
     auto branch = Branch(cell);
     REQUIRE(branch.commit(0) == State::EVALUATED);
@@ -66,7 +66,7 @@ TEST_SUITE("Branch") {
     REQUIRE(branch->eval() == 2);
   }
 
-  TEST_CASE("completion_survives_a_skipped_commit") {
+  TEST_CASE("completion") {
     auto branch = Branch(constant(5));
     REQUIRE(branch.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(branch.commit(1) == State::COMPLETE);
@@ -74,7 +74,7 @@ TEST_SUITE("Branch") {
     REQUIRE(branch->eval() == 5);
   }
 
-  TEST_CASE("a_continuation_is_committed_again") {
+  TEST_CASE("continuation") {
     auto counter = Counter(State::CONTINUE_EVALUATED);
     auto count = counter.get_count();
     auto branch = Branch(std::move(counter));
@@ -86,7 +86,7 @@ TEST_SUITE("Branch") {
     REQUIRE(*count == 3);
   }
 
-  TEST_CASE("moving_a_branch_preserves_propagation") {
+  TEST_CASE("move_construction") {
     auto cell = Shared(Cell(1));
     auto branch = Branch(cell);
     REQUIRE(branch.commit(0) == State::EVALUATED);
@@ -100,7 +100,7 @@ TEST_SUITE("Branch") {
     REQUIRE(moved->eval() == 3);
   }
 
-  TEST_CASE("destroying_a_moved_from_branch_preserves_propagation") {
+  TEST_CASE("destroying_a_moved_from_branch") {
     auto cell = Shared(Cell(1));
     auto branch = std::optional(Branch(cell));
     REQUIRE(branch->commit(0) == State::EVALUATED);
@@ -111,7 +111,7 @@ TEST_SUITE("Branch") {
     REQUIRE(moved->eval() == 2);
   }
 
-  TEST_CASE("a_completed_branch_with_a_slot_is_not_committed_again") {
+  TEST_CASE("completed_branch_with_a_slot") {
     auto word = std::atomic_uint64_t(0);
     auto counter = Counter(State::COMPLETE_EVALUATED);
     auto count = counter.get_count();
@@ -123,7 +123,7 @@ TEST_SUITE("Branch") {
     REQUIRE(*count == 1);
   }
 
-  TEST_CASE("assigning_a_branch_commits_it_again") {
+  TEST_CASE("assignment") {
     auto first = Shared(Cell(1));
     auto second = Shared(Cell(2));
     auto third = Shared(Cell(3));
@@ -142,7 +142,7 @@ TEST_SUITE("Branch") {
     REQUIRE(branch.commit(5) == State::NONE);
   }
 
-  TEST_CASE("a_branch_reports_to_the_flag_it_was_committed_under") {
+  TEST_CASE("reporting_to_a_flag") {
     auto cell = Shared(Cell(1));
     auto branch = Branch(cell);
     auto first = CommitFlag();
@@ -161,7 +161,7 @@ TEST_SUITE("Branch") {
     REQUIRE(second.is_raised());
   }
 
-  TEST_CASE("copying_a_branch_preserves_propagation") {
+  TEST_CASE("copy_construction") {
     auto cell = Shared(Cell(1));
     auto branch = Branch(cell);
     REQUIRE(branch.commit(0) == State::EVALUATED);

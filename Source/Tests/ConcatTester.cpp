@@ -15,7 +15,7 @@ using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("Concat") {
-  TEST_CASE("constant_then_empty") {
+  TEST_CASE("constant_then_none") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto reactor = concat(series);
     series->push(shared_box(5));
@@ -29,7 +29,7 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("constant_empty_constant") {
+  TEST_CASE("none_between_constants") {
     auto series = Shared<Queue<SharedBox<int>>>();
     series->push(shared_box(5));
     series->push(shared_box(None<int>()));
@@ -44,7 +44,7 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.eval() == 10);
   }
 
-  TEST_CASE("an_empty_producer_completes") {
+  TEST_CASE("empty_producer") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto reactor = concat(series);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -52,14 +52,14 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("a_producer_that_throws_is_ignored") {
+  TEST_CASE("producer_exception") {
     auto series = Shared<Queue<SharedBox<int>>>();
     series->set_complete(std::runtime_error("fail"));
     auto reactor = concat(series);
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("a_child_producing_several_values") {
+  TEST_CASE("child_with_several_values") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto child = Shared(Queue<int>());
     series->set_complete(shared_box(child));
@@ -76,7 +76,7 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(3) == State::COMPLETE);
   }
 
-  TEST_CASE("a_child_arriving_while_another_produces") {
+  TEST_CASE("child_arriving_mid_stream") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -97,7 +97,7 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(3) == State::COMPLETE);
   }
 
-  TEST_CASE("no_evaluation_continue") {
+  TEST_CASE("continuation_without_a_value") {
     auto series = Shared<Queue<SharedBox<int>>>();
     series->push(shared_box(10));
     series->push(shared_box(last(chain(3, 1))));
@@ -111,12 +111,29 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.eval() == 1);
   }
 
-  TEST_CASE("concat_children_evaluating_by_value") {
+  TEST_CASE("by_value_child") {
     auto reactor = Concat(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
   }
 
-  TEST_CASE("a_completed_producer_is_released") {
+  TEST_CASE("releasing_a_completed_child") {
+    auto first = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
+    auto token = first.get_token();
+    auto second = Shared(Queue<int>());
+    second->push(2);
+    auto producer = Queue<SharedBox<int>>();
+    producer.push(shared_box(std::move(first)));
+    producer.set_complete(shared_box(second));
+    auto reactor = concat(std::move(producer));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(!token.expired());
+    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(token.expired());
+  }
+
+  TEST_CASE("releasing_a_completed_producer") {
     auto producer = TrackedReactor<SharedBox<int>>(
       shared_box(Constant(5)), State::COMPLETE_EVALUATED);
     auto token = producer.get_token();

@@ -6,7 +6,7 @@
 using namespace Aspen;
 
 TEST_SUITE("None") {
-  TEST_CASE("none_int") {
+  TEST_CASE("evaluation") {
     static_assert(IsReactorOf<None<int>, int>);
     static_assert(None<int>().commit(0) == State::COMPLETE);
     auto reactor = None<int>();
@@ -15,7 +15,7 @@ TEST_SUITE("None") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("none_void") {
+  TEST_CASE("void_evaluation") {
     auto reactor = none<void>();
     REQUIRE(reactor.commit(0) == State::COMPLETE);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);

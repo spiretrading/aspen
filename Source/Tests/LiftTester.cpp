@@ -65,19 +65,19 @@ namespace {
 }
 
 TEST_SUITE("Lift") {
-  TEST_CASE("lift_no_parameters") {
+  TEST_CASE("no_parameters") {
     auto reactor = Lift(no_parameter_function);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 512);
   }
 
-  TEST_CASE("lift_no_parameters_throw") {
+  TEST_CASE("no_parameters_that_throws") {
     auto reactor = Lift(no_parameter_function_throw);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("lift_no_parameters_is_noexcept") {
+  TEST_CASE("noexcept_no_parameters") {
     auto reactor = Lift([] () noexcept {
       return 512;
     });
@@ -88,7 +88,7 @@ TEST_SUITE("Lift") {
     REQUIRE(!decltype(Lift(no_parameter_function))::is_noexcept);
   }
 
-  TEST_CASE("lift_no_parameters_returning_a_maybe") {
+  TEST_CASE("no_parameters_returning_a_maybe") {
     auto reactor = Lift([] () noexcept {
       return Maybe<int>(std::make_exception_ptr(std::runtime_error("bad")));
     });
@@ -98,13 +98,13 @@ TEST_SUITE("Lift") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("lift_constant_argument") {
+  TEST_CASE("constant_argument") {
     auto reactor = Lift(square, Constant(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 25);
   }
 
-  TEST_CASE("lift_one_argument_updates") {
+  TEST_CASE("one_argument") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift(square, queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -123,7 +123,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 16);
   }
 
-  TEST_CASE("complete_arguments") {
+  TEST_CASE("completing_arguments") {
     auto queue = Shared(Queue<int>());
     queue->push(10);
     queue.commit(0);
@@ -133,7 +133,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 100);
   }
 
-  TEST_CASE("lifting_over_several_arguments") {
+  TEST_CASE("several_arguments") {
     auto left = Shared(Queue<int>());
     auto right = Shared(Queue<int>());
     auto reactor = Lift([] (int a, int b) {
@@ -149,7 +149,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 20);
   }
 
-  TEST_CASE("an_argument_that_throws") {
+  TEST_CASE("argument_exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift(square, queue);
     queue->set_complete(std::runtime_error("fail"));
@@ -157,7 +157,7 @@ TEST_SUITE("Lift") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("lifting_a_void_function") {
+  TEST_CASE("void_function") {
     auto queue = Shared(Queue<int>());
     auto total = std::make_shared<int>(0);
     auto reactor = Lift([total] (int value) {
@@ -173,7 +173,7 @@ TEST_SUITE("Lift") {
     REQUIRE(*total == 7);
   }
 
-  TEST_CASE("lifting_a_void_function_that_throws") {
+  TEST_CASE("void_function_exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       throw std::runtime_error("fail");
@@ -183,7 +183,7 @@ TEST_SUITE("Lift") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("lifting_a_void_function_that_completes") {
+  TEST_CASE("void_function_completing") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       return FunctionEvaluation<void>(State::COMPLETE);
@@ -192,7 +192,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("lifting_a_void_function_that_continues") {
+  TEST_CASE("void_function_continuing") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       return FunctionEvaluation<void>(State::CONTINUE);
@@ -201,7 +201,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(0) == State::CONTINUE);
   }
 
-  TEST_CASE("lifting_a_void_function_that_evaluates_and_continues") {
+  TEST_CASE("void_function_evaluating_and_continuing") {
     auto queue = Shared(Queue<int>());
     auto total = std::make_shared<int>(0);
     auto reactor = Lift([total] (int value) {
@@ -213,7 +213,7 @@ TEST_SUITE("Lift") {
     REQUIRE(*total == 1);
   }
 
-  TEST_CASE("lifting_a_void_function_returning_a_failure") {
+  TEST_CASE("void_function_returning_an_exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       return Maybe<void>(std::make_exception_ptr(std::runtime_error("fail")));
@@ -223,7 +223,7 @@ TEST_SUITE("Lift") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("lifting_to_a_type_without_a_default") {
+  TEST_CASE("result_without_a_default") {
     auto cell = Shared(Cell(1));
     auto reactor = Lift([] (int value) noexcept {
       return Required(value);
@@ -235,7 +235,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval().m_value == 7);
   }
 
-  TEST_CASE("lifting_from_a_type_without_a_default") {
+  TEST_CASE("argument_without_a_default") {
     auto reactor = Lift([] (const Required& value) noexcept {
       return value.m_value;
     }, Constant(Required(5)));
@@ -243,7 +243,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("an_evaluation_does_not_copy_its_arguments") {
+  TEST_CASE("argument_copies") {
     auto left = Shared(Cell(Counted(1)));
     auto right = Shared(Cell(Counted(2)));
     auto reactor = Lift([] (const Counted& a, const Counted& b) noexcept {
@@ -258,7 +258,7 @@ TEST_SUITE("Lift") {
     REQUIRE(Counted::copies == copies);
   }
 
-  TEST_CASE("a_generic_function_sees_the_evaluation") {
+  TEST_CASE("generic_function") {
     auto cell = Shared(Cell(1));
     auto reactor = Lift([] (auto&& value) noexcept {
       return value;
@@ -271,7 +271,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 4);
   }
 
-  TEST_CASE("lifting_a_function_returning_an_optional") {
+  TEST_CASE("function_returning_an_optional") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       if(value % 2 == 0) {
@@ -287,7 +287,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("lifting_a_function_returning_a_maybe") {
+  TEST_CASE("function_returning_a_maybe") {
     auto cell = Shared(Cell(1));
     auto reactor = Lift([] (int value) noexcept {
       if(value < 0) {
@@ -307,7 +307,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 6);
   }
 
-  TEST_CASE("lifting_a_function_returning_an_evaluation") {
+  TEST_CASE("function_returning_an_evaluation") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       if(value < 0) {
@@ -322,7 +322,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("lifting_a_function_returning_an_optional_evaluation") {
+  TEST_CASE("function_returning_an_optional_evaluation") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       return FunctionEvaluation<int>(std::optional(value), State::COMPLETE);
@@ -332,7 +332,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("lifting_a_function_returning_an_empty_optional_evaluation") {
+  TEST_CASE("function_returning_an_empty_evaluation") {
     auto queue = Shared(Queue<int>());
     auto reactor = Lift([] (int value) {
       return FunctionEvaluation<int>(std::optional<int>(), State::COMPLETE);
@@ -341,7 +341,38 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("a_function_asking_to_be_committed_again") {
+  TEST_CASE("continuation_with_a_completed_child") {
+    auto queue = Shared(Queue<int>());
+    auto count = std::make_shared<int>(0);
+    auto reactor = Lift([count] (int value) {
+      ++*count;
+      if(*count == 1) {
+        return FunctionEvaluation<int>(value, State::CONTINUE);
+      }
+      return FunctionEvaluation<int>(value + 100);
+    }, queue);
+    queue->set_complete(1);
+    auto first = reactor.commit(0);
+    REQUIRE(has_evaluation(first));
+    REQUIRE(has_continuation(first));
+    REQUIRE(!is_complete(first));
+    REQUIRE(reactor.eval() == 1);
+    auto second = reactor.commit(1);
+    REQUIRE(has_evaluation(second));
+    REQUIRE(is_complete(second));
+    REQUIRE(reactor.eval() == 101);
+  }
+
+  TEST_CASE("empty_evaluation_with_a_completed_child") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([] (int value) {
+      return std::optional<int>();
+    }, queue);
+    queue->set_complete(1);
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
+  TEST_CASE("continuing_function") {
     auto queue = Shared(Queue<int>());
     auto count = std::make_shared<int>(0);
     auto reactor = Lift([count] (int value) {
@@ -361,7 +392,7 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(3) == State::NONE);
   }
 
-  TEST_CASE("an_evaluation_is_noexcept_when_everything_is") {
+  TEST_CASE("noexcept_evaluation") {
     auto cell = Shared(Cell(1));
     auto safe = Lift([] (int value) noexcept {
       return value;

@@ -20,7 +20,7 @@ namespace {
 }
 
 TEST_SUITE("Concur") {
-  TEST_CASE("empty_concur") {
+  TEST_CASE("no_children") {
     auto queue = Shared(Queue<SharedBox<int>>());
     auto reactor = concur(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -28,7 +28,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("loop_complete") {
+  TEST_CASE("completion") {
     auto queue = Shared(Queue<SharedBox<int>>());
     auto reactor = concur(queue);
     queue->push(shared_box(constant(123)));
@@ -40,7 +40,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("children_are_evaluated_in_turn") {
+  TEST_CASE("evaluating_in_turn") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -60,7 +60,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_child_waits_its_turn_while_another_has_values") {
+  TEST_CASE("child_waiting_its_turn") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -81,7 +81,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_child_with_more_values_continues") {
+  TEST_CASE("continuing_child") {
     auto producer = Producer();
     auto child = Shared(Queue<int>());
     producer->set_complete(shared_box(child));
@@ -97,7 +97,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::NONE);
   }
 
-  TEST_CASE("a_completed_child_is_removed") {
+  TEST_CASE("removing_a_completed_child") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -114,7 +114,25 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 7);
   }
 
-  TEST_CASE("an_evaluated_child_survives_its_completion") {
+  TEST_CASE("destroying_a_completed_child") {
+    auto producer = Producer();
+    auto tracked = TrackedReactor<int>(9, State::COMPLETE_EVALUATED);
+    auto token = tracked.get_token();
+    auto second = Shared(Queue<int>());
+    producer->push(shared_box(std::move(tracked)));
+    producer->push(shared_box(second));
+    producer->set_complete();
+    auto reactor = concur(producer);
+    auto sequence = std::uint64_t(0);
+    absorb(reactor, sequence, 2);
+    REQUIRE(!token.expired());
+    second->push(3);
+    REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+    REQUIRE(token.expired());
+  }
+
+  TEST_CASE("completed_child_holding_an_evaluation") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -138,7 +156,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 4);
   }
 
-  TEST_CASE("the_last_child_evaluating_as_it_completes") {
+  TEST_CASE("last_child_completing_with_a_value") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -156,14 +174,14 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 3);
   }
 
-  TEST_CASE("a_producer_that_throws_is_ignored") {
+  TEST_CASE("producer_exception") {
     auto producer = Producer();
     producer->set_complete(std::runtime_error("fail"));
     auto reactor = concur(producer);
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("a_child_that_throws_is_evaluated") {
+  TEST_CASE("child_exception") {
     auto producer = Producer();
     auto child = Shared(Queue<int>());
     producer->set_complete(shared_box(child));
@@ -175,7 +193,7 @@ TEST_SUITE("Concur") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("children_outlive_a_completed_producer") {
+  TEST_CASE("completed_producer") {
     auto producer = Producer();
     auto child = Shared(Queue<int>());
     producer->set_complete(shared_box(child));
@@ -192,7 +210,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::COMPLETE);
   }
 
-  TEST_CASE("evaluating_more_children_than_a_word_holds") {
+  TEST_CASE("more_children_than_a_word") {
     auto producer = Producer();
     auto queues = std::vector<Shared<Queue<int>>>();
     for(auto i = 0; i != 100; ++i) {
@@ -211,7 +229,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 3);
   }
 
-  TEST_CASE("a_slot_is_reused_by_a_later_child") {
+  TEST_CASE("reusing_a_slot") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -233,7 +251,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_child_produced_after_another_completes") {
+  TEST_CASE("child_produced_after_a_completion") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -253,7 +271,7 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::COMPLETE);
   }
 
-  TEST_CASE("moving_a_concur_resumes_where_it_left_off") {
+  TEST_CASE("move_construction") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -272,7 +290,7 @@ TEST_SUITE("Concur") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("a_child_produced_later_is_evaluated") {
+  TEST_CASE("child_produced_later") {
     auto producer = Producer();
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
@@ -290,12 +308,12 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("concur_children_evaluating_by_value") {
+  TEST_CASE("by_value_child") {
     auto reactor = Concur(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
   }
 
-  TEST_CASE("a_child_completing_without_evaluating") {
+  TEST_CASE("child_completing_without_a_value") {
     auto queue = Shared(Queue<SharedBox<int>>());
     auto reactor = concur(queue);
     queue->push(shared_box(None<int>()));

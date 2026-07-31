@@ -10,27 +10,27 @@
 using namespace Aspen;
 
 TEST_SUITE("Queue") {
-  TEST_CASE("queue_immediate_complete") {
+  TEST_CASE("immediate_completion") {
     auto queue = Queue<int>();
     queue.set_complete();
     REQUIRE(queue.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("queue_complete_with_exception") {
+  TEST_CASE("immediate_exception") {
     auto queue = Queue<int>();
     queue.set_complete(std::runtime_error(""));
     REQUIRE(queue.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(queue.eval(), std::runtime_error);
   }
 
-  TEST_CASE("queue_single_value") {
+  TEST_CASE("value") {
     auto queue = Queue<int>();
     queue.set_complete(123);
     REQUIRE(queue.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(queue.eval() == 123);
   }
 
-  TEST_CASE("queue_single_value_then_complete") {
+  TEST_CASE("value_then_completion") {
     auto queue = Queue<int>();
     queue.push(321);
     REQUIRE(queue.commit(0) == State::EVALUATED);
@@ -40,7 +40,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.eval() == 321);
   }
 
-  TEST_CASE("queue_single_value_then_exception") {
+  TEST_CASE("value_then_an_exception") {
     auto queue = Queue<int>();
     queue.push(321);
     REQUIRE(queue.commit(0) == State::EVALUATED);
@@ -50,14 +50,14 @@ TEST_SUITE("Queue") {
     REQUIRE_THROWS_AS(queue.eval(), std::runtime_error);
   }
 
-  TEST_CASE("queue_empty_then_complete") {
+  TEST_CASE("completion_while_empty") {
     auto queue = Queue<int>();
     REQUIRE(queue.commit(0) == State::NONE);
     queue.set_complete();
     REQUIRE(queue.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("queue_empty_then_evaluated") {
+  TEST_CASE("value_while_empty") {
     auto queue = Queue<int>();
     REQUIRE(queue.commit(0) == State::NONE);
     queue.push(1);
@@ -65,7 +65,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.eval() == 1);
   }
 
-  TEST_CASE("queue_empty_then_complete_evaluated") {
+  TEST_CASE("completion_with_a_value_while_empty") {
     auto queue = Queue<int>();
     REQUIRE(queue.commit(0) == State::NONE);
     queue.set_complete(1);
@@ -73,7 +73,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.eval() == 1);
   }
 
-  TEST_CASE("queue_empty_then_complete_exception") {
+  TEST_CASE("exception_while_empty") {
     auto queue = Queue<int>();
     REQUIRE(queue.commit(0) == State::NONE);
     queue.set_complete(std::runtime_error("fail"));
@@ -81,7 +81,7 @@ TEST_SUITE("Queue") {
     REQUIRE_THROWS_AS(queue.eval(), std::runtime_error);
   }
 
-  TEST_CASE("queue_several_values") {
+  TEST_CASE("several_values") {
     auto queue = Queue<int>();
     queue.push(1);
     queue.push(2);
@@ -95,7 +95,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(3) == State::NONE);
   }
 
-  TEST_CASE("queue_move_construction") {
+  TEST_CASE("move_construction") {
     auto queue = Queue<int>();
     queue.push(1);
     queue.push(2);
@@ -106,7 +106,7 @@ TEST_SUITE("Queue") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("queue_move_assignment") {
+  TEST_CASE("move_assignment") {
     auto queue = Queue<int>();
     queue.push(1);
     queue.set_complete();
@@ -117,7 +117,7 @@ TEST_SUITE("Queue") {
     REQUIRE(moved.eval() == 1);
   }
 
-  TEST_CASE("queue_self_move_assignment") {
+  TEST_CASE("self_move_assignment") {
     auto queue = Queue<int>();
     queue.push(1);
     auto& alias = queue;
@@ -126,7 +126,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.eval() == 1);
   }
 
-  TEST_CASE("pushing_from_the_slot_a_push_signals") {
+  TEST_CASE("pushing_from_a_slot") {
     auto queue = Queue<int>();
     auto flag = CommitFlag();
     auto is_pushed = false;
@@ -170,7 +170,7 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("move_assigning_a_queue_in_a_graph") {
+  TEST_CASE("move_assignment_in_a_graph") {
     auto flag = CommitFlag();
     auto destination = Queue<int>();
     {

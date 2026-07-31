@@ -15,7 +15,7 @@
 using namespace Aspen;
 
 TEST_SUITE("MultiSync") {
-  TEST_CASE("empty_multi_sync") {
+  TEST_CASE("no_values") {
     auto record = std::tuple<int, std::string, double>();
     auto reactor = MultiSync(record, Sync(std::get<0>(record), none<int>()),
       Sync(std::get<1>(record), constant("hello")),
@@ -25,7 +25,7 @@ TEST_SUITE("MultiSync") {
     REQUIRE(record == std::tuple(0, "", 0.0));
   }
 
-  TEST_CASE("single_multi_sync") {
+  TEST_CASE("value") {
     auto record = std::tuple<int, std::string, double>();
     auto reactor = MultiSync(record, Sync(std::get<0>(record), constant(5)),
       Sync(std::get<1>(record), constant("hello")),
@@ -36,7 +36,7 @@ TEST_SUITE("MultiSync") {
     REQUIRE(record == std::tuple(5, "hello", 3.14));
   }
 
-  TEST_CASE("exception_multi_sync") {
+  TEST_CASE("exception") {
     auto record = std::tuple<int, std::string, double>();
     auto reactor = MultiSync(record, Sync(std::get<0>(record),
       chain(throws<int>(std::runtime_error("fail")), constant(12))),
@@ -50,7 +50,7 @@ TEST_SUITE("MultiSync") {
     REQUIRE(record == std::tuple(12, "hello", 3.14));
   }
 
-  TEST_CASE("multi_sync_follows_every_update") {
+  TEST_CASE("following_every_update") {
     auto record = std::tuple<int, int>();
     auto left = Shared(Cell(1));
     auto right = Shared(Cell(2));
@@ -68,7 +68,21 @@ TEST_SUITE("MultiSync") {
     REQUIRE(reactor.eval() == std::tuple(10, 20));
   }
 
-  TEST_CASE("multi_sync_reports_an_exception") {
+  TEST_CASE("later_element_failing") {
+    auto record = std::tuple<int, std::string>();
+    auto first = Shared(Cell(1));
+    auto second = Shared(Queue<std::string>());
+    auto reactor = MultiSync(record, Sync(std::get<0>(record), first),
+      Sync(std::get<1>(record), second));
+    REQUIRE(reactor.get_exception() == nullptr);
+    second->set_complete(std::runtime_error("fail"));
+    REQUIRE(has_evaluation(reactor.commit(0)));
+    REQUIRE(reactor.get_exception() != nullptr);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+    REQUIRE(std::get<0>(record) == 1);
+  }
+
+  TEST_CASE("reporting_an_exception") {
     auto record = std::tuple<int, std::string>();
     auto queue = Shared(Queue<int>());
     auto reactor = MultiSync(record, Sync(std::get<0>(record), queue),

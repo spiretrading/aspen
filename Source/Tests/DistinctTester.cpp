@@ -10,7 +10,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Distinct") {
-  TEST_CASE("multiple") {
+  TEST_CASE("repeated_values") {
     auto queue = Shared(Queue<int>());
     auto reactor = distinct(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -37,7 +37,7 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("a_noexcept_source") {
+  TEST_CASE("noexcept_source") {
     auto cell = Shared(Cell(1));
     auto reactor = distinct(cell);
     REQUIRE(decltype(reactor)::is_noexcept);
@@ -54,7 +54,7 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_value_requiring_an_allocation") {
+  TEST_CASE("allocating_value") {
     auto cell = Shared(Cell(std::string("a")));
     auto reactor = distinct(cell);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
@@ -65,6 +65,29 @@ TEST_SUITE("Distinct") {
     cell->set("a");
     REQUIRE(reactor.commit(2) == State::NONE);
     REQUIRE(reactor.eval() == "b");
+  }
+
+  TEST_CASE("completion_with_a_repeat") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = distinct(queue);
+    queue->push(10);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    queue->set_complete(10);
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
+  }
+
+  TEST_CASE("continuation_with_a_repeat") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = distinct(queue);
+    queue->push(10);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    queue->push(10);
+    queue->push(20);
+    REQUIRE(reactor.commit(1) == State::CONTINUE);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 20);
   }
 
   TEST_CASE("exception") {

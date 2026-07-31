@@ -10,7 +10,7 @@ static_assert(std::is_same_v<decltype(
   std::declval<const ByValueReactor<CountedValue>&>().eval()), CountedValue>);
 
 TEST_SUITE("ReactorTests") {
-  TEST_CASE("counting_copies_and_destructions") {
+  TEST_CASE("counted_value") {
     CountedValue::reset_counts();
     {
       auto value = CountedValue(5);
@@ -24,7 +24,7 @@ TEST_SUITE("ReactorTests") {
     REQUIRE(CountedValue::get_destructions() == 2);
   }
 
-  TEST_CASE("evaluating_a_reactor_by_value") {
+  TEST_CASE("by_value_reactor") {
     auto reactor = ByValueReactor(CountedValue(7));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval().get_value() == 7);
@@ -33,7 +33,7 @@ TEST_SUITE("ReactorTests") {
     REQUIRE(CountedValue::get_copies() == 1);
   }
 
-  TEST_CASE("an_evaluation_that_outlives_its_reactor_call") {
+  TEST_CASE("evaluation_lifetime") {
     auto reactor = ByValueReactor(CountedValue(9));
     test_evaluation_lifetime(reactor);
   }

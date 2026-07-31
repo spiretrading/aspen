@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Executor.hpp"
@@ -37,7 +38,7 @@ namespace {
 }
 
 TEST_SUITE("Executor") {
-  TEST_CASE("run_until_none_empty") {
+  TEST_CASE("run_until_none_with_no_update") {
     auto result = std::optional<int>();
     auto executor = Executor(
       lift([&] (const auto& value) {
@@ -47,7 +48,7 @@ TEST_SUITE("Executor") {
     REQUIRE(!result);
   }
 
-  TEST_CASE("run_until_none_constant") {
+  TEST_CASE("run_until_none_with_a_constant") {
     auto result = std::optional<int>();
     auto executor = Executor(
       lift([&] (const auto& value) {
@@ -58,7 +59,7 @@ TEST_SUITE("Executor") {
     REQUIRE(*result == 5);
   }
 
-  TEST_CASE("run_until_none_continues") {
+  TEST_CASE("run_until_none_with_a_continuation") {
     auto results = std::vector<int>();
     auto executor = Executor(
       lift([&] (const auto& value) {
@@ -97,7 +98,7 @@ TEST_SUITE("Executor") {
     REQUIRE(results == std::vector{10, 20, 30, 40, 100});
   }
 
-  TEST_CASE("run_until_complete_wakes_on_every_push") {
+  TEST_CASE("run_until_complete_with_a_queue") {
     auto queue = Shared(Queue<int>());
     auto mutex = std::mutex();
     auto condition = std::condition_variable();
@@ -128,7 +129,37 @@ TEST_SUITE("Executor") {
     REQUIRE(results == std::vector{10, 20, 30, 40});
   }
 
-  TEST_CASE("aborting_a_waiting_executor") {
+  TEST_CASE("run_until_complete_with_a_cell") {
+    auto cell = Shared(Cell(0));
+    auto mutex = std::mutex();
+    auto condition = std::condition_variable();
+    auto results = std::vector<int>();
+    auto executor = Executor(
+      lift([&] (int value) {
+        auto lock = std::lock_guard(mutex);
+        results.push_back(value);
+        condition.notify_all();
+      }, cell));
+    auto executor_thread = std::thread([&] {
+      executor.run_until_complete();
+    });
+    auto wait_for = [&] (std::size_t count) {
+      auto lock = std::unique_lock(mutex);
+      condition.wait(lock, [&] {
+        return results.size() >= count;
+      });
+    };
+    wait_for(1);
+    cell->set(1);
+    wait_for(2);
+    cell->set(2);
+    wait_for(3);
+    cell->set_complete(3);
+    executor_thread.join();
+    REQUIRE(results == std::vector{0, 1, 2, 3});
+  }
+
+  TEST_CASE("aborting_while_waiting") {
     auto queue = Shared(Queue<int>());
     auto mutex = std::mutex();
     auto condition = std::condition_variable();
@@ -154,7 +185,7 @@ TEST_SUITE("Executor") {
     REQUIRE(results == std::vector{10});
   }
 
-  TEST_CASE("aborting_a_reactor_that_always_continues") {
+  TEST_CASE("aborting_a_continuation") {
     auto counter = std::make_shared<std::atomic_int>(0);
     auto executor = Executor(
       lift([counter] (const auto& value) {
@@ -170,7 +201,7 @@ TEST_SUITE("Executor") {
     REQUIRE(counter->load() >= 10);
   }
 
-  TEST_CASE("aborting_before_a_run_starts") {
+  TEST_CASE("aborting_before_a_run") {
     auto counter = std::make_shared<std::atomic_int>(0);
     auto executor = Executor(
       lift([counter] (const auto& value) {
@@ -181,7 +212,7 @@ TEST_SUITE("Executor") {
     REQUIRE(counter->load() == 0);
   }
 
-  TEST_CASE("running_until_none_twice_after_completing") {
+  TEST_CASE("run_until_none_twice") {
     auto counter = Counter();
     auto executor = Executor(counter);
     executor.run_until_none();
@@ -190,7 +221,7 @@ TEST_SUITE("Executor") {
     REQUIRE(*counter.m_commits == 1);
   }
 
-  TEST_CASE("running_until_complete_twice") {
+  TEST_CASE("run_until_complete_twice") {
     auto counter = Counter();
     auto executor = Executor(counter);
     executor.run_until_complete();
@@ -199,7 +230,7 @@ TEST_SUITE("Executor") {
     REQUIRE(*counter.m_commits == 1);
   }
 
-  TEST_CASE("running_until_none_after_aborting") {
+  TEST_CASE("run_until_none_after_aborting") {
     auto counter = Counter();
     auto executor = Executor(counter);
     executor.abort();

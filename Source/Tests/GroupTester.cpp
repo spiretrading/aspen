@@ -5,6 +5,7 @@
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Group.hpp"
+#include "Aspen/Last.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
@@ -22,7 +23,7 @@ namespace {
 }
 
 TEST_SUITE("Group") {
-  TEST_CASE("a_child_completing_with_a_continuation_completes") {
+  TEST_CASE("child_completing_with_a_continuation") {
     auto first =
       TrackedReactor<int>(1, merge(State::COMPLETE, State::CONTINUE));
     auto token = first.get_token();
@@ -32,14 +33,14 @@ TEST_SUITE("Group") {
     REQUIRE(token.expired());
   }
 
-  TEST_CASE("group_loop_complete") {
+  TEST_CASE("completion") {
     auto reactor = group(constant(123), none<int>());
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("group_two_constants") {
+  TEST_CASE("two_constants") {
     auto reactor = group(constant(1), constant(2));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
@@ -47,7 +48,7 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("group_three_reactors") {
+  TEST_CASE("three_children") {
     auto reactor = group(constant(1), constant(2), constant(3));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
@@ -57,7 +58,7 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.eval() == 3);
   }
 
-  TEST_CASE("group_alternates_between_children") {
+  TEST_CASE("alternating_between_children") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     auto reactor = group(first, second);
@@ -75,7 +76,15 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.commit(4) == State::COMPLETE);
   }
 
-  TEST_CASE("group_a_child_with_a_continuation") {
+  TEST_CASE("child_continuing_without_a_value") {
+    auto second = Shared(Queue<int>());
+    auto reactor = group(last(chain(3, 1)), second);
+    REQUIRE(reactor.commit(0) == State::CONTINUE);
+    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE(reactor.eval() == 1);
+  }
+
+  TEST_CASE("child_with_a_continuation") {
     auto reactor = group(chain(1, 2), constant(3));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
@@ -85,7 +94,7 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("group_propagates_an_exception") {
+  TEST_CASE("exception") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     auto reactor = group(first, second);
@@ -94,20 +103,20 @@ TEST_SUITE("Group") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("group_is_noexcept_when_both_children_are") {
+  TEST_CASE("noexcept_children") {
     auto safe = group(Shared(Cell(1)), Shared(Cell(2)));
     REQUIRE(decltype(safe)::is_noexcept);
     auto mixed = group(Shared(Cell(1)), Shared(Queue<int>()));
     REQUIRE(!decltype(mixed)::is_noexcept);
   }
 
-  TEST_CASE("group_children_evaluating_by_value") {
+  TEST_CASE("by_value_children") {
     auto reactor = Group(
       ByValueReactor(CountedValue(1)), ByValueReactor(CountedValue(2)));
     test_evaluation_lifetime(reactor);
   }
 
-  TEST_CASE("group_children_evaluating_by_reference_does_not_copy") {
+  TEST_CASE("by_reference_children") {
     auto reactor = Group(
       Constant(CountedValue(1)), Constant(CountedValue(2)));
     REQUIRE(has_evaluation(reactor.commit(0)));
@@ -116,7 +125,7 @@ TEST_SUITE("Group") {
     REQUIRE(CountedValue::get_copies() == 0);
   }
 
-  TEST_CASE("a_child_that_completes_as_it_evaluates_is_not_committed_again") {
+  TEST_CASE("child_completing_with_a_value") {
     auto toggle = Shared(Queue<bool>());
     toggle->push(true);
     toggle->push(true);
@@ -127,7 +136,7 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.eval() == 0);
   }
 
-  TEST_CASE("a_child_completing_without_evaluating_is_released") {
+  TEST_CASE("releasing_a_child_without_a_value") {
     auto first = TrackedReactor<int>(1, State::COMPLETE);
     auto token = first.get_token();
     auto second = Shared(Queue<int>());
@@ -136,7 +145,7 @@ TEST_SUITE("Group") {
     REQUIRE(token.expired());
   }
 
-  TEST_CASE("a_completed_child_is_released") {
+  TEST_CASE("releasing_a_completed_child") {
     auto first = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
     auto token = first.get_token();
     auto second = Shared(Queue<int>());

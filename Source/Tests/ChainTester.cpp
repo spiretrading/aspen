@@ -12,7 +12,7 @@ using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("Chain") {
-  TEST_CASE("constant_chain") {
+  TEST_CASE("two_constants") {
     auto reactor = Chain(Constant(100), Constant(200));
     auto state = reactor.commit(0);
     REQUIRE(state == State::CONTINUE_EVALUATED);
@@ -22,7 +22,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 200);
   }
 
-  TEST_CASE("single_chain") {
+  TEST_CASE("constant_initial") {
     auto reactor = Chain(Constant(911), None<int>());
     auto state = reactor.commit(0);
     REQUIRE(state == State::CONTINUE_EVALUATED);
@@ -32,20 +32,20 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 911);
   }
 
-  TEST_CASE("chain_immediate_transition") {
+  TEST_CASE("empty_initial") {
     auto reactor = Chain(None<int>(), Constant(911));
     auto state = reactor.commit(0);
     REQUIRE(state == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 911);
   }
 
-  TEST_CASE("empty_chain") {
+  TEST_CASE("no_values") {
     auto reactor = Chain(None<int>(), None<int>());
     auto state = reactor.commit(0);
     REQUIRE(state == State::COMPLETE);
   }
 
-  TEST_CASE("chain_initial_complete_none") {
+  TEST_CASE("empty_continuation") {
     auto queue = Shared(Queue<int>());
     queue->push(5);
     queue.commit(0);
@@ -57,7 +57,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("chain_immediate_complete") {
+  TEST_CASE("immediate_completion") {
     auto queue = Shared(Queue<int>());
     auto reactor = Chain(None<int>(), queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -66,7 +66,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 21);
   }
 
-  TEST_CASE("chain_immediate_continue") {
+  TEST_CASE("immediate_continuation") {
     auto queue = Shared(Queue<int>());
     queue->push(21);
     auto reactor = Chain(None<int>(), queue);
@@ -74,7 +74,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 21);
   }
 
-  TEST_CASE("chaining_an_initial_that_produces_then_completes") {
+  TEST_CASE("initial_completing_with_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = Chain(queue, Constant(9));
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -91,7 +91,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 9);
   }
 
-  TEST_CASE("chaining_a_series") {
+  TEST_CASE("series") {
     auto reactor = chain(Constant(1), Constant(2), Constant(3));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
@@ -101,7 +101,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 3);
   }
 
-  TEST_CASE("chain_initial_complete") {
+  TEST_CASE("initial_completing_without_a_value") {
     auto queue = Shared(Queue<int>());
     queue->push(5);
     queue.commit(0);
@@ -113,7 +113,7 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("chain_children_evaluating_by_reference_does_not_copy") {
+  TEST_CASE("by_reference_children") {
     auto reactor = Chain(
       Constant(CountedValue(1)), Constant(CountedValue(2)));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
@@ -123,13 +123,13 @@ TEST_SUITE("Chain") {
     REQUIRE(CountedValue::get_destructions() == 0);
   }
 
-  TEST_CASE("chain_children_evaluating_by_value") {
+  TEST_CASE("by_value_children") {
     auto reactor = Chain(
       ByValueReactor(CountedValue(1)), ByValueReactor(CountedValue(2)));
     test_evaluation_lifetime(reactor);
   }
 
-  TEST_CASE("chain_a_continuation_evaluating_by_value") {
+  TEST_CASE("by_value_continuation") {
     auto reactor = Chain(
       Constant(CountedValue(1)), ByValueReactor(CountedValue(2)));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
@@ -139,7 +139,7 @@ TEST_SUITE("Chain") {
     REQUIRE(CountedValue::get_destructions() == 0);
   }
 
-  TEST_CASE("a_completed_initial_is_released") {
+  TEST_CASE("releasing_a_completed_initial") {
     auto initial = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
     auto token = initial.get_token();
     auto reactor = Chain(std::move(initial), Constant(2));
@@ -151,7 +151,7 @@ TEST_SUITE("Chain") {
     REQUIRE(token.expired());
   }
 
-  TEST_CASE("an_unraised_child_is_not_recommitted") {
+  TEST_CASE("unraised_child") {
     auto flag = CommitFlag();
     auto child = CountingReactor<int>(1, State::EVALUATED);
     auto reactor = Chain(child, Constant(2));

@@ -9,20 +9,20 @@ using namespace Aspen;
 using namespace std::string_literals;
 
 TEST_SUITE("Cell") {
-  TEST_CASE("cell_immediate_complete") {
+  TEST_CASE("immediate_completion") {
     auto cell = Cell<int>();
     cell.set_complete();
     REQUIRE(cell.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("cell_single_value") {
+  TEST_CASE("value") {
     auto cell = Cell(123);
     cell.set_complete();
     REQUIRE(cell.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(cell.eval() == 123);
   }
 
-  TEST_CASE("cell_single_value_then_complete") {
+  TEST_CASE("value_then_completion") {
     auto cell = Cell(321);
     REQUIRE(cell.commit(0) == State::EVALUATED);
     REQUIRE(cell.eval() == 321);
@@ -31,14 +31,14 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == 321);
   }
 
-  TEST_CASE("cell_empty_then_complete") {
+  TEST_CASE("completion_while_empty") {
     auto cell = Cell<int>();
     REQUIRE(cell.commit(0) == State::NONE);
     cell.set_complete();
     REQUIRE(cell.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("cell_empty_then_evaluated") {
+  TEST_CASE("value_while_empty") {
     auto cell = Cell<int>();
     REQUIRE(cell.commit(0) == State::NONE);
     cell.set(1);
@@ -46,7 +46,7 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == 1);
   }
 
-  TEST_CASE("cell_empty_then_complete_evaluated") {
+  TEST_CASE("completion_with_a_value_while_empty") {
     auto cell = Cell<int>();
     REQUIRE(cell.commit(0) == State::NONE);
     cell.set_complete(1);
@@ -54,7 +54,7 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == 1);
   }
 
-  TEST_CASE("setting_a_cell_more_than_once_before_a_commit") {
+  TEST_CASE("setting_twice_before_a_commit") {
     auto cell = Cell<int>();
     REQUIRE(cell.commit(0) == State::NONE);
     cell.set(1);
@@ -66,14 +66,14 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == 3);
   }
 
-  TEST_CASE("setting_a_cell_before_it_is_committed") {
+  TEST_CASE("setting_before_the_first_commit") {
     auto cell = Cell<int>();
     cell.set(1);
     REQUIRE(cell.commit(0) == State::EVALUATED);
     REQUIRE(cell.eval() == 1);
   }
 
-  TEST_CASE("constructing_a_value_in_place") {
+  TEST_CASE("in_place_construction") {
     auto cell = Cell<std::string>(std::in_place, 3, 'a');
     REQUIRE(cell.commit(0) == State::EVALUATED);
     REQUIRE(cell.eval() == "aaa"s);
@@ -85,7 +85,7 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == "cccc"s);
   }
 
-  TEST_CASE("copying_a_cell") {
+  TEST_CASE("copy_construction") {
     auto cell = Cell(1);
     REQUIRE(cell.commit(0) == State::EVALUATED);
     cell.set(2);
@@ -99,7 +99,7 @@ TEST_SUITE("Cell") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("assigning_a_cell") {
+  TEST_CASE("assignment") {
     auto cell = Cell(1);
     REQUIRE(cell.commit(0) == State::EVALUATED);
     REQUIRE(cell.eval() == 1);
@@ -115,7 +115,7 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == 3);
   }
 
-  TEST_CASE("updating_a_cell_requires_a_commit") {
+  TEST_CASE("raising_on_an_update") {
     auto flag = CommitFlag();
     auto cell = Cell(1);
     {
@@ -140,7 +140,7 @@ TEST_SUITE("Cell") {
     REQUIRE(flag.is_raised());
   }
 
-  TEST_CASE("a_cell_reports_to_its_most_recent_commit") {
+  TEST_CASE("reporting_to_a_flag") {
     auto first = CommitFlag();
     auto second = CommitFlag();
     auto cell = Cell(1);
@@ -158,7 +158,7 @@ TEST_SUITE("Cell") {
     REQUIRE(!first.is_raised());
     REQUIRE(second.is_raised());
   }
-  TEST_CASE("assigning_a_cell_takes_effect_on_the_next_commit") {
+  TEST_CASE("assignment_before_a_commit") {
     auto destination = Cell(1);
     REQUIRE(destination.commit(0) == State::EVALUATED);
     REQUIRE(destination.eval() == 1);

@@ -77,14 +77,14 @@ namespace {
 }
 
 TEST_SUITE("LocalPtr") {
-  TEST_CASE("constructing_forwards_its_arguments") {
+  TEST_CASE("construction") {
     REQUIRE(LocalPtr<Path>()->m_value == "default");
     REQUIRE(LocalPtr<Path>(1)->m_value == "int");
     REQUIRE(LocalPtr<Path>(1, 2)->m_value == "int, int");
     REQUIRE(*LocalPtr<std::string>(3, 'a') == "aaa");
   }
 
-  TEST_CASE("copying_selects_the_copy_constructor") {
+  TEST_CASE("copy_construction") {
     auto pointer = LocalPtr<Path>();
     auto direct = LocalPtr<Path>(pointer);
     REQUIRE(direct->m_value == "copy");
@@ -97,14 +97,14 @@ TEST_SUITE("LocalPtr") {
     REQUIRE(moved->m_value == "move");
   }
 
-  TEST_CASE("constructing_from_an_incompatible_type_is_rejected") {
+  TEST_CASE("incompatible_construction") {
     REQUIRE(!(std::is_constructible_v<LocalPtr<int>, const char*>));
     REQUIRE(!(std::is_constructible_v<LocalPtr<int>, Path>));
     REQUIRE((std::is_constructible_v<LocalPtr<int>, int>));
     REQUIRE((std::is_constructible_v<LocalPtr<std::string>, const char*>));
   }
 
-  TEST_CASE("assigning_a_value") {
+  TEST_CASE("assignment") {
     auto pointer = LocalPtr<Path>();
     const auto value = Path();
     pointer = value;
@@ -118,7 +118,7 @@ TEST_SUITE("LocalPtr") {
     REQUIRE(pointer->m_value == "move assignment");
   }
 
-  TEST_CASE("assigning_a_value_does_not_reconstruct_it") {
+  TEST_CASE("assignment_in_place") {
     auto pointer = LocalPtr<Allocation>();
     auto address = pointer->m_value.get();
     auto count = Allocation::count;
@@ -130,13 +130,13 @@ TEST_SUITE("LocalPtr") {
     REQUIRE(*pointer->m_value == 7);
   }
 
-  TEST_CASE("assigning_an_incompatible_type_is_rejected") {
+  TEST_CASE("incompatible_assignment") {
     REQUIRE(!(std::is_assignable_v<LocalPtr<int>&, const char*>));
     REQUIRE((std::is_assignable_v<LocalPtr<int>&, int>));
     REQUIRE((std::is_assignable_v<LocalPtr<int>&, LocalPtr<int>>));
   }
 
-  TEST_CASE("dereferencing_propagates_constness") {
+  TEST_CASE("const_dereferencing") {
     auto pointer = LocalPtr<int>(1);
     REQUIRE((std::is_same_v<decltype(*pointer), int&>));
     REQUIRE((std::is_same_v<decltype(pointer.operator ->()), int*>));
@@ -149,13 +149,13 @@ TEST_SUITE("LocalPtr") {
     REQUIRE(*pointer.operator ->() == 2);
   }
 
-  TEST_CASE("the_wrapped_value_is_reached_only_by_dereferencing") {
+  TEST_CASE("dereferencing") {
     REQUIRE(!(std::is_convertible_v<LocalPtr<int>, int>));
     REQUIRE(!(std::is_convertible_v<LocalPtr<int>&, int&>));
     REQUIRE(!(std::is_convertible_v<const LocalPtr<int>&, const int&>));
   }
 
-  TEST_CASE("operations_are_noexcept_when_the_value_is") {
+  TEST_CASE("noexcept_operations") {
     REQUIRE((std::is_nothrow_constructible_v<LocalPtr<Throws>, int>));
     REQUIRE(!(std::is_nothrow_constructible_v<LocalPtr<Throws>>));
     REQUIRE((std::is_nothrow_assignable_v<LocalPtr<Throws>&, double>));
@@ -164,7 +164,7 @@ TEST_SUITE("LocalPtr") {
     REQUIRE(noexcept(std::declval<LocalPtr<Throws>&>().operator ->()));
   }
 
-  TEST_CASE("try_ptr_t_wraps_only_non_pointers") {
+  TEST_CASE("try_ptr_trait") {
     REQUIRE((std::is_same_v<try_ptr_t<int>, LocalPtr<int>>));
     REQUIRE((std::is_same_v<try_ptr_t<Path>, LocalPtr<Path>>));
     REQUIRE((std::is_same_v<try_ptr_t<int*>, int*>));
@@ -175,7 +175,7 @@ TEST_SUITE("LocalPtr") {
     REQUIRE(!Dereferenceable<int>);
   }
 
-  TEST_CASE("deducing_the_wrapped_type") {
+  TEST_CASE("deduction") {
     auto value = 1;
     REQUIRE((std::is_same_v<decltype(LocalPtr(value)), LocalPtr<int>>));
     REQUIRE((std::is_same_v<decltype(LocalPtr(std::string("a"))),

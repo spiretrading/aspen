@@ -3,6 +3,7 @@
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Distinct.hpp"
+#include "Aspen/Lift.hpp"
 #include "Aspen/Previous.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
@@ -10,14 +11,14 @@
 using namespace Aspen;
 
 TEST_SUITE("Previous") {
-  TEST_CASE("empty") {
+  TEST_CASE("completion_without_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     queue->set_complete();
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("single") {
+  TEST_CASE("single_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     queue->set_complete(123);
@@ -26,7 +27,7 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("single_delay") {
+  TEST_CASE("delayed_completion") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     queue->push(321);
@@ -36,7 +37,7 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.eval() == 321);
   }
 
-  TEST_CASE("multiple") {
+  TEST_CASE("series_of_values") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -53,7 +54,7 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.eval() == 30);
   }
 
-  TEST_CASE("a_source_that_cannot_throw") {
+  TEST_CASE("noexcept_source") {
     auto cell = Shared(Cell(1));
     auto reactor = previous(cell);
     REQUIRE(decltype(reactor)::is_noexcept);
@@ -66,7 +67,7 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_source_that_fails_before_producing") {
+  TEST_CASE("exception_before_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     REQUIRE(!decltype(reactor)::is_noexcept);
@@ -75,7 +76,7 @@ TEST_SUITE("Previous") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("a_source_that_fails_after_producing") {
+  TEST_CASE("exception_after_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     queue->push(1);
@@ -88,7 +89,29 @@ TEST_SUITE("Previous") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("a_source_that_stops_evaluating") {
+  TEST_CASE("exception_between_values") {
+    auto queue = Shared(Queue<int>());
+    auto source = Shared(lift([] (int value) {
+      if(value == 3) {
+        throw std::runtime_error("fail");
+      }
+      return value;
+    }, queue));
+    auto reactor = previous(source);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    queue->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    queue->push(3);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+    queue->push(4);
+    REQUIRE(reactor.commit(3) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("suppressed_evaluation") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(distinct(queue));
     queue->push(5);
@@ -100,7 +123,7 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
-  TEST_CASE("completing_with_the_last_value") {
+  TEST_CASE("completion_with_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     queue->push(1);
@@ -112,7 +135,7 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("completing_while_a_value_is_queued") {
+  TEST_CASE("completion_with_a_queued_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);
     queue->push(1);
@@ -124,5 +147,4 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
   }
-
 }

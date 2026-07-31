@@ -35,7 +35,7 @@ namespace {
 }
 
 TEST_SUITE("Box") {
-  TEST_CASE("boxing_a_reactor") {
+  TEST_CASE("reactor") {
     auto constant = Constant(123);
     auto box = Box(std::move(constant));
     REQUIRE((std::is_same_v<decltype(box), Box<int>>));
@@ -46,20 +46,20 @@ TEST_SUITE("Box") {
     REQUIRE(temporary.eval() == 321);
   }
 
-  TEST_CASE("boxing_a_value") {
+  TEST_CASE("value") {
     auto reactor = box(123);
     REQUIRE((std::is_same_v<decltype(reactor), Box<int>>));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("void_box") {
+  TEST_CASE("void_evaluation") {
     auto box = Box<void>(Constant(123));
     REQUIRE(box.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_NOTHROW(box.eval());
   }
 
-  TEST_CASE("boxing_a_reactor_that_evaluates_by_value") {
+  TEST_CASE("by_value_reactor") {
     auto reactor = box(ByValue());
     REQUIRE((std::is_same_v<decltype(reactor), Box<int>>));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
@@ -67,7 +67,7 @@ TEST_SUITE("Box") {
     REQUIRE(reactor.eval() == 123);
   }
 
-  TEST_CASE("boxing_a_reactor_of_a_convertible_type") {
+  TEST_CASE("convertible_type") {
     auto reactor = Box<double>(Constant(123));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     const auto& value = reactor.eval();
@@ -76,19 +76,19 @@ TEST_SUITE("Box") {
     REQUIRE(reactor.eval() == 123.0);
   }
 
-  TEST_CASE("boxing_a_reactor_of_a_convertible_type_that_throws") {
+  TEST_CASE("convertible_type_that_throws") {
     auto reactor = Box<double>(ThrowingByValue());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("boxing_a_reactor_that_throws") {
+  TEST_CASE("exception") {
     auto reactor = box(ThrowingByValue());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("boxing_a_box_does_not_box_it_again") {
+  TEST_CASE("boxing_a_box") {
     auto inner = box(Constant(123));
     auto outer = box(std::move(inner));
     REQUIRE((std::is_same_v<decltype(outer), Box<int>>));

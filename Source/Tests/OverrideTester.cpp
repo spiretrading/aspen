@@ -8,7 +8,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Override") {
-  TEST_CASE("override_an_empty_producer") {
+  TEST_CASE("empty_producer") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto reactor = override(series);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -16,14 +16,14 @@ TEST_SUITE("Override") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("override_a_producer_that_fails") {
+  TEST_CASE("producer_exception") {
     auto series = Shared<Queue<SharedBox<int>>>();
     series->set_complete(std::runtime_error("fail"));
     auto reactor = override(series);
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("override_a_single_reactor") {
+  TEST_CASE("single_reactor") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto reactor = override(series);
     auto only = Shared<Queue<int>>();
@@ -37,7 +37,7 @@ TEST_SUITE("Override") {
     REQUIRE(reactor.eval() == 8);
   }
 
-  TEST_CASE("a_later_reactor_overrides_an_earlier_one") {
+  TEST_CASE("overriding") {
     auto series = Shared<Queue<SharedBox<int>>>();
     auto reactor = override(series);
     auto first = Shared<Queue<int>>();

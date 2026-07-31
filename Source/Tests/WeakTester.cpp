@@ -11,7 +11,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Weak") {
-  TEST_CASE("weak_queue") {
+  TEST_CASE("queue") {
     auto s1 = std::optional<Shared<Queue<int>>>();
     s1.emplace();
     auto s2 = Weak(*s1);
@@ -27,7 +27,7 @@ TEST_SUITE("Weak") {
     REQUIRE(s2.eval() == 10);
   }
 
-  TEST_CASE("weak_box") {
+  TEST_CASE("box") {
     auto s1 = std::optional<Shared<Queue<int>>>();
     s1.emplace();
     auto s2 = std::optional<Shared<Box<int>>>(*s1);
@@ -45,7 +45,7 @@ TEST_SUITE("Weak") {
     REQUIRE(s3.eval() == 10);
   }
 
-  TEST_CASE("a_reactor_that_cannot_throw") {
+  TEST_CASE("noexcept_reactor") {
     auto shared = std::optional(Shared(Cell(1)));
     auto weak = Weak(*shared);
     REQUIRE(decltype(weak)::is_noexcept);
@@ -59,7 +59,7 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 2);
   }
 
-  TEST_CASE("locking_a_weak") {
+  TEST_CASE("locking") {
     auto shared = std::optional(Shared(Queue<int>()));
     auto weak = Weak(*shared);
     auto locked = weak.lock();
@@ -72,7 +72,7 @@ TEST_SUITE("Weak") {
     REQUIRE(!weak.lock());
   }
 
-  TEST_CASE("copying_and_moving_a_weak") {
+  TEST_CASE("copy_and_move_construction") {
     auto shared = std::optional(Shared(Queue<int>()));
     auto weak = Weak(*shared);
     (*shared)->push(5);
@@ -85,7 +85,8 @@ TEST_SUITE("Weak") {
     REQUIRE(moved.eval() == 10);
     REQUIRE(moved.lock());
   }
-  TEST_CASE("weak_from_a_moved_shared") {
+
+  TEST_CASE("moved_shared") {
     auto shared = std::optional(Shared(Queue<int>()));
     (*shared)->push(5);
     REQUIRE(shared->commit(0) == State::EVALUATED);
@@ -96,7 +97,7 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
   }
 
-  TEST_CASE("copy_assigning_an_observed_shared") {
+  TEST_CASE("copy_assigning_the_shared") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     auto weak = Weak(first);
@@ -108,7 +109,7 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
   }
 
-  TEST_CASE("move_assigning_an_observed_shared") {
+  TEST_CASE("move_assigning_the_shared") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     auto weak = Weak(first);
@@ -120,7 +121,7 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
   }
 
-  TEST_CASE("assigning_a_weak") {
+  TEST_CASE("assignment") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     first->push(1);
@@ -137,7 +138,7 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 1);
   }
 
-  TEST_CASE("a_weak_over_an_uncommitted_box_reports_no_evaluation") {
+  TEST_CASE("uncommitted_box") {
     auto cell = Shared(Cell(1));
     auto boxed = std::optional(Shared<Box<double>>(cell));
     auto observer = Weak(*boxed);
@@ -146,7 +147,7 @@ TEST_SUITE("Weak") {
     REQUIRE(observer.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("moving_a_weak_stops_reporting_to_the_old_flag") {
+  TEST_CASE("flag_after_a_move") {
     auto cell = Shared(Cell(1));
     auto observer = Weak(cell);
     auto flag = CommitFlag();
@@ -162,7 +163,7 @@ TEST_SUITE("Weak") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("move_assigning_a_weak_stops_reporting_to_the_old_flag") {
+  TEST_CASE("flag_after_a_move_assignment") {
     auto cell = Shared(Cell(1));
     auto other = Shared(Cell(0));
     auto observer = Weak(cell);

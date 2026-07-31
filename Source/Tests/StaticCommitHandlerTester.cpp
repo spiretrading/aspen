@@ -8,12 +8,12 @@
 using namespace Aspen;
 
 TEST_SUITE("StaticCommitHandler") {
-  TEST_CASE("empty_static_commit") {
+  TEST_CASE("no_children") {
     auto reactor = StaticCommitHandler<>();
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("static_immediate_complete") {
+  TEST_CASE("immediate_completion") {
     auto reactor = StaticCommitHandler(Queue<int>());
     reactor.get<0>().push(1);
     reactor.get<0>().commit(0);
@@ -21,7 +21,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("static_complete") {
+  TEST_CASE("completion") {
     auto queue = Shared(Queue<int>());
     auto reactor = StaticCommitHandler(queue, queue);
     reactor.get<0>()->push(1);
@@ -30,7 +30,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
-  TEST_CASE("static_empty_and_evaluated") {
+  TEST_CASE("initial_evaluation") {
     auto reactor = StaticCommitHandler(Queue<int>(), Queue<int>());
     REQUIRE(reactor.commit(0) == State::NONE);
     reactor.get<0>().push(123);
@@ -39,7 +39,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.commit(2) == State::EVALUATED);
   }
 
-  TEST_CASE("static_delayed_evaluation") {
+  TEST_CASE("delayed_evaluation") {
     auto reactor = StaticCommitHandler(Queue<int>(), constant(5));
     REQUIRE(reactor.commit(0) == State::NONE);
     reactor.get<0>().push(123);
@@ -47,7 +47,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
-  TEST_CASE("a_child_that_continues") {
+  TEST_CASE("continuing_child") {
     auto reactor = StaticCommitHandler(Queue<int>(), constant(5));
     reactor.get<0>().push(1);
     reactor.get<0>().push(2);
@@ -58,7 +58,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
-  TEST_CASE("a_completion_suppresses_a_continuation") {
+  TEST_CASE("completion_with_a_continuation") {
     auto queue = Shared(Queue<int>());
     auto reactor = StaticCommitHandler(queue, constant(5));
     queue->push(1);
@@ -69,7 +69,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(reactor.get<0>()->eval() == 2);
   }
 
-  TEST_CASE("copying_a_handler") {
+  TEST_CASE("copy_construction") {
     auto handler = StaticCommitHandler(constant(1), constant(2));
     auto copy = StaticCommitHandler<Constant<int>, Constant<int>>(handler);
     REQUIRE(copy.commit(0) == State::COMPLETE_EVALUATED);
@@ -77,7 +77,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(copy.get<1>().eval() == 2);
   }
 
-  TEST_CASE("moving_a_handler") {
+  TEST_CASE("move_construction") {
     auto handler = StaticCommitHandler(constant(1), constant(2));
     auto moved = StaticCommitHandler(std::move(handler));
     REQUIRE(moved.commit(0) == State::COMPLETE_EVALUATED);
@@ -85,7 +85,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(moved.get<1>().eval() == 2);
   }
 
-  TEST_CASE("assigning_a_handler") {
+  TEST_CASE("assignment") {
     auto handler = StaticCommitHandler(constant(1), constant(2));
     auto other = StaticCommitHandler(constant(10), constant(20));
     handler = other;
@@ -95,7 +95,7 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(handler.get<1>().eval() == 20);
   }
 
-  TEST_CASE("applying_over_every_reactor") {
+  TEST_CASE("apply_function") {
     auto handler = StaticCommitHandler(constant(1), constant(2));
     REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
     auto total = apply([] (const auto&... children) {

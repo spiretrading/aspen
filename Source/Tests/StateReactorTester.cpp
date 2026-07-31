@@ -1,6 +1,8 @@
 #include <stdexcept>
 #include <doctest/doctest.h>
+#include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
+#include "Aspen/Last.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
@@ -9,26 +11,26 @@
 using namespace Aspen;
 
 TEST_SUITE("StateReactor") {
-  TEST_CASE("none_state") {
+  TEST_CASE("none") {
     auto reactor = StateReactor(none<int>());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == State::COMPLETE);
   }
 
-  TEST_CASE("immediate_completion") {
+  TEST_CASE("constant") {
     auto reactor = StateReactor(constant(10));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
   }
 
-  TEST_CASE("monitoring_a_value") {
+  TEST_CASE("value") {
     auto reactor = StateReactor(10);
     REQUIRE(is_noexcept_reactor_v<decltype(reactor)>);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
   }
 
-  TEST_CASE("a_source_that_fails") {
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = StateReactor(queue);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
@@ -38,7 +40,15 @@ TEST_SUITE("StateReactor") {
     REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
   }
 
-  TEST_CASE("series_then_complete") {
+  TEST_CASE("continuing_source") {
+    auto reactor = StateReactor(last(chain(3, 1)));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == State::CONTINUE);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
+  }
+
+  TEST_CASE("series_of_states") {
     auto queue = Shared(Queue<int>());
     auto reactor = StateReactor(queue);
     REQUIRE(reactor.commit(0) == State::EVALUATED);

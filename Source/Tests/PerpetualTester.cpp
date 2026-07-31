@@ -6,7 +6,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Perpetual") {
-  TEST_CASE("perpetual") {
+  TEST_CASE("evaluation") {
     static_assert(IsReactorOf<Perpetual, void>);
     static_assert(Perpetual().commit(0) == State::CONTINUE_EVALUATED);
     auto reactor = Perpetual();

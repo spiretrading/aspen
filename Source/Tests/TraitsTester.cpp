@@ -47,13 +47,14 @@ namespace {
 }
 
 TEST_SUITE("Traits") {
-  TEST_CASE("wrapping_a_type_into_a_reactor") {
+  TEST_CASE("to_reactor_trait") {
     REQUIRE((std::is_same_v<to_reactor_t<int>, Constant<int>>));
     REQUIRE((std::is_same_v<to_reactor_t<Constant<int>>, Constant<int>>));
-    REQUIRE((std::is_same_v<to_reactor_t<const Constant<int>&>, Constant<int>>));
+    REQUIRE((std::is_same_v<
+      to_reactor_t<const Constant<int>&>, Constant<int>>));
   }
 
-  TEST_CASE("determining_what_a_reactor_evaluates_to") {
+  TEST_CASE("reactor_result_trait") {
     REQUIRE((std::is_same_v<reactor_result_t<int>, int>));
     REQUIRE((std::is_same_v<reactor_result_t<Constant<int>>, int>));
     REQUIRE((std::is_same_v<reactor_result_t<Perpetual>, void>));
@@ -61,7 +62,7 @@ TEST_SUITE("Traits") {
     REQUIRE((std::is_same_v<eval_result_t<void>, void>));
   }
 
-  TEST_CASE("determining_how_an_evaluation_is_returned") {
+  TEST_CASE("eval_result_trait") {
     REQUIRE((std::is_same_v<reactor_evaluation_t<Constant<int>>, const int&>));
     REQUIRE((std::is_same_v<reactor_evaluation_t<ByValueReactor<int>>, int>));
     REQUIRE(is_reference_evaluation_v<Constant<int>>);
@@ -70,7 +71,7 @@ TEST_SUITE("Traits") {
     REQUIRE(!is_reference_evaluation_v<Perpetual>);
   }
 
-  TEST_CASE("combining_the_evaluations_of_several_reactors") {
+  TEST_CASE("common_evaluation_trait") {
     REQUIRE((std::is_same_v<common_result_t<Constant<int>>, int>));
     REQUIRE((std::is_same_v<
       common_result_t<Constant<int>, ByValueReactor<int>>, int>));
@@ -83,7 +84,7 @@ TEST_SUITE("Traits") {
     REQUIRE((std::is_same_v<common_evaluation_t<Perpetual>, void>));
   }
 
-  TEST_CASE("determining_whether_an_evaluation_is_noexcept") {
+  TEST_CASE("noexcept_evaluation_trait") {
     REQUIRE(is_noexcept_reactor_v<Constant<int>>);
     REQUIRE(!is_noexcept_reactor_v<Queue<int>>);
     REQUIRE(is_noexcept_reactor_v<Constant<int>, Cell<int>>);
@@ -94,7 +95,7 @@ TEST_SUITE("Traits") {
     REQUIRE(!is_noexcept_evaluation_v<Constant<int>, Queue<int>>);
   }
 
-  TEST_CASE("evaluating_by_value_decides_whether_a_copy_can_throw") {
+  TEST_CASE("noexcept_evaluation_by_value") {
     REQUIRE(is_noexcept_reactor_v<ValueReactor>);
     REQUIRE(is_noexcept_evaluation_v<ValueReactor>);
     REQUIRE(is_noexcept_reactor_v<FragileReactor>);
@@ -102,7 +103,7 @@ TEST_SUITE("Traits") {
     REQUIRE((std::is_same_v<common_evaluation_t<FragileReactor>, Fragile>));
   }
 
-  TEST_CASE("applying_a_function_to_every_element") {
+  TEST_CASE("for_each_function") {
     auto tuple = std::tuple(1, 2, 3);
     auto total = 0;
     for_each(tuple, [&] (const auto& element) {
@@ -116,7 +117,7 @@ TEST_SUITE("Traits") {
     REQUIRE(std::get<2>(tuple) == 6);
   }
 
-  TEST_CASE("assigning_an_evaluation") {
+  TEST_CASE("try_assign_function") {
     auto reactor = Constant(5);
     reactor.commit(0);
     auto value = std::optional<Maybe<int>>();
@@ -124,7 +125,7 @@ TEST_SUITE("Traits") {
     REQUIRE(**value == 5);
   }
 
-  TEST_CASE("assigning_an_evaluation_that_throws") {
+  TEST_CASE("try_assign_an_exception") {
     auto reactor = Queue<int>();
     reactor.set_complete(std::runtime_error("fail"));
     reactor.commit(0);
@@ -134,7 +135,7 @@ TEST_SUITE("Traits") {
     REQUIRE_THROWS_AS(value.get(), std::runtime_error);
   }
 
-  TEST_CASE("assigning_an_evaluation_of_nothing") {
+  TEST_CASE("try_assign_void") {
     auto reactor = Perpetual();
     reactor.commit(0);
     auto value = Maybe<void>();

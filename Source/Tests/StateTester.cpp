@@ -19,7 +19,7 @@ namespace {
 }
 
 TEST_SUITE("State") {
-  TEST_CASE("combining_states") {
+  TEST_CASE("combine_function") {
     REQUIRE(combine(State::NONE, State::EVALUATED) == State::EVALUATED);
     REQUIRE(combine(State::EVALUATED, State::CONTINUE) ==
       State::CONTINUE_EVALUATED);
@@ -28,7 +28,7 @@ TEST_SUITE("State") {
     REQUIRE(combine(State::EVALUATED, State::EVALUATED) == State::EVALUATED);
   }
 
-  TEST_CASE("resetting_states") {
+  TEST_CASE("reset_function") {
     REQUIRE(reset(State::COMPLETE_EVALUATED, State::COMPLETE) ==
       State::EVALUATED);
     REQUIRE(reset(State::COMPLETE_EVALUATED, State::CONTINUE) ==
@@ -39,7 +39,7 @@ TEST_SUITE("State") {
       State::CONTINUE);
   }
 
-  TEST_CASE("testing_state_flags") {
+  TEST_CASE("state_predicates") {
     REQUIRE(!has_evaluation(State::NONE));
     REQUIRE(has_evaluation(State::EVALUATED));
     REQUIRE(has_evaluation(State::CONTINUE_EVALUATED));
@@ -58,7 +58,7 @@ TEST_SUITE("State") {
     REQUIRE(!is_complete(State::CONTINUE_EVALUATED));
   }
 
-  TEST_CASE("streaming_a_state") {
+  TEST_CASE("streaming") {
     REQUIRE(to_string(State::NONE) == "NONE");
     REQUIRE(to_string(State::EVALUATED) == "EVALUATED");
     REQUIRE(to_string(State::CONTINUE) == "CONTINUE");
@@ -67,14 +67,14 @@ TEST_SUITE("State") {
     REQUIRE(to_string(State::COMPLETE_EVALUATED) == "COMPLETE_EVALUATED");
   }
 
-  TEST_CASE("streaming_a_combination_without_a_name") {
+  TEST_CASE("streaming_a_combination") {
     REQUIRE(to_string(merge(State::COMPLETE, State::CONTINUE)) ==
       "COMPLETE_CONTINUE");
     REQUIRE(to_string(merge(State::COMPLETE_EVALUATED, State::CONTINUE)) ==
       "COMPLETE_CONTINUE_EVALUATED");
   }
 
-  TEST_CASE("evaluating_at_compile_time") {
+  TEST_CASE("constexpr_evaluation") {
     static_assert(combine(State::EVALUATED, State::CONTINUE) ==
       State::CONTINUE_EVALUATED);
     static_assert(reset(State::COMPLETE_EVALUATED, State::COMPLETE) ==

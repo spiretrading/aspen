@@ -8,7 +8,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Discard") {
-  TEST_CASE("flipping_discard") {
+  TEST_CASE("toggling") {
     auto toggle = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     series->push(1);
@@ -28,7 +28,7 @@ TEST_SUITE("Discard") {
     REQUIRE(reactor.eval() == 4);
   }
 
-  TEST_CASE("discard_noexcept_sources") {
+  TEST_CASE("noexcept_sources") {
     auto toggle = Shared(Cell(true));
     auto series = Shared(Cell(5));
     auto reactor = discard(toggle, series);
@@ -45,7 +45,21 @@ TEST_SUITE("Discard") {
     REQUIRE(reactor.eval() == 6);
   }
 
-  TEST_CASE("discard_propagates_a_toggle_exception") {
+  TEST_CASE("completed_toggle") {
+    auto toggle = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    toggle->push(false);
+    toggle->set_complete();
+    series->push(1);
+    auto reactor = discard(toggle, series);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    series->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("toggle_exception") {
     auto toggle = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     series->push(1);
@@ -56,7 +70,7 @@ TEST_SUITE("Discard") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("discard_propagates_a_series_exception") {
+  TEST_CASE("series_exception") {
     auto toggle = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     toggle->push(false);
@@ -67,7 +81,7 @@ TEST_SUITE("Discard") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("discard_drops_an_exception_while_toggled") {
+  TEST_CASE("exception_while_toggled") {
     auto toggle = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
     toggle->push(false);

@@ -14,7 +14,7 @@
 using namespace Aspen;
 
 TEST_SUITE("VectorSync") {
-  TEST_CASE("empty_vector_sync") {
+  TEST_CASE("element_without_a_value") {
     auto list = std::vector<int>();
     auto reactors = std::vector<Box<int>>();
     reactors.push_back(box(constant(5)));
@@ -26,7 +26,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list == std::vector{5, 0, 0});
   }
 
-  TEST_CASE("single_vector_sync") {
+  TEST_CASE("constant_elements") {
     auto list = std::vector<int>();
     auto reactors = std::vector<Box<int>>();
     reactors.push_back(box(constant(5)));
@@ -38,7 +38,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list == std::vector{5, 12, 3});
   }
 
-  TEST_CASE("exception_vector_sync") {
+  TEST_CASE("element_exception") {
     auto list = std::vector<int>();
     auto reactors = std::vector<Box<int>>();
     reactors.push_back(box(constant(5)));
@@ -53,7 +53,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list == std::vector{5, 12, 3});
   }
 
-  TEST_CASE("persistent_exception_vector_sync") {
+  TEST_CASE("persistent_exception") {
     auto queue = Shared(Queue<int>());
     auto list = std::vector<int>();
     auto reactors = std::vector<Box<int>>();
@@ -69,7 +69,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list[0] == 10);
   }
 
-  TEST_CASE("no_reactors_at_all") {
+  TEST_CASE("no_reactors") {
     auto list = std::vector<int>();
     auto reactor = VectorSync(list, std::vector<Box<int>>());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
@@ -77,7 +77,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list.empty());
   }
 
-  TEST_CASE("a_vector_resized_to_the_reactors") {
+  TEST_CASE("resizing_the_vector") {
     auto list = std::vector<int>{1, 2, 3, 4, 5};
     auto reactors = std::vector<Box<int>>();
     reactors.push_back(box(constant(7)));
@@ -88,7 +88,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list == std::vector{7, 8});
   }
 
-  TEST_CASE("a_vector_of_a_different_element_type") {
+  TEST_CASE("converted_element_type") {
     auto list = std::vector<double>();
     auto reactors = std::vector<Box<int>>();
     reactors.push_back(box(constant(5)));
@@ -98,7 +98,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list == std::vector{5.0, 12.0});
   }
 
-  TEST_CASE("reactors_that_cannot_throw") {
+  TEST_CASE("noexcept_reactors") {
     auto list = std::vector<int>();
     auto first = Shared(Cell(1));
     auto second = Shared(Cell(2));
@@ -114,7 +114,22 @@ TEST_SUITE("VectorSync") {
     REQUIRE(list == std::vector{10, 2});
   }
 
-  TEST_CASE("recovering_exception_restores_evaluation") {
+  TEST_CASE("element_recovering_from_an_exception") {
+    auto list = std::vector<int>();
+    auto reactors = std::vector<Box<int>>();
+    reactors.push_back(box(chain(throws<int>(std::runtime_error("fail")),
+      constant(12))));
+    reactors.push_back(box(constant(3)));
+    auto reactor = VectorSync(list, std::move(reactors));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.get_exception() != nullptr);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.get_exception() == nullptr);
+    REQUIRE(reactor.eval() == std::vector{12, 3});
+  }
+
+  TEST_CASE("element_failing_permanently") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     auto list = std::vector<int>();
@@ -131,7 +146,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("vector_sync_reports_which_reactor_failed") {
+  TEST_CASE("reporting_which_reactor_failed") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
     auto list = std::vector<int>();

@@ -10,7 +10,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Unconsecutive") {
-  TEST_CASE("a_value_repeated_in_a_row_is_dropped") {
+  TEST_CASE("repeated_values") {
     auto queue = Shared(Queue<int>());
     auto reactor = unconsecutive(queue);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -30,13 +30,13 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == 1);
   }
 
-  TEST_CASE("unconsecutive_of_a_constant") {
+  TEST_CASE("constant") {
     auto reactor = unconsecutive(Constant(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 5);
   }
 
-  TEST_CASE("a_source_that_cannot_throw") {
+  TEST_CASE("noexcept_source") {
     auto cell = Shared(Cell(1));
     auto reactor = unconsecutive(cell);
     REQUIRE(decltype(reactor)::is_noexcept);
@@ -50,7 +50,7 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("a_value_requiring_an_allocation") {
+  TEST_CASE("allocating_value") {
     auto cell = Shared(Cell(std::string("a")));
     auto reactor = unconsecutive(cell);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
@@ -62,7 +62,30 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == "b");
   }
 
-  TEST_CASE("a_source_that_fails") {
+  TEST_CASE("completion_with_a_repeat") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = unconsecutive(queue);
+    queue->push(10);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    queue->set_complete(10);
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
+  }
+
+  TEST_CASE("continuation_with_a_repeat") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = unconsecutive(queue);
+    queue->push(10);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    queue->push(10);
+    queue->push(20);
+    REQUIRE(reactor.commit(1) == State::CONTINUE);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 20);
+  }
+
+  TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = unconsecutive(queue);
     REQUIRE(!decltype(reactor)::is_noexcept);

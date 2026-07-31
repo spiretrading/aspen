@@ -12,7 +12,7 @@
 using namespace Aspen;
 
 TEST_SUITE("Sync") {
-  TEST_CASE("empty_sync") {
+  TEST_CASE("no_values") {
     auto value = 0;
     auto reactor = Sync(value, none<int>());
     REQUIRE(reactor.commit(0) == State::COMPLETE);
@@ -20,7 +20,7 @@ TEST_SUITE("Sync") {
     REQUIRE(value == 0);
   }
 
-  TEST_CASE("single_sync") {
+  TEST_CASE("value") {
     auto value = 0;
     auto reactor = Sync(value, constant(5));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
@@ -28,7 +28,7 @@ TEST_SUITE("Sync") {
     REQUIRE(value == 5);
   }
 
-  TEST_CASE("exception_sync") {
+  TEST_CASE("exception") {
     auto value = 0;
     auto reactor = Sync(value, chain(throws<int>(std::runtime_error("fail")),
       constant(12)));
@@ -44,7 +44,7 @@ TEST_SUITE("Sync") {
     REQUIRE(value == 12);
   }
 
-  TEST_CASE("sync_a_noexcept_reactor") {
+  TEST_CASE("noexcept_reactor") {
     auto value = 0;
     auto cell = Shared(Cell(1));
     auto reactor = Sync(value, cell);
@@ -58,7 +58,7 @@ TEST_SUITE("Sync") {
     REQUIRE(reactor.eval() == 2);
   }
 
-  TEST_CASE("sync_a_converted_value") {
+  TEST_CASE("converted_value") {
     auto value = 0.0;
     auto reactor = Sync(value, constant(5));
     REQUIRE((std::is_same_v<decltype(reactor)::Type, double>));

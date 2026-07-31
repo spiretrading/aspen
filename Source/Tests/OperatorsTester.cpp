@@ -18,7 +18,7 @@ namespace {
 }
 
 TEST_SUITE("Operators") {
-  TEST_CASE("operators") {
+  TEST_CASE("every_operator") {
     require(constant(10) + Constant<int>(20), 30);
     require(constant(10) - Constant<int>(20), -10);
     require(constant(10) * Constant<int>(20), 200);
@@ -54,7 +54,7 @@ TEST_SUITE("Operators") {
     require(Constant<bool>(false) || constant(false), false);
   }
 
-  TEST_CASE("operating_on_a_plain_value") {
+  TEST_CASE("plain_value") {
     require(constant(10) + 5, 15);
     require(5 + constant(10), 15);
     require(constant(10) - 5, 5);
@@ -73,7 +73,7 @@ TEST_SUITE("Operators") {
     require(false || constant(true), true);
   }
 
-  TEST_CASE("operating_on_reactors_that_cannot_throw") {
+  TEST_CASE("noexcept_reactors") {
     auto left = Shared(Cell(10));
     auto right = Shared(Cell(20));
     auto reactor = left + right;
@@ -85,7 +85,7 @@ TEST_SUITE("Operators") {
     REQUIRE(reactor.eval() == 25);
   }
 
-  TEST_CASE("operating_on_a_reactor_that_fails") {
+  TEST_CASE("reactor_exception") {
     auto left = Shared(Queue<int>());
     auto right = Shared(Queue<int>());
     auto reactor = left + right;

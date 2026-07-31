@@ -60,7 +60,20 @@ TEST_SUITE("Conversions") {
     REQUIRE(reactor.eval() == 10);
   }
 
-  TEST_CASE("an_evaluation_is_converted_once") {
+  TEST_CASE("propagating_a_continuation") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = ConversionReactor(queue, [] (int value) noexcept {
+      return value * 2;
+    });
+    queue->push(1);
+    queue->push(2);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 4);
+  }
+
+  TEST_CASE("converting_once") {
     auto queue = Shared(Queue<int>());
     auto reactor = ConversionReactor(queue, [] (int value) noexcept {
       return value;
@@ -70,7 +83,7 @@ TEST_SUITE("Conversions") {
     REQUIRE(&reactor.eval() == &reactor.eval());
   }
 
-  TEST_CASE("a_conversion_returning_a_reference") {
+  TEST_CASE("conversion_returning_a_reference") {
     auto queue = Shared(Queue<std::string>());
     auto reactor = ConversionReactor(queue,
       [] (const std::string& value) noexcept -> const std::string& {
@@ -85,7 +98,7 @@ TEST_SUITE("Conversions") {
     REQUIRE(reactor.eval() == "world");
   }
 
-  TEST_CASE("a_conversion_that_throws") {
+  TEST_CASE("conversion_exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = ConversionReactor(queue, [] (int value) {
       if(value < 0) {
@@ -102,7 +115,7 @@ TEST_SUITE("Conversions") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("a_child_that_throws") {
+  TEST_CASE("child_exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = ConversionReactor(queue, [] (int value) {
       return value;
@@ -119,7 +132,7 @@ TEST_SUITE("Conversions") {
     REQUIRE(reactor.eval() == 5.0);
   }
 
-  TEST_CASE("converting_to_a_type_without_a_default") {
+  TEST_CASE("converting_without_a_default") {
     auto reactor = ConversionReactor(Constant(5), [] (int value) noexcept {
       return Required(value);
     });
@@ -128,7 +141,7 @@ TEST_SUITE("Conversions") {
     REQUIRE(reactor.eval().m_value == 5);
   }
 
-  TEST_CASE("casting_through_a_conversion_that_throws") {
+  TEST_CASE("casting_with_an_exception") {
     auto reactor = static_reactor_cast<Checked>(Constant(-1));
     REQUIRE(!decltype(reactor)::is_noexcept);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);

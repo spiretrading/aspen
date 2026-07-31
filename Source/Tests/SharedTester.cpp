@@ -16,7 +16,7 @@ using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("Shared") {
-  TEST_CASE("shared_chain") {
+  TEST_CASE("chain") {
     auto s1 = Shared(Chain(constant(10), constant(9)));
     auto s2 = s1;
     REQUIRE(s1.commit(0) == State::CONTINUE_EVALUATED);
@@ -29,21 +29,21 @@ TEST_SUITE("Shared") {
     REQUIRE(s2.eval() == 9);
   }
 
-  TEST_CASE("shared_from_unique") {
+  TEST_CASE("from_a_unique") {
     auto c = Unique(std::make_unique<Constant<int>>(5));
     auto s = Shared(std::move(c));
     REQUIRE(s.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(s.eval() == 5);
   }
 
-  TEST_CASE("shared_constant_to_shared_box") {
+  TEST_CASE("to_a_box") {
     auto c = Shared(Constant(123));
     auto b = Shared<Box<int>>(c);
     REQUIRE(b.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(b.eval() == 123);
   }
 
-  TEST_CASE("shared_move_construction") {
+  TEST_CASE("move_construction") {
     auto queue = Shared(Queue<int>());
     queue->push(1);
     auto moved = Shared(std::move(queue));
@@ -54,7 +54,7 @@ TEST_SUITE("Shared") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("shared_copy_assignment") {
+  TEST_CASE("copy_assignment") {
     auto left = Shared(Queue<int>());
     auto right = Shared(Queue<int>());
     left->push(1);
@@ -69,7 +69,7 @@ TEST_SUITE("Shared") {
     REQUIRE(left.eval() == 3);
   }
 
-  TEST_CASE("shared_move_assignment") {
+  TEST_CASE("move_assignment") {
     auto left = Shared(Queue<int>());
     auto right = Shared(Queue<int>());
     left->push(1);
@@ -81,7 +81,7 @@ TEST_SUITE("Shared") {
     REQUIRE(left.eval() == 2);
   }
 
-  TEST_CASE("shared_self_assignment") {
+  TEST_CASE("self_assignment") {
     auto queue = Shared(Queue<int>());
     queue->push(1);
     REQUIRE(queue.commit(0) == State::EVALUATED);
@@ -94,7 +94,7 @@ TEST_SUITE("Shared") {
     REQUIRE(queue.eval() == 2);
   }
 
-  TEST_CASE("shared_is_noexcept") {
+  TEST_CASE("noexcept_reactor") {
     auto cell = Shared(Cell(1));
     REQUIRE(decltype(cell)::is_noexcept);
     auto queue = Shared(Queue<int>());
@@ -104,13 +104,13 @@ TEST_SUITE("Shared") {
       Shared<Cell<int>>>);
   }
 
-  TEST_CASE("shared_emplaced_from_several_arguments") {
+  TEST_CASE("emplaced_construction") {
     auto reactor = Shared<Cell<int>>(std::in_place, 7);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 7);
   }
 
-  TEST_CASE("shared_with_none") {
+  TEST_CASE("none") {
     auto a = Shared(chain(123, none<int>(), 321, none<int>()));
     auto b = Shared(a);
     a.commit(0);
@@ -123,7 +123,7 @@ TEST_SUITE("Shared") {
     REQUIRE(b.eval() == 321);
   }
 
-  TEST_CASE("destroying_an_unobserved_shared_does_not_evaluate") {
+  TEST_CASE("destroying_unobserved") {
     auto reactor = std::optional(Shared(Constant(CountedValue(1))));
     REQUIRE(has_evaluation(reactor->commit(0)));
     CountedValue::reset_counts();
@@ -131,7 +131,7 @@ TEST_SUITE("Shared") {
     REQUIRE(CountedValue::get_copies() == 0);
   }
 
-  TEST_CASE("a_boxed_shared_caches_its_own_evaluation") {
+  TEST_CASE("boxed_evaluation_cache") {
     auto reactor = Shared(ByValueReactor(5));
     auto first = shared_box(reactor);
     auto second = shared_box(reactor);
@@ -141,7 +141,7 @@ TEST_SUITE("Shared") {
     REQUIRE(second.eval() == 5);
   }
 
-  TEST_CASE("a_boxed_shared_commits_its_own_reactor") {
+  TEST_CASE("boxed_commit") {
     auto cell = Shared(Cell(1));
     auto first = Shared<Box<double>>(cell);
     auto second = Shared<Box<double>>(cell);
@@ -156,9 +156,25 @@ TEST_SUITE("Shared") {
     REQUIRE(second.eval() == 2.0);
   }
 
-  TEST_CASE("only_a_box_shares_the_state_of_the_reactor_it_wraps") {
+  TEST_CASE("skipping_a_quiet_sequence") {
+    auto reactor = Shared(CountingReactor<int>(1, State::EVALUATED));
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor->get_commits() == 1);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(reactor->get_commits() == 1);
+    REQUIRE(reactor.commit(2) == State::NONE);
+    REQUIRE(reactor->get_commits() == 1);
+  }
+
+  TEST_CASE("sharing_state_with_a_box") {
     static_assert(IsBox<Box<int>>);
     static_assert(!IsBox<Cell<int>>);
+    static_assert(std::is_convertible_v<Shared<Cell<int>>, Shared<Box<int>>>);
+    static_assert(!std::is_convertible_v<Shared<Cell<int>>,
+      Shared<StateReactor<Shared<Cell<int>>>>>);
+    static_assert(std::is_constructible_v<
+      Shared<StateReactor<Shared<Cell<int>>>>, Shared<Cell<int>>>);
     auto cell = Shared(Cell(1));
     auto states = Shared<StateReactor<Shared<Cell<int>>>>(cell);
     REQUIRE(states.commit(0) == State::EVALUATED);
@@ -168,7 +184,7 @@ TEST_SUITE("Shared") {
     REQUIRE(states.eval() == State::EVALUATED);
   }
 
-  TEST_CASE("moving_a_shared_stops_reporting_to_the_old_flag") {
+  TEST_CASE("flag_after_a_move") {
     auto cell = Shared(Cell(1));
     auto observer = cell;
     auto flag = CommitFlag();
@@ -184,7 +200,7 @@ TEST_SUITE("Shared") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("move_assigning_a_shared_stops_reporting_to_the_old_flag") {
+  TEST_CASE("flag_after_a_move_assignment") {
     auto cell = Shared(Cell(1));
     auto observer = cell;
     auto flag = CommitFlag();
@@ -201,7 +217,7 @@ TEST_SUITE("Shared") {
     REQUIRE(moved.eval() == 2);
   }
 
-  TEST_CASE("copy_assigning_to_a_moved_from_shared") {
+  TEST_CASE("copy_assigning_a_moved_from") {
     auto source = Shared(Queue<int>());
     auto moved = std::move(source);
     source = moved;
@@ -210,7 +226,7 @@ TEST_SUITE("Shared") {
     REQUIRE(source.eval() == 5);
   }
 
-  TEST_CASE("move_assigning_to_a_moved_from_shared") {
+  TEST_CASE("move_assigning_a_moved_from") {
     auto source = Shared(Queue<int>());
     auto moved = std::move(source);
     auto other = Shared(Queue<int>());

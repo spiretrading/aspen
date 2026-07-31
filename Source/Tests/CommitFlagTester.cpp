@@ -45,7 +45,7 @@ namespace {
 }
 
 TEST_SUITE("CommitFlag") {
-  TEST_CASE("unraised_children_are_skipped") {
+  TEST_CASE("skipping_unraised_children") {
     auto left = Shared(Cell(1));
     auto right = Shared(Cell(2));
     auto left_counter = Counter(left);
@@ -72,7 +72,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(*right_count == 2);
   }
 
-  TEST_CASE("updates_propagate_through_nested_reactors") {
+  TEST_CASE("nested_reactors") {
     auto cell = Shared(Cell(1));
     auto counter = Counter(cell);
     auto count = counter.get_count();
@@ -89,7 +89,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(*count == 2);
   }
 
-  TEST_CASE("shared_children_evaluate_for_every_dependent") {
+  TEST_CASE("shared_child") {
     auto cell = Shared(Cell(1));
     auto counter = Shared(Counter(cell));
     auto count = counter->get_count();
@@ -107,7 +107,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(*count == 2);
   }
 
-  TEST_CASE("diamond_dependencies_remain_glitch_free") {
+  TEST_CASE("diamond_dependency") {
     auto cell = Shared(Cell(1));
     auto doubled = Shared(Lift([] (int value) noexcept {
       return 2 * value;
@@ -127,7 +127,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(reactor.eval() == 500);
   }
 
-  TEST_CASE("moving_a_committed_reactor_preserves_propagation") {
+  TEST_CASE("moving_a_reactor") {
     auto cell = Shared(Cell(1));
     auto reactor = Lift(add, Lift(add, cell, constant(0)), constant(100));
     REQUIRE(reactor.commit(0) == State::EVALUATED);
@@ -142,7 +142,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(moved.eval() == 107);
   }
 
-  TEST_CASE("copying_a_committed_reactor_preserves_propagation") {
+  TEST_CASE("copying_a_reactor") {
     auto cell = Shared(Cell(1));
     auto reactor = Lift(add, Lift(add, cell, constant(0)), constant(100));
     REQUIRE(reactor.commit(0) == State::EVALUATED);
@@ -156,7 +156,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(copy.eval() == 107);
   }
 
-  TEST_CASE("raising_propagates_to_every_dependent") {
+  TEST_CASE("raising_a_hub") {
     auto root = CommitFlag();
     auto a = CommitFlag();
     auto b = CommitFlag();
@@ -182,7 +182,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(b.is_raised());
   }
 
-  TEST_CASE("dependents_can_be_removed") {
+  TEST_CASE("removing_a_dependent") {
     auto root = CommitFlag();
     auto a = CommitFlag();
     auto b = CommitFlag();
@@ -219,7 +219,7 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(c.is_raised());
   }
 
-  TEST_CASE("a_slot_records_a_raised_flag") {
+  TEST_CASE("slot") {
     auto word = std::atomic_uint64_t(0);
     auto flag = CommitFlag();
     flag.clear();
@@ -232,14 +232,14 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(word.load() == std::uint64_t(1) << 3);
   }
 
-  TEST_CASE("a_slot_records_a_flag_that_is_already_raised") {
+  TEST_CASE("slot_on_a_raised_flag") {
     auto word = std::atomic_uint64_t(0);
     auto flag = CommitFlag();
     flag.set_slot(&word, 5);
     REQUIRE(word.load() == std::uint64_t(1) << 5);
   }
 
-  TEST_CASE("adding_a_dependent_reports_a_raised_flag") {
+  TEST_CASE("adding_a_dependent") {
     auto raised_parent = CommitFlag();
     auto hub = CommitFlag();
     raised_parent.clear();
@@ -253,7 +253,52 @@ TEST_SUITE("CommitFlag") {
     REQUIRE(!cleared_parent.is_raised());
   }
 
-  TEST_CASE("raising_stops_at_raised_ancestors") {
+  TEST_CASE("root_flag") {
+    auto count = 0;
+    auto trigger = Trigger([&] {
+      ++count;
+    });
+    auto root = CommitFlag();
+    root.set_trigger(&trigger);
+    root.clear();
+    root.raise();
+    REQUIRE(root.is_raised());
+    REQUIRE(count == 1);
+    root.raise();
+    REQUIRE(count == 1);
+    root.clear();
+    root.raise();
+    REQUIRE(count == 2);
+  }
+
+  TEST_CASE("root_flag_raised_by_a_child") {
+    auto count = 0;
+    auto trigger = Trigger([&] {
+      ++count;
+    });
+    auto root = CommitFlag();
+    auto leaf = CommitFlag();
+    root.set_trigger(&trigger);
+    leaf.set_parent(&root);
+    root.clear();
+    leaf.clear();
+    leaf.raise();
+    REQUIRE(root.is_raised());
+    REQUIRE(count == 1);
+    leaf.clear();
+    leaf.raise();
+    REQUIRE(count == 1);
+  }
+
+  TEST_CASE("root_flag_without_a_trigger") {
+    auto root = CommitFlag();
+    root.set_trigger(nullptr);
+    root.clear();
+    root.raise();
+    REQUIRE(root.is_raised());
+  }
+
+  TEST_CASE("raising_a_raised_ancestor") {
     auto root = CommitFlag();
     auto branch = CommitFlag();
     auto leaf = CommitFlag();
