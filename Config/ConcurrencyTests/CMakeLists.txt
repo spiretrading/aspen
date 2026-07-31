@@ -5,7 +5,7 @@ target_include_directories(
 if(UNIX)
   target_link_libraries(aspen_concurrency_tester PRIVATE pthread)
 endif()
-foreach(case parent_assignment parent_list_mutation)
+foreach(case parent_assignment parent_list_mutation completed_child_removal)
   add_test(NAME concurrency_${case}
     COMMAND aspen_concurrency_tester -tc=${case})
   set_tests_properties(concurrency_${case} PROPERTIES TIMEOUT 600)
