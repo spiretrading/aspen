@@ -5,6 +5,7 @@
 #include <deque>
 #include <exception>
 #include <mutex>
+#include <stdexcept>
 #include <utility>
 #include "Aspen/CommitFlag.hpp"
 #include "Aspen/State.hpp"
@@ -152,6 +153,9 @@ namespace Aspen {
   eval_result_t<typename Queue<T>::Type> Queue<T>::eval() const {
     auto lock = std::lock_guard(m_mutex);
     if(m_entries.empty()) {
+      if(!m_exception) {
+        throw std::runtime_error("Uninitialized.");
+      }
       std::rethrow_exception(m_exception);
     }
     return m_entries.front();
@@ -178,8 +182,11 @@ namespace Aspen {
 
   template<typename T>
   void Queue<T>::update(auto&& f) {
-    auto flag = [&] {
+    auto flag = [&] () -> CommitFlag* {
       auto lock = std::lock_guard(m_mutex);
+      if(m_is_complete) {
+        return nullptr;
+      }
       f();
       return m_flag;
     }();

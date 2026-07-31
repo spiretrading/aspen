@@ -170,6 +170,37 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(0) == State::COMPLETE);
   }
 
+  TEST_CASE("evaluating_without_a_value") {
+    auto destination = Queue<int>();
+    destination.push(7);
+    REQUIRE(destination.commit(0) == State::EVALUATED);
+    REQUIRE(destination.eval() == 7);
+    destination = Queue<int>();
+    REQUIRE_THROWS_AS(destination.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("pushing_after_completion") {
+    auto queue = Queue<int>();
+    queue.set_complete(std::runtime_error("fail"));
+    REQUIRE(queue.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(queue.eval(), std::runtime_error);
+    queue.push(5);
+    REQUIRE_THROWS_AS(queue.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("raising_after_completion") {
+    auto queue = Queue<int>();
+    auto flag = CommitFlag();
+    {
+      auto scope = CommitFlagScope(flag);
+      queue.set_complete();
+      REQUIRE(queue.commit(0) == State::COMPLETE);
+    }
+    flag.clear();
+    queue.push(5);
+    REQUIRE(!flag.is_raised());
+  }
+
   TEST_CASE("move_assignment_in_a_graph") {
     auto flag = CommitFlag();
     auto destination = Queue<int>();
