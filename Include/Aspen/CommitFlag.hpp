@@ -64,7 +64,8 @@ namespace Details {
       void add_parent(CommitFlag& parent);
 
       /**
-       * Removes a CommitFlag previously added as a dependent.
+       * Removes a CommitFlag previously added as a dependent, returning once
+       * no propagation still in progress can reach it.
        * @param parent The CommitFlag to stop raising.
        */
       void remove_parent(CommitFlag& parent) noexcept;
@@ -99,6 +100,7 @@ namespace Details {
       };
       std::atomic<std::atomic_uint64_t*> m_word;
       std::atomic<std::shared_ptr<const Parents>> m_parents;
+      std::atomic_uint32_t m_readers;
       std::atomic_uint8_t m_flags;
       std::atomic<std::uint8_t> m_bit;
       std::atomic<Kind> m_kind;
@@ -135,6 +137,7 @@ namespace Details {
   inline CommitFlag::CommitFlag() noexcept
     : m_parent(nullptr),
       m_word(nullptr),
+      m_readers(0),
       m_flags(RAISED),
       m_bit(0),
       m_kind(Kind::PLAIN) {}
@@ -155,6 +158,7 @@ namespace Details {
       if((previous & PROPAGATED) != 0) {
         return;
       }
+      m_readers.fetch_add(1);
       if(auto parent = m_parent.load(std::memory_order_acquire)) {
         parent->raise();
       }
@@ -163,6 +167,8 @@ namespace Details {
           parent->raise();
         }
       }
+      m_readers.fetch_sub(1);
+      m_readers.notify_all();
     } else {
       auto previous = m_flags.fetch_or(RAISED, std::memory_order_acq_rel);
       if((previous & RAISED) != 0) {
@@ -241,16 +247,18 @@ namespace Details {
       } else {
         m_parent.store(nullptr, std::memory_order_release);
       }
-      return;
+    } else if(parents) {
+      auto i = std::find(parents->begin(), parents->end(), &parent);
+      if(i != parents->end()) {
+        auto updated = std::make_shared<Parents>(*parents);
+        updated->erase(updated->begin() + (i - parents->begin()));
+        m_parents.store(std::move(updated), std::memory_order_release);
+      }
     }
-    if(!parents) {
-      return;
-    }
-    auto i = std::find(parents->begin(), parents->end(), &parent);
-    if(i != parents->end()) {
-      auto updated = std::make_shared<Parents>(*parents);
-      updated->erase(updated->begin() + (i - parents->begin()));
-      m_parents.store(std::move(updated), std::memory_order_release);
+    auto readers = m_readers.load();
+    while(readers != 0) {
+      m_readers.wait(readers);
+      readers = m_readers.load();
     }
   }
 

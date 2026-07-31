@@ -6,13 +6,18 @@
 #include <cstdlib>
 #include <deque>
 #include <latch>
+#include <memory>
+#include <optional>
+#include <semaphore>
 #include <thread>
 #include <vector>
 #include <doctest/doctest.h>
+#include "Aspen/Cell.hpp"
 #include "Aspen/CommitFlag.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
+#include "Aspen/Trigger.hpp"
 
 using namespace Aspen;
 
@@ -22,6 +27,7 @@ namespace {
   constexpr auto PUSHES = 1000;
   constexpr auto RAISES = std::size_t(100000);
   constexpr auto TIMEOUT = std::chrono::seconds(30);
+  constexpr auto DELAY = std::chrono::milliseconds(20);
 
   int get_iterations() {
     auto variable = std::getenv("ASPEN_CONCURRENCY_ITERATIONS");
@@ -60,6 +66,38 @@ TEST_SUITE("CommitFlagConcurrency") {
       flag.set_parent(&parents[0]);
       flag.raise();
       REQUIRE(parents[0].is_raised());
+    }
+  }
+
+  TEST_CASE("parent_destruction") {
+    auto iterations = get_iterations();
+    for(auto iteration = 0; iteration != iterations; ++iteration) {
+      auto source = Shared(Cell<int>(0));
+      auto parents = std::deque<std::unique_ptr<CommitFlag>>();
+      auto holders = std::deque<std::optional<Shared<Cell<int>>>>();
+      for(auto i = std::size_t(0); i != PARENTS; ++i) {
+        parents.push_back(std::make_unique<CommitFlag>());
+        holders.emplace_back(source);
+        auto scope = CommitFlagScope(*parents[i]);
+        (*holders.back()).commit(0);
+      }
+      auto entered = std::binary_semaphore(0);
+      auto trigger = Trigger([&] {
+        entered.release();
+        std::this_thread::sleep_for(DELAY);
+      });
+      for(auto& parent : parents) {
+        parent->clear();
+      }
+      parents[1]->set_trigger(&trigger);
+      auto producer = std::thread([&] {
+        source->set(1);
+      });
+      entered.acquire();
+      holders[PARENTS - 1].reset();
+      parents[PARENTS - 1].reset();
+      producer.join();
+      REQUIRE(parents[1]->is_raised());
     }
   }
 
