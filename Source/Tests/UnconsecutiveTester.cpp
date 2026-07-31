@@ -62,6 +62,21 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == "b");
   }
 
+  TEST_CASE("throwing_source_with_a_class_value") {
+    auto queue = Shared(Queue<std::string>());
+    auto reactor = unconsecutive(queue);
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    queue->push("a");
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == "a");
+    queue->push("a");
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(reactor.eval() == "a");
+    queue->push("b");
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == "b");
+  }
+
   TEST_CASE("completion_with_a_repeat") {
     auto queue = Shared(Queue<int>());
     auto reactor = unconsecutive(queue);

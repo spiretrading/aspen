@@ -30,10 +30,11 @@ namespace Aspen {
           return Maybe<Type>(value.get_exception());
         }
       }
-      if(previous == value) {
+      auto& current = static_cast<const Type&>(value);
+      if(previous == current) {
         return State::NONE;
       }
-      previous = value;
+      previous = current;
       return *previous;
     }, std::forward<Series>(series));
   }
