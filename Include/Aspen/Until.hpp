@@ -44,7 +44,6 @@ namespace Aspen {
       std::optional<Branch<C>> m_condition;
       std::optional<Branch<T>> m_series;
       try_maybe_t<Type, !is_noexcept> m_value;
-      bool m_is_condition_complete;
   };
 
   template<typename C, typename T>
@@ -69,14 +68,13 @@ namespace Aspen {
     std::constructible_from<C, CF> && std::constructible_from<T, TF>
   Until<C, T>::Until(CF&& condition, TF&& series)
     : m_condition(std::forward<CF>(condition)),
-      m_series(std::forward<TF>(series)),
-      m_is_condition_complete(false) {}
+      m_series(std::forward<TF>(series)) {}
 
   template<IsReactorOf<bool> C, IsReactor T>
   State Until<C, T>::commit(std::uint64_t sequence) noexcept {
     auto state = State::NONE;
     auto has_condition_continuation = false;
-    if(!m_is_condition_complete && m_condition) {
+    if(m_condition) {
       auto condition_state = m_condition->commit(sequence);
       if(has_evaluation(condition_state)) {
         auto is_reached = [&] {
@@ -95,9 +93,8 @@ namespace Aspen {
           state = State::COMPLETE;
         }
       }
-      m_is_condition_complete = is_complete(condition_state);
       has_condition_continuation = has_continuation(condition_state);
-      if(m_is_condition_complete || !m_series) {
+      if(is_complete(condition_state) || !m_series) {
         m_condition = std::nullopt;
       }
     }

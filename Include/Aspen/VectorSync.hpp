@@ -41,16 +41,15 @@ namespace Details {
        * Constructs a VectorSync, resizing the <i>value</i> to hold one element
        * per reactor.
        * @param value The vector to keep synchronized, which must outlive this
-       *        reactor and must not be reallocated, since an element of it is
-       *        kept by address.
+       *        reactor and whose elements must not be reallocated.
        * @param reactors The vector of reactors used to synchronize the
        *        <i>value</i>.
        */
       VectorSync(Type& value, std::vector<R> reactors);
 
       /**
-       * Returns the exception thrown by the first reactor to fail, or nullptr
-       * for none.
+       * Returns the exception thrown by the lowest indexed reactor currently
+       * in an exception state, or nullptr for none.
        */
       std::exception_ptr get_exception() const noexcept;
 

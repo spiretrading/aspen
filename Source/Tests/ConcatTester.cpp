@@ -115,6 +115,7 @@ TEST_SUITE("Concat") {
     auto reactor = Concat(Constant(ByValueReactor(CountedValue(1))));
     test_evaluation_lifetime(reactor);
   }
+
   TEST_CASE("a_completed_producer_is_released") {
     auto producer = TrackedReactor<SharedBox<int>>(
       shared_box(Constant(5)), State::COMPLETE_EVALUATED);
@@ -124,5 +125,4 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.eval() == 5);
     REQUIRE(token.expired());
   }
-
 }

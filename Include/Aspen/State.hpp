@@ -31,8 +31,8 @@ namespace Aspen {
 
   /** Returns <code>true</code> iff a reactor State is in an EVALUATED state. */
   constexpr bool has_evaluation(State state) {
-    return (static_cast<unsigned char>(state) & static_cast<unsigned char>(
-      State::EVALUATED)) != 0;
+    return (static_cast<unsigned char>(state) &
+      static_cast<unsigned char>(State::EVALUATED)) != 0;
   }
 
   /** Returns <code>true</code> iff a reactor State is in a CONTINUE state. */

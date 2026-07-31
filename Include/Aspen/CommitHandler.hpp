@@ -66,8 +66,8 @@ namespace Aspen {
         explicit Child(U&& reactor);
         Child(Child&& child) noexcept;
       };
-      std::unique_ptr<std::atomic_uint64_t[]> m_raised;
       std::size_t m_word_count;
+      std::unique_ptr<std::atomic_uint64_t[]> m_raised;
       std::vector<Child> m_children;
       std::vector<std::size_t> m_evaluated;
       std::size_t m_completion_count;
@@ -95,6 +95,7 @@ namespace Aspen {
   template<typename A>
   CommitHandler<R>::CommitHandler(std::vector<R, A> children)
       : m_word_count((children.size() + BITS - 1) / BITS),
+        m_raised(std::make_unique<std::atomic_uint64_t[]>(m_word_count)),
         m_completion_count(0),
         m_evaluation_count(0),
         m_is_initializing(true),
@@ -103,7 +104,6 @@ namespace Aspen {
     for(auto& child : children) {
       m_children.emplace_back(std::move(child));
     }
-    m_raised = std::make_unique<std::atomic_uint64_t[]>(m_word_count);
   }
 
   template<IsReactor R>

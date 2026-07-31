@@ -41,7 +41,7 @@ namespace Details {
       /** Returns <code>true</code> iff a commit is required. */
       bool is_raised() const noexcept;
 
-      /** Returns <code>true</code> iff a bit is raised along with this flag. */
+      /** Returns <code>true</code> iff this flag was assigned a slot. */
       bool has_slot() const noexcept;
 
       /** Indicates that a commit is required. */
@@ -175,8 +175,7 @@ namespace Details {
         return;
       }
       if(m_word) {
-        m_word->fetch_or(std::uint64_t(1) << m_bit,
-          std::memory_order_release);
+        m_word->fetch_or(std::uint64_t(1) << m_bit, std::memory_order_release);
       }
       if(m_kind == Kind::ROOT) {
         if(m_trigger) {

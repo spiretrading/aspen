@@ -186,5 +186,4 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 5);
     REQUIRE(token.expired());
   }
-
 }

@@ -138,6 +138,7 @@ TEST_SUITE("Chain") {
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_destructions() == 0);
   }
+
   TEST_CASE("a_completed_initial_is_released") {
     auto initial = TrackedReactor<int>(1, State::COMPLETE_EVALUATED);
     auto token = initial.get_token();
@@ -161,5 +162,4 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.commit(1) == State::NONE);
     REQUIRE(child.get_commits() == 1);
   }
-
 }

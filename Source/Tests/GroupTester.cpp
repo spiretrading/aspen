@@ -149,5 +149,4 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.eval() == 2);
     REQUIRE(token.expired());
   }
-
 }

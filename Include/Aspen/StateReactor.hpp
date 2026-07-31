@@ -28,7 +28,8 @@ namespace Aspen {
       template<typename RF> requires(
         !std::derived_from<std::remove_cvref_t<RF>, StateReactor<R>>) &&
         std::constructible_from<R, RF>
-      explicit StateReactor(RF&& reactor);
+      explicit StateReactor(RF&& reactor) noexcept(
+        std::is_nothrow_constructible_v<R, RF>);
 
       State commit(std::uint64_t sequence) noexcept;
       Type eval() const noexcept;
@@ -46,7 +47,8 @@ namespace Aspen {
   template<typename RF> requires(
     !std::derived_from<std::remove_cvref_t<RF>, StateReactor<R>>) &&
     std::constructible_from<R, RF>
-  StateReactor<R>::StateReactor(RF&& reactor)
+  StateReactor<R>::StateReactor(RF&& reactor) noexcept(
+    std::is_nothrow_constructible_v<R, RF>)
     : m_reactor(std::forward<RF>(reactor)),
       m_value(State::EVALUATED) {}
 

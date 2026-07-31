@@ -16,10 +16,12 @@
 namespace Aspen {
 
   /**
-   * Implements a reactor that evaluates to the reactors produced by its child,
-   * where each successively produced reactor overrides the previous.
+   * Implements a reactor that evaluates to the values of the reactors produced
+   * by its child, where each successively produced reactor overrides the
+   * previous.
    * @param producer The reactor producing the reactors to evaluate to.
-   * @return A reactor evaluating to the most recently produced reactor.
+   * @return A reactor evaluating to the values of the most recently produced
+   *         reactor.
    */
   template<typename T> requires
     IsReactor<std::remove_cvref_t<T>> && IsReactor<reactor_result_t<T>>
@@ -27,10 +29,9 @@ namespace Aspen {
     using Reactor = reactor_result_t<T>;
     auto producer_handle = Shared(std::forward<T>(producer));
     auto counter = Shared(count(producer_handle));
-    return concat(lift(
-      [counter] (const Reactor& reactor, std::uint64_t count) mutable {
-        return Shared(until(counter != constant(count), reactor));
-      }, std::move(producer_handle), std::move(counter)));
+    return concat(lift([counter] (const Reactor& reactor, std::uint64_t count) {
+      return Shared(until(counter != constant(count), reactor));
+    }, std::move(producer_handle), std::move(counter)));
   }
 }
 

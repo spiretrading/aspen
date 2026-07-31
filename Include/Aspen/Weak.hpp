@@ -41,6 +41,7 @@ namespace Aspen {
       Weak(const Weak& weak) noexcept;
       Weak(Weak&& weak) noexcept;
       ~Weak();
+
       Weak& operator =(const Weak& weak) noexcept;
       Weak& operator =(Weak&& weak) noexcept;
 
