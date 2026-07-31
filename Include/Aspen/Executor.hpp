@@ -1,6 +1,7 @@
 #ifndef ASPEN_EXECUTOR_HPP
 #define ASPEN_EXECUTOR_HPP
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
@@ -56,8 +57,10 @@ namespace Aspen {
         RunningScope(const RunningScope&) = delete;
         RunningScope& operator =(const RunningScope&) = delete;
       };
+      static constexpr auto INTERRUPT_INTERVAL = std::chrono::seconds(1);
       static inline std::mutex m_abort_mutex;
       static inline std::vector<Executor*> m_running_executors;
+      static inline std::atomic_bool m_is_interrupted;
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
       static inline auto m_previous_action = SignalAction();
 #endif
@@ -95,7 +98,8 @@ namespace Aspen {
   }
 
   inline bool Executor::is_aborted() const noexcept {
-    return m_is_aborted.load(std::memory_order_acquire);
+    return m_is_aborted.load(std::memory_order_acquire) ||
+      m_is_interrupted.load(std::memory_order_acquire);
   }
 
   inline State Executor::commit() {
@@ -132,7 +136,7 @@ namespace Aspen {
       }
       if(!has_continuation(state)) {
         auto lock = std::unique_lock(m_mutex);
-        m_update_condition.wait(lock, [&] {
+        m_update_condition.wait_for(lock, INTERRUPT_INTERVAL, [&] {
           return m_has_update || is_aborted();
         });
       }
@@ -146,6 +150,7 @@ namespace Aspen {
       auto lock = std::lock_guard(m_abort_mutex);
       m_running_executors.push_back(&executor);
       if(m_running_executors.size() == 1) {
+        m_is_interrupted.store(false, std::memory_order_release);
 #if defined(_WIN32)
         ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -170,6 +175,7 @@ namespace Aspen {
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
       ::sigaction(SIGINT, &m_previous_action, nullptr);
 #endif
+      m_is_interrupted.store(false, std::memory_order_release);
     }
   }
 
@@ -194,18 +200,12 @@ namespace Aspen {
     if(ctrl != CTRL_C_EVENT) {
       return FALSE;
     }
-    auto lock = std::lock_guard(m_abort_mutex);
-    for(auto executor : m_running_executors) {
-      executor->abort();
-    }
+    m_is_interrupted.store(true, std::memory_order_release);
     return TRUE;
   }
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
   inline void Executor::ctrl_handler(int) {
-    auto lock = std::lock_guard(m_abort_mutex);
-    for(auto executor : m_running_executors) {
-      executor->abort();
-    }
+    m_is_interrupted.store(true, std::memory_order_release);
   }
 #endif
 }
