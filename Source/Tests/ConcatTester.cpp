@@ -56,7 +56,43 @@ TEST_SUITE("Concat") {
     auto series = Shared<Queue<SharedBox<int>>>();
     series->set_complete(std::runtime_error("fail"));
     auto reactor = concat(series);
-    REQUIRE(reactor.commit(0) == State::COMPLETE);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("producer_exception_after_a_child") {
+    auto series = Shared<Queue<SharedBox<int>>>();
+    auto child = Shared(Queue<int>());
+    series->push(shared_box(child));
+    series->set_complete(std::runtime_error("fail"));
+    auto reactor = concat(series);
+    child->push(1);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    child->push(2);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    child->set_complete();
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("producer_exception_after_a_final_value") {
+    auto series = Shared<Queue<SharedBox<int>>>();
+    auto child = Shared(Queue<int>());
+    series->push(shared_box(child));
+    series->set_complete(std::runtime_error("fail"));
+    auto reactor = concat(series);
+    child->push(1);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    child->set_complete(2);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
   TEST_CASE("child_with_several_values") {

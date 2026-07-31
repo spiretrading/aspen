@@ -20,7 +20,8 @@ TEST_SUITE("Override") {
     auto series = Shared<Queue<SharedBox<int>>>();
     series->set_complete(std::runtime_error("fail"));
     auto reactor = override(series);
-    REQUIRE(reactor.commit(0) == State::COMPLETE);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
   TEST_CASE("single_reactor") {

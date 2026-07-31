@@ -6,6 +6,7 @@
 #include "Aspen/Chain.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/Count.hpp"
+#include "Aspen/Lift.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 
@@ -55,6 +56,25 @@ TEST_SUITE("Count") {
     queue->set_complete();
     REQUIRE(counter.commit(4) == State::COMPLETE);
     REQUIRE(counter.eval() == 2);
+  }
+
+  TEST_CASE("exception_between_values") {
+    auto queue = Shared(Queue<int>());
+    auto counter = count(lift([] (int value) {
+      if(value == 20) {
+        throw std::runtime_error("fail");
+      }
+      return value;
+    }, queue));
+    queue->push(10);
+    REQUIRE(counter.commit(0) == State::EVALUATED);
+    REQUIRE(counter.eval() == 1);
+    queue->push(20);
+    REQUIRE(counter.commit(1) == State::EVALUATED);
+    REQUIRE_THROWS_AS(counter.eval(), std::runtime_error);
+    queue->push(30);
+    REQUIRE(counter.commit(2) == State::EVALUATED);
+    REQUIRE(counter.eval() == 3);
   }
 
   TEST_CASE("exception") {

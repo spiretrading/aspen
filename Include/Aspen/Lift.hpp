@@ -133,7 +133,8 @@ namespace Details {
   };
 
   template<typename T>
-  using function_reactor_result_t = typename function_reactor_result<T>::type;
+  using function_reactor_result_t =
+    typename function_reactor_result<std::remove_cvref_t<T>>::type;
 
   decltype(auto) eval_argument(const auto& reactor) {
     return try_call([&] () noexcept(noexcept(reactor.eval())) ->

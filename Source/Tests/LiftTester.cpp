@@ -287,6 +287,21 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.eval() == 2);
   }
 
+  TEST_CASE("function_returning_a_reference_to_an_optional") {
+    auto storage = std::optional<int>(5);
+    auto queue = Shared(Queue<int>());
+    auto reactor = Lift([&] (int value) noexcept -> const std::optional<int>& {
+      return storage;
+    }, queue);
+    static_assert(std::is_same_v<decltype(reactor)::Type, int>);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    storage = std::nullopt;
+    queue->push(2);
+    REQUIRE(reactor.commit(1) == State::NONE);
+  }
+
   TEST_CASE("function_returning_a_maybe") {
     auto cell = Shared(Cell(1));
     auto reactor = Lift([] (int value) noexcept {
