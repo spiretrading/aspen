@@ -1,5 +1,7 @@
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <doctest/doctest.h>
@@ -116,6 +118,25 @@ TEST_SUITE("Maybe") {
     auto failed = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
     destination = failed;
     REQUIRE(destination.has_exception());
+  }
+
+  TEST_CASE("assignment_in_place") {
+    auto maybe = Maybe(std::string(64, 'a'));
+    auto address = maybe.get().data();
+    auto replacement = std::string(32, 'b');
+    auto source = Maybe(std::string_view(replacement));
+    maybe = source;
+    REQUIRE(maybe.get() == replacement);
+    REQUIRE(maybe.get().data() == address);
+  }
+
+  TEST_CASE("move_assignment_in_place") {
+    auto maybe = Maybe(std::string(64, 'a'));
+    auto address = maybe.get().data();
+    auto replacement = std::string(32, 'b');
+    maybe = Maybe(std::string_view(replacement));
+    REQUIRE(maybe.get() == replacement);
+    REQUIRE(maybe.get().data() == address);
   }
 
   TEST_CASE("noexcept_assignment") {

@@ -1,5 +1,6 @@
 #ifndef ASPEN_SYNC_HPP
 #define ASPEN_SYNC_HPP
+#include <concepts>
 #include <cstdint>
 #include <exception>
 #include <type_traits>
@@ -15,6 +16,21 @@ namespace Details {
   struct Exception {
     std::exception_ptr m_exception;
   };
+
+  std::exception_ptr get_exception(const auto& reactor) noexcept {
+    if constexpr(requires {
+        { reactor.get_exception() } -> std::same_as<std::exception_ptr>;
+      }) {
+      return reactor.get_exception();
+    } else {
+      try {
+        reactor.eval();
+        return nullptr;
+      } catch(...) {
+        return std::current_exception();
+      }
+    }
+  }
 }
 
   /**

@@ -215,8 +215,9 @@ namespace Details {
   template<IsReactor R>
   template<typename U> requires IsBox<R>
   Shared<R>::Shared(Shared<U> reactor)
-    : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
-        reactor.m_evaluator->m_state), std::make_shared<Reactor>(reactor)) {
+      : Shared(std::make_shared<Details::SharedEvaluator<Reactor>>(
+          reactor.m_evaluator->m_state), std::shared_ptr<Reactor>()) {
+    m_reactor = std::make_shared<Reactor>(std::move(reactor));
     m_evaluator->m_reactor = m_reactor;
   }
 

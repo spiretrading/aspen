@@ -67,14 +67,16 @@ namespace Aspen {
     auto state = m_reactors.commit(sequence);
     if constexpr(!is_noexcept) {
       if(has_evaluation(state)) {
-        try {
-          apply([] (const auto&... reactors) {
-            (reactors.eval(), ...);
-          }, m_reactors);
-          this->m_exception = nullptr;
-        } catch(...) {
-          this->m_exception = std::current_exception();
-        }
+        this->m_exception = apply([] (const auto&... reactors) {
+          auto exception = std::exception_ptr();
+          auto find = [&] (const auto& reactor) {
+            if(!exception) {
+              exception = Details::get_exception(reactor);
+            }
+          };
+          (find(reactors), ...);
+          return exception;
+        }, m_reactors);
       }
     }
     return state;

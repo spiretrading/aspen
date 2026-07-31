@@ -67,6 +67,8 @@ namespace Details {
       using Element = Sync<R, typename Type::value_type>;
       Type* m_value;
       CommitHandler<Element> m_reactors;
+
+      std::size_t find_exception() const noexcept;
   };
 
   template<IsReactor R, typename V>
@@ -87,17 +89,26 @@ namespace Details {
   }
 
   template<IsReactor R, typename V>
-  std::exception_ptr VectorSync<R, V>::get_exception() const noexcept {
+  std::size_t VectorSync<R, V>::find_exception() const noexcept {
     if constexpr(!is_noexcept) {
       if(this->m_count != 0) {
         for(auto i = std::size_t(0); i != m_reactors.size(); ++i) {
           if(this->m_has_exception[i]) {
-            return m_reactors.get(i).get_exception();
+            return i;
           }
         }
       }
     }
-    return nullptr;
+    return m_reactors.size();
+  }
+
+  template<IsReactor R, typename V>
+  std::exception_ptr VectorSync<R, V>::get_exception() const noexcept {
+    auto index = find_exception();
+    if(index == m_reactors.size()) {
+      return nullptr;
+    }
+    return m_reactors.get(index).get_exception();
   }
 
   template<IsReactor R, typename V>
@@ -137,12 +148,9 @@ namespace Details {
   const typename VectorSync<R, V>::Type& VectorSync<R, V>::eval()
       const noexcept(is_noexcept) {
     if constexpr(!is_noexcept) {
-      if(this->m_count != 0) {
-        for(auto i = std::size_t(0); i != m_reactors.size(); ++i) {
-          if(this->m_has_exception[i]) {
-            m_reactors.get(i).eval();
-          }
-        }
+      auto index = find_exception();
+      if(index != m_reactors.size()) {
+        m_reactors.get(index).eval();
       }
     }
     return *m_value;

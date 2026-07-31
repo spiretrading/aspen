@@ -298,10 +298,16 @@ namespace Details {
   template<typename U> requires std::constructible_from<T, const U&>
   Maybe<T>& Maybe<T>::operator =(const Maybe<U>& maybe) noexcept(
       std::is_nothrow_assignable_v<Type&, const U&>) {
-    if(maybe.has_value()) {
-      m_value = static_cast<Type>(maybe.get());
-    } else {
+    if(!maybe.has_value()) {
       m_value = maybe.get_exception();
+    } else if constexpr(std::is_assignable_v<Type&, const U&>) {
+      if(has_value()) {
+        std::get<Type>(m_value) = maybe.get();
+      } else {
+        m_value.template emplace<Type>(maybe.get());
+      }
+    } else {
+      m_value = static_cast<Type>(maybe.get());
     }
     return *this;
   }
@@ -310,10 +316,16 @@ namespace Details {
   template<typename U> requires std::constructible_from<T, U&&>
   Maybe<T>& Maybe<T>::operator =(Maybe<U>&& maybe) noexcept(
       std::is_nothrow_assignable_v<Type&, U&&>) {
-    if(maybe.has_value()) {
-      m_value = static_cast<Type>(std::move(maybe.get()));
-    } else {
+    if(!maybe.has_value()) {
       m_value = maybe.get_exception();
+    } else if constexpr(std::is_assignable_v<Type&, U&&>) {
+      if(has_value()) {
+        std::get<Type>(m_value) = std::move(maybe.get());
+      } else {
+        m_value.template emplace<Type>(std::move(maybe.get()));
+      }
+    } else {
+      m_value = static_cast<Type>(std::move(maybe.get()));
     }
     return *this;
   }
