@@ -68,6 +68,7 @@ namespace Aspen {
   template<typename U> requires std::constructible_from<T, U>
   void Proxy<T>::set_reactor(U&& reactor) {
     m_reactor.emplace(std::forward<U>(reactor));
+    m_state = State::NONE;
     if(m_flag) {
       m_flag->raise();
     }

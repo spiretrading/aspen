@@ -51,6 +51,23 @@ TEST_SUITE("Proxy") {
     REQUIRE(reactor.eval() == 7);
   }
 
+  TEST_CASE("set_after_a_completion") {
+    auto first = Shared(Queue<int>());
+    auto reactor = Proxy<Shared<Queue<int>>>();
+    reactor.set_reactor(first);
+    first->set_complete(1);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    auto second = Shared(Queue<int>());
+    second->push(2);
+    reactor.set_reactor(second);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    second->push(3);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+  }
+
   TEST_CASE("exception") {
     auto queue = Shared(Queue<int>());
     auto reactor = Proxy<Shared<Queue<int>>>();
