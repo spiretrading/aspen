@@ -331,7 +331,6 @@ namespace Details {
       auto skipped = reset(
         evaluator.m_state->m_state, combine(State::EVALUATED, State::CONTINUE));
       evaluator.m_state->m_state = skipped;
-      evaluator.m_state->m_sequence.set(sequence);
       evaluator.m_sequence.set(sequence);
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;

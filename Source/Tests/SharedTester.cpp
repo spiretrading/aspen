@@ -235,4 +235,19 @@ TEST_SUITE("Shared") {
     REQUIRE(source.commit(0) == State::EVALUATED);
     REQUIRE(source.eval() == 7);
   }
+
+  TEST_CASE("raising_between_a_box_and_its_source") {
+    auto queue = Shared(Queue<int>());
+    auto boxed = SharedBox<int>(queue);
+    queue->push(1);
+    REQUIRE(has_evaluation(boxed.commit(0)));
+    REQUIRE(boxed.eval() == 1);
+    REQUIRE(has_evaluation(queue.commit(0)));
+    boxed.commit(1);
+    queue->push(2);
+    REQUIRE(has_evaluation(queue.commit(1)));
+    REQUIRE(queue.eval() == 2);
+    REQUIRE(has_evaluation(boxed.commit(2)));
+    REQUIRE(boxed.eval() == 2);
+  }
 }
