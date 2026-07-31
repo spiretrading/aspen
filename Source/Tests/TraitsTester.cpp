@@ -44,6 +44,11 @@ namespace {
       return 1;
     }
   };
+
+  template<typename R>
+  concept HasEvaluation = requires {
+    typename reactor_evaluation_t<R>;
+  };
 }
 
 TEST_SUITE("Traits") {
@@ -71,6 +76,14 @@ TEST_SUITE("Traits") {
     REQUIRE(!is_reference_evaluation_v<Perpetual>);
   }
 
+  TEST_CASE("evaluation_of_a_qualified_type") {
+    static_assert(HasEvaluation<Constant<int>>);
+    static_assert(!HasEvaluation<Constant<int>&>);
+    static_assert(!HasEvaluation<const Constant<int>&>);
+    static_assert(!HasEvaluation<const Constant<int>>);
+    static_assert(!HasEvaluation<int>);
+  }
+
   TEST_CASE("common_evaluation_trait") {
     REQUIRE((std::is_same_v<common_result_t<Constant<int>>, int>));
     REQUIRE((std::is_same_v<
@@ -82,6 +95,8 @@ TEST_SUITE("Traits") {
     REQUIRE((std::is_same_v<
       common_evaluation_t<Constant<int>, ByValueReactor<int>>, int>));
     REQUIRE((std::is_same_v<common_evaluation_t<Perpetual>, void>));
+    REQUIRE((std::is_same_v<
+      common_evaluation_t<Constant<int>, Constant<double>>, double>));
   }
 
   TEST_CASE("noexcept_evaluation_trait") {

@@ -89,7 +89,7 @@ namespace Details {
       using Type = reactor_result_t<Reactor>;
 
       /** The type returned by an evaluation. */
-      using Result = decltype(std::declval<Reactor&>().eval());
+      using Result = reactor_evaluation_t<Reactor>;
 
       /** Whether this reactor's eval is noexcept. */
       static constexpr auto is_noexcept = is_noexcept_reactor_v<Reactor>;
