@@ -123,6 +123,11 @@ namespace Details {
   };
 
   template<typename T>
+  struct function_reactor_result<std::optional<Maybe<T>>> {
+    using type = T;
+  };
+
+  template<typename T>
   struct function_reactor_result<FunctionEvaluation<T>> {
     using type = T;
   };
