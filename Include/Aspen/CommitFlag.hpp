@@ -157,7 +157,8 @@ namespace Details {
   }
 
   inline void CommitFlag::propagate() noexcept {
-    if(m_kind.load(std::memory_order_acquire) == Kind::HUB) {
+    auto kind = m_kind.load(std::memory_order_acquire);
+    if(kind == Kind::HUB) {
       auto previous =
         m_flags.fetch_or(RAISED | PROPAGATED, std::memory_order_acq_rel);
       if((previous & PROPAGATED) != 0) {
@@ -182,7 +183,7 @@ namespace Details {
           std::uint64_t(1) << m_bit.load(std::memory_order_acquire),
           std::memory_order_release);
       }
-      if(m_kind.load(std::memory_order_acquire) == Kind::ROOT) {
+      if(kind == Kind::ROOT) {
         if(auto trigger = static_cast<Trigger*>(
             m_pointer.load(std::memory_order_acquire))) {
           trigger->signal();
