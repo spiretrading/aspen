@@ -23,7 +23,7 @@ namespace Aspen {
     using Type = reactor_result_t<Series>;
     return lift([] (const auto& toggle, const auto& series) noexcept(
         is_noexcept_reactor_v<to_reactor_t<Toggle>> &&
-        is_noexcept_reactor_v<to_reactor_t<Series>>) -> std::optional<Type> {
+        is_noexcept_evaluation_v<to_reactor_t<Series>>) -> std::optional<Type> {
       if(toggle) {
         return std::nullopt;
       }
