@@ -7,6 +7,7 @@
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/StateReactor.hpp"
+#include "Aspen/Weak.hpp"
 
 using namespace Aspen;
 
@@ -67,5 +68,16 @@ TEST_SUITE("StateReactor") {
     queue->set_complete();
     REQUIRE(reactor.commit(6) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == State::COMPLETE);
+  }
+
+  TEST_CASE("releasing_a_completed_source") {
+    auto queue = Shared(Queue<int>());
+    auto observer = Weak(queue);
+    auto reactor = StateReactor(queue);
+    queue->set_complete();
+    queue = Shared(Queue<int>());
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == State::COMPLETE);
+    REQUIRE(!observer.lock());
   }
 }
