@@ -123,6 +123,9 @@ namespace Aspen {
   template<IsReactor R>
   CommitHandler<R>& CommitHandler<R>::operator =(
       CommitHandler&& handler) noexcept {
+    if(this == &handler) {
+      return *this;
+    }
     m_children = std::move(handler.m_children);
     m_evaluated = std::move(handler.m_evaluated);
     m_raised = std::move(handler.m_raised);

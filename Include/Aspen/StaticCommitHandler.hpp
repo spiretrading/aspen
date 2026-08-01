@@ -172,6 +172,9 @@ namespace Details {
   template<IsReactor... R>
   StaticCommitHandler<R...>& StaticCommitHandler<R...>::operator =(
       const StaticCommitHandler& handler) {
+    if(this == &handler) {
+      return *this;
+    }
     m_children = handler.m_children;
     m_is_initializing = handler.m_is_initializing;
     m_is_linked = false;
@@ -181,6 +184,9 @@ namespace Details {
   template<IsReactor... R>
   StaticCommitHandler<R...>& StaticCommitHandler<R...>::operator =(
       StaticCommitHandler&& handler) noexcept {
+    if(this == &handler) {
+      return *this;
+    }
     m_children = std::move(handler.m_children);
     m_is_initializing = handler.m_is_initializing;
     m_is_linked = false;
