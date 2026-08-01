@@ -110,8 +110,8 @@ namespace Aspen {
 
   template<IsReactor R>
   CommitHandler<R>::CommitHandler(CommitHandler&& handler) noexcept
-    : m_raised(std::move(handler.m_raised)),
-      m_word_count(handler.m_word_count),
+    : m_word_count(handler.m_word_count),
+      m_raised(std::move(handler.m_raised)),
       m_children(std::move(handler.m_children)),
       m_evaluated(std::move(handler.m_evaluated)),
       m_completion_count(handler.m_completion_count),
