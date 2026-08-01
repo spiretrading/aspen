@@ -200,22 +200,22 @@ namespace Details {
    * @return The result of <i>f</i>.
    */
   template<typename F>
-  decltype(auto) try_call(F&& f) noexcept(noexcept(f())) {
+  decltype(auto) try_call(F&& f) noexcept {
     using Type = std::decay_t<std::invoke_result_t<F>>;
-    if constexpr(noexcept(f())) {
+    if constexpr(noexcept(std::forward<F>(f)())) {
       if constexpr(std::is_same_v<Type, void>) {
-        f();
+        std::forward<F>(f)();
         return Maybe<void>();
       } else {
-        return f();
+        return std::forward<F>(f)();
       }
     } else {
       try {
         if constexpr(std::is_same_v<Type, void>) {
-          f();
+          std::forward<F>(f)();
           return Maybe<Type>();
         } else {
-          return Maybe<Type>(f());
+          return Maybe<Type>(std::forward<F>(f)());
         }
       } catch(...) {
         return Maybe<Type>(std::current_exception());
