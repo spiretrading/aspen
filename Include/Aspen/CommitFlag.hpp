@@ -188,9 +188,16 @@ namespace Details {
             m_pointer.load(std::memory_order_acquire))) {
           trigger->signal();
         }
-      } else if(auto parent = static_cast<CommitFlag*>(
-          m_pointer.load(std::memory_order_acquire))) {
-        parent->raise();
+      } else {
+        if(auto parent = static_cast<CommitFlag*>(
+            m_pointer.load(std::memory_order_acquire))) {
+          parent->raise();
+        }
+        if(auto parents = m_parents.load(std::memory_order_acquire)) {
+          for(auto parent : *parents) {
+            parent->raise();
+          }
+        }
       }
     }
   }
