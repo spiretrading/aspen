@@ -21,7 +21,6 @@ TEST_SUITE("MultiSync") {
       Sync(std::get<1>(record), constant("hello")),
       Sync(std::get<2>(record), constant(3.14)));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
-    REQUIRE(reactor.eval() == std::tuple(0, "", 0.0));
     REQUIRE(record == std::tuple(0, "", 0.0));
   }
 

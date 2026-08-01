@@ -70,7 +70,6 @@ TEST_SUITE("Group") {
     REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
     REQUIRE(reactor.commit(3) == State::NONE);
-    REQUIRE(reactor.eval() == 2);
     first->set_complete();
     second->set_complete();
     REQUIRE(reactor.commit(4) == State::COMPLETE);

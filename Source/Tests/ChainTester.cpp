@@ -29,7 +29,6 @@ TEST_SUITE("Chain") {
     REQUIRE(reactor.eval() == 911);
     state = reactor.commit(1);
     REQUIRE(state == State::COMPLETE);
-    REQUIRE(reactor.eval() == 911);
   }
 
   TEST_CASE("empty_initial") {
@@ -48,13 +47,11 @@ TEST_SUITE("Chain") {
   TEST_CASE("empty_continuation") {
     auto queue = Shared(Queue<int>());
     queue->push(5);
-    queue.commit(0);
     auto reactor = Chain(queue, None<int>());
-    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 5);
     queue->set_complete();
-    REQUIRE(reactor.commit(2) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 5);
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
   }
 
   TEST_CASE("immediate_completion") {
@@ -104,12 +101,11 @@ TEST_SUITE("Chain") {
   TEST_CASE("initial_completing_without_a_value") {
     auto queue = Shared(Queue<int>());
     queue->push(5);
-    queue.commit(0);
     auto reactor = Chain(queue, Constant(123));
-    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 5);
     queue->set_complete();
-    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
   }
 

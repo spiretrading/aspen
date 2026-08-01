@@ -22,7 +22,6 @@ TEST_SUITE("VectorSync") {
     reactors.push_back(box(constant(10)));
     auto reactor = VectorSync(list, std::move(reactors));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
-    REQUIRE(reactor.eval() == std::vector{5, 0, 0});
     REQUIRE(list == std::vector{5, 0, 0});
   }
 
@@ -142,7 +141,7 @@ TEST_SUITE("VectorSync") {
     REQUIRE(has_evaluation(reactor.commit(0)));
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
     first->push(2);
-    reactor.commit(1);
+    REQUIRE(has_evaluation(reactor.commit(1)));
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 

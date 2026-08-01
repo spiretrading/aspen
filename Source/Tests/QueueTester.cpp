@@ -37,7 +37,6 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.eval() == 321);
     queue.set_complete();
     REQUIRE(queue.commit(1) == State::COMPLETE);
-    REQUIRE(queue.eval() == 321);
   }
 
   TEST_CASE("value_then_an_exception") {

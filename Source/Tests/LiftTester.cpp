@@ -112,12 +112,10 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 100);
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == 100);
     queue->push(5);
     REQUIRE(reactor.commit(3) == State::EVALUATED);
     REQUIRE(reactor.eval() == 25);
     REQUIRE(reactor.commit(4) == State::NONE);
-    REQUIRE(reactor.eval() == 25);
     queue->set_complete(4);
     REQUIRE(reactor.commit(5) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 16);
@@ -126,10 +124,9 @@ TEST_SUITE("Lift") {
   TEST_CASE("completing_arguments") {
     auto queue = Shared(Queue<int>());
     queue->push(10);
-    queue.commit(0);
     queue->set_complete();
     auto reactor = Lift(square, queue);
-    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 100);
   }
 

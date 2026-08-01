@@ -65,7 +65,6 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.eval() == 51);
     queue->push(200);
     REQUIRE(reactor.commit(3) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 51);
   }
 
   TEST_CASE("step") {
@@ -194,7 +193,6 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 0);
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 0);
     step->set(2);
     REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 2);

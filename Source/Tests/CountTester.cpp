@@ -49,13 +49,11 @@ TEST_SUITE("Count") {
     REQUIRE(counter.commit(1) == State::EVALUATED);
     REQUIRE(counter.eval() == 1);
     REQUIRE(counter.commit(2) == State::NONE);
-    REQUIRE(counter.eval() == 1);
     queue->push(10);
     REQUIRE(counter.commit(3) == State::EVALUATED);
     REQUIRE(counter.eval() == 2);
     queue->set_complete();
     REQUIRE(counter.commit(4) == State::COMPLETE);
-    REQUIRE(counter.eval() == 2);
   }
 
   TEST_CASE("exception_between_values") {

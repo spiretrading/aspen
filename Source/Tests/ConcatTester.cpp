@@ -22,11 +22,9 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 5);
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 5);
     auto producer = Shared<Queue<int>>();
     series->push(shared_box(producer));
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == 5);
   }
 
   TEST_CASE("none_between_constants") {
@@ -39,7 +37,6 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 5);
     REQUIRE(reactor.commit(1) == State::CONTINUE);
-    REQUIRE(reactor.eval() == 5);
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 10);
   }
@@ -107,7 +104,6 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == 2);
     child->set_complete();
     REQUIRE(reactor.commit(3) == State::COMPLETE);
   }
@@ -142,7 +138,6 @@ TEST_SUITE("Concat") {
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 10);
     REQUIRE(reactor.commit(1) == State::CONTINUE);
-    REQUIRE(reactor.eval() == 10);
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
   }

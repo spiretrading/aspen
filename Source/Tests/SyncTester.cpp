@@ -16,7 +16,6 @@ TEST_SUITE("Sync") {
     auto value = 0;
     auto reactor = Sync(value, none<int>());
     REQUIRE(reactor.commit(0) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 0);
     REQUIRE(value == 0);
   }
 

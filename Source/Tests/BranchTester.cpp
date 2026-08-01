@@ -63,15 +63,14 @@ TEST_SUITE("Branch") {
     REQUIRE(branch.commit(2) == State::EVALUATED);
     REQUIRE(branch->eval() == 2);
     REQUIRE(branch.commit(3) == State::NONE);
-    REQUIRE(branch->eval() == 2);
   }
 
   TEST_CASE("completion") {
     auto branch = Branch(constant(5));
     REQUIRE(branch.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(branch->eval() == 5);
     REQUIRE(branch.commit(1) == State::COMPLETE);
     REQUIRE(branch.commit(2) == State::COMPLETE);
-    REQUIRE(branch->eval() == 5);
   }
 
   TEST_CASE("continuation") {

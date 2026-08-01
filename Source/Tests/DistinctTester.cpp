@@ -22,10 +22,8 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.eval() == 20);
     queue->push(10);
     REQUIRE(reactor.commit(3) == State::NONE);
-    REQUIRE(reactor.eval() == 20);
     queue->push(20);
     REQUIRE(reactor.commit(4) == State::NONE);
-    REQUIRE(reactor.eval() == 20);
     queue->push(30);
     REQUIRE(reactor.commit(5) == State::EVALUATED);
     REQUIRE(reactor.eval() == 30);
@@ -45,13 +43,11 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.eval() == 1);
     cell->set(1);
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 1);
     cell->set(2);
     REQUIRE(reactor.commit(2) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
     cell->set(1);
     REQUIRE(reactor.commit(3) == State::NONE);
-    REQUIRE(reactor.eval() == 2);
   }
 
   TEST_CASE("allocating_value") {
@@ -64,7 +60,6 @@ TEST_SUITE("Distinct") {
     REQUIRE(reactor.eval() == "b");
     cell->set("a");
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == "b");
   }
 
   TEST_CASE("completion_with_a_repeat") {

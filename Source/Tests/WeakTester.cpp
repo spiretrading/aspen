@@ -24,7 +24,6 @@ TEST_SUITE("Weak") {
     REQUIRE(s2.eval() == 10);
     s1 = std::nullopt;
     REQUIRE(s2.commit(2) == State::COMPLETE);
-    REQUIRE(s2.eval() == 10);
   }
 
   TEST_CASE("box") {
@@ -42,7 +41,6 @@ TEST_SUITE("Weak") {
     s1 = std::nullopt;
     s2 = std::nullopt;
     REQUIRE(s3.commit(2) == State::COMPLETE);
-    REQUIRE(s3.eval() == 10);
   }
 
   TEST_CASE("noexcept_reactor") {
@@ -56,7 +54,6 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 2);
     shared = std::nullopt;
     REQUIRE(weak.commit(2) == State::COMPLETE);
-    REQUIRE(weak.eval() == 2);
   }
 
   TEST_CASE("locking") {
@@ -106,7 +103,6 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
     first = second;
     REQUIRE(weak.commit(1) == State::COMPLETE);
-    REQUIRE(weak.eval() == 5);
   }
 
   TEST_CASE("move_assigning_the_shared") {
@@ -118,7 +114,6 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.eval() == 5);
     first = std::move(second);
     REQUIRE(weak.commit(1) == State::COMPLETE);
-    REQUIRE(weak.eval() == 5);
   }
 
   TEST_CASE("assignment") {

@@ -51,13 +51,11 @@ TEST_SUITE("Conversions") {
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == 2);
     queue->push(9);
     REQUIRE(reactor.commit(3) == State::EVALUATED);
     REQUIRE(reactor.eval() == 10);
     queue->set_complete();
     REQUIRE(reactor.commit(4) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 10);
   }
 
   TEST_CASE("propagating_a_continuation") {

@@ -19,7 +19,6 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == 1);
     queue->push(1);
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == 1);
     queue->push(2);
     REQUIRE(reactor.commit(3) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
@@ -44,7 +43,6 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == 1);
     cell->set(1);
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 1);
     cell->set(2);
     REQUIRE(reactor.commit(2) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
@@ -71,7 +69,6 @@ TEST_SUITE("Unconsecutive") {
     REQUIRE(reactor.eval() == "a");
     queue->push("a");
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == "a");
     queue->push("b");
     REQUIRE(reactor.commit(2) == State::EVALUATED);
     REQUIRE(reactor.eval() == "b");

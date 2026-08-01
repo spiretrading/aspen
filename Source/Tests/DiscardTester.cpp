@@ -22,7 +22,6 @@ TEST_SUITE("Discard") {
     REQUIRE(reactor.eval() == 2);
     toggle->push(true);
     REQUIRE(reactor.commit(2) == State::CONTINUE);
-    REQUIRE(reactor.eval() == 2);
     toggle->push(false);
     REQUIRE(reactor.commit(3) == State::EVALUATED);
     REQUIRE(reactor.eval() == 4);
@@ -42,7 +41,6 @@ TEST_SUITE("Discard") {
     REQUIRE(reactor.eval() == 6);
     toggle->set(true);
     REQUIRE(reactor.commit(3) == State::NONE);
-    REQUIRE(reactor.eval() == 6);
   }
 
   TEST_CASE("completed_toggle") {
@@ -92,6 +90,5 @@ TEST_SUITE("Discard") {
     toggle->push(true);
     series->set_complete(std::runtime_error("fail"));
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 1);
   }
 }

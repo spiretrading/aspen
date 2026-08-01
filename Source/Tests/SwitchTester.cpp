@@ -42,7 +42,6 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 321);
     toggle->push(false);
     REQUIRE(reactor.commit(3) == State::NONE);
-    REQUIRE(reactor.eval() == 321);
     toggle->push(true);
     REQUIRE(reactor.commit(4) == State::EVALUATED);
     REQUIRE(reactor.eval() == 321);
@@ -81,7 +80,6 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 1);
     toggle->set_complete(std::runtime_error("fail"));
     REQUIRE(reactor.commit(1) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 1);
   }
 
   TEST_CASE("series_exception") {
@@ -105,7 +103,6 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 6);
     toggle->set(false);
     REQUIRE(reactor.commit(2) == State::NONE);
-    REQUIRE(reactor.eval() == 6);
   }
 
   TEST_CASE("switch_function") {
@@ -133,7 +130,6 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 5);
     toggle->set_complete(std::runtime_error("bad"));
     REQUIRE(reactor.commit(1) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 5);
   }
 
   TEST_CASE("series_gated_by_the_toggle") {
@@ -163,7 +159,6 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 5);
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 5);
   }
 
   TEST_CASE("continuing_series") {

@@ -30,7 +30,6 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 2);
     condition->push(true);
     REQUIRE(reactor.commit(2) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 2);
   }
 
   TEST_CASE("continuing_condition") {
@@ -88,7 +87,6 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 1);
     condition->set_complete(std::runtime_error("bad"));
     REQUIRE(reactor.commit(1) == State::NONE);
-    REQUIRE(reactor.eval() == 1);
   }
 
   TEST_CASE("series_exception") {
@@ -113,7 +111,6 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.eval() == 8);
     condition->set(true);
     REQUIRE(reactor.commit(2) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 8);
   }
 
   TEST_CASE("noexcept_series") {

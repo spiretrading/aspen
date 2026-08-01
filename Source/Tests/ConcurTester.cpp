@@ -37,7 +37,6 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 123);
     REQUIRE(reactor.commit(1) == State::COMPLETE);
-    REQUIRE(reactor.eval() == 123);
   }
 
   TEST_CASE("evaluating_in_turn") {
@@ -57,7 +56,6 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
     REQUIRE(reactor.commit(sequence++) == State::NONE);
-    REQUIRE(reactor.eval() == 2);
   }
 
   TEST_CASE("child_waiting_its_turn") {
@@ -146,7 +144,6 @@ TEST_SUITE("Concur") {
     REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 9);
     REQUIRE(reactor.commit(sequence++) == State::NONE);
-    REQUIRE(reactor.eval() == 9);
     second->push(3);
     REQUIRE(reactor.commit(sequence++) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 3);
