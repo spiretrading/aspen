@@ -146,6 +146,17 @@ TEST_SUITE("Conversions") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
+  TEST_CASE("casting_a_value") {
+    auto same = static_reactor_cast<int>(5);
+    REQUIRE((std::is_same_v<decltype(same), Constant<int>>));
+    REQUIRE(same.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(same.eval() == 5);
+    auto converted = static_reactor_cast<double>(5);
+    REQUIRE((std::is_same_v<decltype(converted)::Type, double>));
+    REQUIRE(converted.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(converted.eval() == 5.0);
+  }
+
   TEST_CASE("casting_to_the_same_type") {
     auto named = Constant(5);
     auto reactor = static_reactor_cast<int>(named);

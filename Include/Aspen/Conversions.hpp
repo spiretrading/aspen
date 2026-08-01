@@ -60,10 +60,12 @@ namespace Aspen {
    */
   template<typename T>
   auto static_reactor_cast(auto&& reactor) {
+    using Reactor = to_reactor_t<decltype(reactor)>;
     if constexpr(std::is_same_v<T, reactor_result_t<decltype(reactor)>>) {
-      return std::forward<decltype(reactor)>(reactor);
+      return Reactor(std::forward<decltype(reactor)>(reactor));
     } else {
-      return ConversionReactor(std::forward<decltype(reactor)>(reactor),
+      return ConversionReactor(
+        Reactor(std::forward<decltype(reactor)>(reactor)),
         [] (auto&& value) noexcept(noexcept(
             static_cast<T>(std::forward<decltype(value)>(value)))) {
           return static_cast<T>(std::forward<decltype(value)>(value));
