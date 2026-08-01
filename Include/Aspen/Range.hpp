@@ -33,7 +33,9 @@ namespace Aspen {
     auto stop_reactor = Shared(std::forward<E>(stop));
     auto stop_updates = StateReactor(stop_reactor);
     return lift([value = std::optional<Type>()] (const Type& start,
-        const Type& end, State end_state, const Type& step) mutable noexcept {
+        const Type& end, State end_state, const Type& step) mutable noexcept(
+          std::is_nothrow_copy_constructible_v<Type> && noexcept(
+            std::declval<const Type&>() + std::declval<const Type&>())) {
       auto current = [&] () -> Type {
         if(!value) {
           return start;
