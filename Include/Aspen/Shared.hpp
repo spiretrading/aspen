@@ -44,6 +44,7 @@ namespace Details {
     Sequence m_evaluated;
     std::optional<try_maybe_t<reactor_result_t<R>, !is_noexcept_reactor_v<R>>>
       m_evaluation;
+    bool m_is_committing;
 
     explicit SharedEvaluator(std::shared_ptr<SharedState> state) noexcept;
   };
@@ -71,7 +72,8 @@ namespace Details {
   template<typename R>
   SharedEvaluator<R>::SharedEvaluator(
     std::shared_ptr<SharedState> state) noexcept
-    : m_state(std::move(state)) {}
+    : m_state(std::move(state)),
+      m_is_committing(false) {}
 }
 
   /**
@@ -325,6 +327,16 @@ namespace Details {
       }
       return evaluator.m_state->m_state;
     }
+    if(evaluator.m_sequence.m_is_set &&
+        is_complete(evaluator.m_state->m_state)) {
+      auto completed = reset(evaluator.m_state->m_state,
+        combine(State::EVALUATED, State::CONTINUE));
+      if(last_evaluation < evaluator.m_state->m_last_evaluation) {
+        last_evaluation = evaluator.m_state->m_last_evaluation;
+        return combine(completed, State::EVALUATED);
+      }
+      return completed;
+    }
     auto& flag = evaluator.m_state->m_flag;
     if(current != &flag && !flag.is_raised() && evaluator.m_sequence.m_is_set &&
         !(evaluator.m_evaluated < evaluator.m_state->m_last_evaluation)) {
@@ -339,10 +351,13 @@ namespace Details {
       return skipped;
     }
     flag.clear();
+    auto is_nested = evaluator.m_is_committing;
+    evaluator.m_is_committing = true;
     auto reactor_state = [&] {
       auto scope = CommitFlagScope(flag);
       return reactor.commit(sequence);
     }();
+    evaluator.m_is_committing = is_nested;
     if(has_continuation(reactor_state)) {
       flag.raise();
     }
@@ -350,7 +365,7 @@ namespace Details {
       evaluator.m_evaluated.set(sequence);
     }
     evaluator.m_sequence.set(sequence);
-    if(evaluator.m_state->m_sequence.is_at(sequence)) {
+    if(is_nested || evaluator.m_state->m_sequence.is_at(sequence)) {
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         reactor_state = combine(reactor_state, State::EVALUATED);

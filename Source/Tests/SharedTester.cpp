@@ -7,6 +7,7 @@
 #include "Aspen/CommitFlag.hpp"
 #include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
+#include "Aspen/Proxy.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/StateReactor.hpp"
@@ -129,6 +130,14 @@ TEST_SUITE("Shared") {
     CountedValue::reset_counts();
     reactor = std::nullopt;
     REQUIRE(CountedValue::get_copies() == 0);
+  }
+
+  TEST_CASE("cyclic_commit_observed_by_a_sibling") {
+    auto reactor = Shared(Proxy<SharedBox<State>>());
+    reactor->set_reactor(shared_box(StateReactor(reactor)));
+    auto observer = reactor;
+    auto state = reactor.commit(0);
+    REQUIRE(observer.commit(0) == state);
   }
 
   TEST_CASE("boxed_evaluation_cache") {
