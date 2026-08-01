@@ -164,6 +164,16 @@ TEST_SUITE("Concat") {
     REQUIRE(token.expired());
   }
 
+  TEST_CASE("releasing_a_child_without_a_value") {
+    auto child = TrackedReactor<int>(1, State::COMPLETE);
+    auto token = child.get_token();
+    auto producer = Queue<SharedBox<int>>();
+    producer.set_complete(shared_box(std::move(child)));
+    auto reactor = concat(std::move(producer));
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
+    REQUIRE(token.expired());
+  }
+
   TEST_CASE("releasing_a_completed_producer") {
     auto producer = TrackedReactor<SharedBox<int>>(
       shared_box(Constant(5)), State::COMPLETE_EVALUATED);

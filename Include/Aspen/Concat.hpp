@@ -121,6 +121,10 @@ namespace Aspen {
               break;
             }
           }
+          if(m_children.size() == 1) {
+            m_children.pop_front();
+            m_is_child_complete = false;
+          }
           return State::NONE;
         } else if(!m_children.empty()) {
           auto child_state = m_children.front().commit(sequence);
@@ -141,7 +145,8 @@ namespace Aspen {
     }
     if(has_continuation(child_state)) {
       state = combine(state, State::CONTINUE);
-    } else if(m_is_child_complete && m_children.size() == 1 && !m_producer) {
+    } else if(!m_producer &&
+        (m_children.empty() || m_children.size() == 1 && m_is_child_complete)) {
       state = combine(state, State::COMPLETE);
     }
     if(m_exception && is_complete(state)) {
