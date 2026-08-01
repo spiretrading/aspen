@@ -105,8 +105,8 @@ namespace Aspen {
   template<typename T>
   void Queue<T>::set_complete(Type value) {
     update([&] {
-      m_is_complete = true;
       m_entries.emplace_back(std::move(value));
+      m_is_complete = true;
     });
   }
 

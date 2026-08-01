@@ -154,8 +154,8 @@ namespace Aspen {
   template<typename T>
   void Cell<T>::set_complete(Type value) {
     update([&] {
-      m_is_complete = true;
       m_next = std::move(value);
+      m_is_complete = true;
     });
   }
 
@@ -163,8 +163,8 @@ namespace Aspen {
   template<typename... A>
   void Cell<T>::emplace_complete(A&&... args) {
     update([&] {
-      m_is_complete = true;
       m_next.emplace(std::forward<A>(args)...);
+      m_is_complete = true;
     });
   }
 
@@ -233,8 +233,11 @@ namespace Aspen {
 
   template<typename T>
   void Cell<T>::update(auto&& f) {
-    auto flag = [&] {
+    auto flag = [&] () -> CommitFlag* {
       auto lock = std::lock_guard(m_mutex);
+      if(m_is_complete) {
+        return nullptr;
+      }
       f();
       return m_flag;
     }();

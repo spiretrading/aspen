@@ -1,4 +1,5 @@
 #include <exception>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <doctest/doctest.h>
@@ -7,6 +8,19 @@
 
 using namespace Aspen;
 using namespace std::string_literals;
+
+namespace {
+  struct Checked {
+    int m_value;
+
+    explicit Checked(int value)
+        : m_value(value) {
+      if(value < 0) {
+        throw std::runtime_error("negative");
+      }
+    }
+  };
+}
 
 TEST_SUITE("Cell") {
   TEST_CASE("immediate_completion") {
@@ -162,6 +176,37 @@ TEST_SUITE("Cell") {
     REQUIRE(!first.is_raised());
     REQUIRE(second.is_raised());
   }
+
+  TEST_CASE("setting_after_completion") {
+    auto flag = CommitFlag();
+    auto cell = Cell<int>();
+    {
+      auto scope = CommitFlagScope(flag);
+      cell.set_complete(1);
+      REQUIRE(cell.commit(0) == State::COMPLETE_EVALUATED);
+      REQUIRE(cell.eval() == 1);
+    }
+    flag.clear();
+    cell.set(2);
+    REQUIRE(!flag.is_raised());
+  }
+
+  TEST_CASE("completing_with_a_throwing_value") {
+    auto flag = CommitFlag();
+    auto cell = Cell<Checked>();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(cell.commit(0) == State::NONE);
+    }
+    flag.clear();
+    REQUIRE_THROWS_AS(cell.emplace_complete(-1), std::runtime_error);
+    REQUIRE(!flag.is_raised());
+    cell.emplace(2);
+    REQUIRE(flag.is_raised());
+    REQUIRE(cell.commit(1) == State::EVALUATED);
+    REQUIRE(cell.eval().m_value == 2);
+  }
+
   TEST_CASE("assignment_before_a_commit") {
     auto destination = Cell(1);
     REQUIRE(destination.commit(0) == State::EVALUATED);
