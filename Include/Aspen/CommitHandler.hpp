@@ -74,6 +74,7 @@ namespace Aspen {
       std::size_t m_evaluation_count;
       bool m_is_initializing;
       bool m_is_linked;
+      CommitFlag* m_parent;
 
       void link() noexcept;
   };
@@ -99,7 +100,8 @@ namespace Aspen {
         m_completion_count(0),
         m_evaluation_count(0),
         m_is_initializing(true),
-        m_is_linked(false) {
+        m_is_linked(false),
+        m_parent(nullptr) {
     m_children.reserve(children.size());
     for(auto& child : children) {
       m_children.emplace_back(std::move(child));
@@ -115,7 +117,8 @@ namespace Aspen {
       m_completion_count(handler.m_completion_count),
       m_evaluation_count(handler.m_evaluation_count),
       m_is_initializing(handler.m_is_initializing),
-      m_is_linked(false) {}
+      m_is_linked(false),
+      m_parent(nullptr) {}
 
   template<IsReactor R>
   CommitHandler<R>& CommitHandler<R>::operator =(
@@ -128,6 +131,9 @@ namespace Aspen {
     m_evaluation_count = handler.m_evaluation_count;
     m_is_initializing = handler.m_is_initializing;
     m_is_linked = false;
+    if(auto parent = std::exchange(m_parent, nullptr)) {
+      parent->raise();
+    }
     return *this;
   }
 
@@ -135,6 +141,7 @@ namespace Aspen {
   void CommitHandler<R>::link() noexcept {
     m_is_linked = true;
     auto parent = CommitFlag::get_current();
+    m_parent = parent;
     for(auto i = std::size_t(0); i != m_children.size(); ++i) {
       auto& flag = m_children[i].m_flag;
       flag.set_parent(parent);
