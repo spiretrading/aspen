@@ -95,6 +95,15 @@ TEST_SUITE("Cell") {
     REQUIRE(cell.eval() == 2);
   }
 
+  TEST_CASE("copy_construction_after_a_commit") {
+    auto cell = Cell(1);
+    REQUIRE(cell.commit(0) == State::EVALUATED);
+    REQUIRE(cell.eval() == 1);
+    auto copy = cell;
+    REQUIRE(copy.commit(0) == State::EVALUATED);
+    REQUIRE(copy.eval() == 1);
+  }
+
   TEST_CASE("assignment") {
     auto cell = Cell(1);
     REQUIRE(cell.commit(0) == State::EVALUATED);

@@ -111,12 +111,14 @@ namespace Aspen {
 
   template<typename T>
   Cell<T>::Cell(const Cell& cell)
-      : m_is_complete(false),
-        m_flag(nullptr) {
+      : m_flag(nullptr) {
     auto lock = std::lock_guard(cell.m_mutex);
     m_is_complete = cell.m_is_complete;
-    m_current = cell.m_current;
-    m_next = cell.m_next;
+    if(cell.m_next) {
+      m_next = cell.m_next;
+    } else {
+      m_next = cell.m_current;
+    }
   }
 
   template<typename T>
