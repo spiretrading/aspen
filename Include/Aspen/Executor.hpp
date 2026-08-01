@@ -119,7 +119,8 @@ namespace Aspen {
     }
     auto old_trigger = Trigger::get_trigger();
     Trigger::set_trigger(m_trigger);
-    while(!is_aborted() && !m_is_complete && has_continuation(commit())) {}
+    while(!m_is_aborted.load(std::memory_order_acquire) && !m_is_complete &&
+      has_continuation(commit())) {}
     Trigger::set_trigger(old_trigger);
   }
 
