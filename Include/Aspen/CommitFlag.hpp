@@ -106,6 +106,7 @@ namespace Details {
       CommitFlag(CommitFlag&&) = delete;
       CommitFlag& operator =(const CommitFlag&) = delete;
       CommitFlag& operator =(CommitFlag&&) = delete;
+      void propagate() noexcept;
   };
 
   /** Sets the CommitFlag that the reactor being committed reports to. */
@@ -149,13 +150,19 @@ namespace Details {
   }
 
   inline void CommitFlag::raise() noexcept {
+    m_readers.fetch_add(1);
+    propagate();
+    m_readers.fetch_sub(1);
+    m_readers.notify_all();
+  }
+
+  inline void CommitFlag::propagate() noexcept {
     if(m_kind.load(std::memory_order_acquire) == Kind::HUB) {
       auto previous =
         m_flags.fetch_or(RAISED | PROPAGATED, std::memory_order_acq_rel);
       if((previous & PROPAGATED) != 0) {
         return;
       }
-      m_readers.fetch_add(1);
       if(auto parent = static_cast<CommitFlag*>(
           m_pointer.load(std::memory_order_acquire))) {
         parent->raise();
@@ -165,8 +172,6 @@ namespace Details {
           parent->raise();
         }
       }
-      m_readers.fetch_sub(1);
-      m_readers.notify_all();
     } else {
       auto previous = m_flags.fetch_or(RAISED, std::memory_order_acq_rel);
       if((previous & RAISED) != 0) {

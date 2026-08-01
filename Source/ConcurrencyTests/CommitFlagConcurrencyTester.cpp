@@ -73,6 +73,12 @@ TEST_SUITE("CommitFlagConcurrency") {
     auto iterations = get_iterations();
     for(auto iteration = 0; iteration != iterations; ++iteration) {
       auto source = Shared(Cell<int>(0));
+      auto entered = std::binary_semaphore(0);
+      auto trigger = Trigger([&] {
+        entered.release();
+        std::this_thread::sleep_for(DELAY);
+      });
+      auto word = std::atomic_uint64_t(0);
       auto parents = std::deque<std::unique_ptr<CommitFlag>>();
       auto holders = std::deque<std::optional<Shared<Cell<int>>>>();
       for(auto i = std::size_t(0); i != PARENTS; ++i) {
@@ -81,23 +87,21 @@ TEST_SUITE("CommitFlagConcurrency") {
         auto scope = CommitFlagScope(*parents[i]);
         (*holders.back()).commit(0);
       }
-      auto entered = std::binary_semaphore(0);
-      auto trigger = Trigger([&] {
-        entered.release();
-        std::this_thread::sleep_for(DELAY);
-      });
       for(auto& parent : parents) {
         parent->clear();
       }
       parents[1]->set_trigger(&trigger);
+      parents[PARENTS - 1]->set_slot(&word, 0);
       auto producer = std::thread([&] {
         source->set(1);
       });
-      entered.acquire();
+      auto is_entered = entered.try_acquire_for(TIMEOUT);
       holders[PARENTS - 1].reset();
+      auto is_reached = word.load() != 0;
       parents[PARENTS - 1].reset();
       producer.join();
-      REQUIRE(parents[1]->is_raised());
+      REQUIRE(is_entered);
+      REQUIRE(is_reached);
     }
   }
 
@@ -111,11 +115,7 @@ TEST_SUITE("CommitFlagConcurrency") {
       auto reactor = Shared(Queue<int>());
       auto& queue = *reactor;
       auto word = std::atomic_uint64_t(0);
-      auto parents = std::array<CommitFlag, PARENTS>();
-      for(auto i = std::size_t(0); i != PARENTS; ++i) {
-        parents[i].clear();
-        parents[i].set_slot(&word, static_cast<std::uint8_t>(i));
-      }
+      auto parents = std::deque<std::unique_ptr<CommitFlag>>();
       auto holders = std::deque<Shared<Queue<int>>>();
       auto sequence = std::uint64_t(0);
       reactor.commit(sequence);
@@ -138,20 +138,24 @@ TEST_SUITE("CommitFlagConcurrency") {
         if(has_evaluation(state)) {
           values.push_back(reactor.eval());
         }
+        parents.push_back(std::make_unique<CommitFlag>());
+        parents.back()->clear();
+        parents.back()->set_slot(
+          &word, static_cast<std::uint8_t>(sequence % PARENTS));
         holders.emplace_back(reactor);
         {
-          auto scope = CommitFlagScope(parents[sequence % PARENTS]);
+          auto scope = CommitFlagScope(*parents.back());
           holders.back().commit(sequence);
         }
         if(holders.size() > HOLDERS) {
           holders.pop_front();
+          parents.pop_front();
         }
         ++sequence;
       }
       producer.join();
       REQUIRE(is_complete(state));
       REQUIRE(values == expected);
-      REQUIRE(word.load() != 0);
     }
   }
 }
