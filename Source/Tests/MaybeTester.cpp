@@ -18,6 +18,22 @@ namespace {
       : m_value(value) {}
   };
 
+  struct Guarded {
+    int m_value;
+
+    explicit Guarded(int value)
+        : m_value(value) {
+      if(value < 0) {
+        throw std::runtime_error("negative");
+      }
+    }
+
+    Guarded& operator =(int value) noexcept {
+      m_value = value;
+      return *this;
+    }
+  };
+
   struct Tracker {
     bool m_is_moved;
     int m_value;
@@ -215,6 +231,17 @@ TEST_SUITE("Maybe") {
     REQUIRE(caught.has_exception());
     REQUIRE_THROWS_AS(caught.get(), std::runtime_error);
     REQUIRE(try_call([] { return 5; }).get() == 5);
+  }
+
+  TEST_CASE("converting_from_an_explicit_constructor") {
+    REQUIRE((std::is_convertible_v<Maybe<int>, Maybe<long>>));
+    REQUIRE(!(std::is_convertible_v<Maybe<int>, Maybe<Required>>));
+    REQUIRE((std::is_constructible_v<Maybe<Required>, Maybe<int>>));
+  }
+
+  TEST_CASE("noexcept_converting_assignment") {
+    REQUIRE((std::is_nothrow_assignable_v<Maybe<long>&, const Maybe<int>&>));
+    REQUIRE(!(std::is_nothrow_assignable_v<Maybe<Guarded>&, const Maybe<int>&>));
   }
 
   TEST_CASE("moving_out_a_value") {
