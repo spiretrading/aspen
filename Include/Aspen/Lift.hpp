@@ -189,9 +189,7 @@ namespace Details {
   };
 
   template<typename A>
-  using lift_argument_t = const std::conditional_t<
-    is_noexcept_reactor_v<A> && !std::is_same_v<reactor_result_t<A>, void>,
-    reactor_result_t<A>, Maybe<reactor_result_t<A>>>&;
+  using lift_argument_t = decltype(eval_argument(std::declval<const A&>()));
 
   template<typename F, typename... A>
   struct is_lift_noexcept : std::bool_constant<
