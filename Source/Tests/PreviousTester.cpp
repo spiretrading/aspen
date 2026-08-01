@@ -11,6 +11,28 @@
 using namespace Aspen;
 
 TEST_SUITE("Previous") {
+  TEST_CASE("completion_after_an_exception") {
+    auto queue = Shared(Queue<int>());
+    auto source = Shared(lift([] (int value) {
+      if(value == 3) {
+        throw std::runtime_error("fail");
+      }
+      return value;
+    }, queue));
+    auto reactor = previous(source);
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    queue->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    queue->push(3);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+    queue->set_complete();
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
   TEST_CASE("completion_without_a_value") {
     auto queue = Shared(Queue<int>());
     auto reactor = previous(queue);

@@ -26,7 +26,7 @@ namespace Aspen {
         const auto& value, State state) mutable noexcept ->
           FunctionEvaluation<Type> {
       if constexpr(!is_noexcept_reactor_v<Series>) {
-        if(value.has_exception()) {
+        if(has_evaluation(state) && value.has_exception()) {
           return Maybe<Type>(value.get_exception());
         }
       }
