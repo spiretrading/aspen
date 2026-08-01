@@ -2,6 +2,7 @@
 #define ASPEN_STATE_REACTOR_HPP
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <type_traits>
 #include <utility>
 #include "Aspen/Reactor.hpp"
@@ -35,7 +36,7 @@ namespace Aspen {
       Type eval() const noexcept;
 
     private:
-      R m_reactor;
+      std::optional<R> m_reactor;
       State m_value;
   };
 
@@ -54,7 +55,7 @@ namespace Aspen {
 
   template<IsReactor R>
   State StateReactor<R>::commit(std::uint64_t sequence) noexcept {
-    auto value = m_reactor.commit(sequence);
+    auto value = m_reactor->commit(sequence);
     auto state = [&] {
       if(is_complete(value)) {
         return State::COMPLETE_EVALUATED;
@@ -65,6 +66,9 @@ namespace Aspen {
       }
     }();
     m_value = value;
+    if(is_complete(value)) {
+      m_reactor = std::nullopt;
+    }
     if(has_continuation(m_value)) {
       state = combine(state, State::CONTINUE);
     }
