@@ -17,17 +17,17 @@ namespace Aspen {
    * @param <R> The type of reactor to perform the conversion to.
    * @param <F> The conversion function to apply to the reactor.
    */
-  template<IsReactor R, std::invocable<decltype(std::declval<R>().eval())> F>
+  template<IsReactor R, std::invocable<reactor_evaluation_t<R>> F>
   class ConversionReactor {
     public:
 
       /** The type to evaluate to. */
-      using Type =
-        std::decay_t<decltype(std::declval<F>()(std::declval<R>().eval()))>;
+      using Type = std::decay_t<
+        decltype(std::declval<F&>()(std::declval<reactor_evaluation_t<R>>()))>;
 
       /** Whether an evaluation is noexcept. */
-      static constexpr auto is_noexcept =
-        noexcept(std::declval<F>()(std::declval<R>().eval()));
+      static constexpr auto is_noexcept = noexcept(
+        std::declval<F&>()(std::declval<reactor_evaluation_t<R>>()));
 
       /**
        * Constructs a ConversionReactor.
@@ -73,14 +73,14 @@ namespace Aspen {
     }
   }
 
-  template<IsReactor R, std::invocable<decltype(std::declval<R>().eval())> F>
+  template<IsReactor R, std::invocable<reactor_evaluation_t<R>> F>
   template<typename RF, typename FF> requires
     std::constructible_from<R, RF> && std::constructible_from<F, FF>
   ConversionReactor<R, F>::ConversionReactor(RF&& reactor, FF&& conversion)
     : m_reactor(std::forward<RF>(reactor)),
       m_conversion(std::forward<FF>(conversion)) {}
 
-  template<IsReactor R, std::invocable<decltype(std::declval<R>().eval())> F>
+  template<IsReactor R, std::invocable<reactor_evaluation_t<R>> F>
   State ConversionReactor<R, F>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactor.commit(sequence);
     if(has_evaluation(state)) {
@@ -91,7 +91,7 @@ namespace Aspen {
     return state;
   }
 
-  template<IsReactor R, std::invocable<decltype(std::declval<R>().eval())> F>
+  template<IsReactor R, std::invocable<reactor_evaluation_t<R>> F>
   eval_result_t<typename ConversionReactor<R, F>::Type>
       ConversionReactor<R, F>::eval() const noexcept(is_noexcept) {
     return *m_value;
