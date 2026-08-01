@@ -72,8 +72,7 @@ namespace Aspen {
       Box<void> m_reactor;
       std::atomic_bool m_is_aborted;
       bool m_is_complete;
-      std::atomic_bool m_has_update;
-      std::atomic_bool m_is_waiting;
+      bool m_has_update;
 
       void on_update();
       bool is_aborted() const noexcept;
@@ -94,8 +93,7 @@ namespace Aspen {
         m_reactor(std::forward<R>(reactor)),
         m_is_aborted(false),
         m_is_complete(false),
-        m_has_update(false),
-        m_is_waiting(false) {
+        m_has_update(false) {
     m_flag.set_trigger(&m_trigger);
   }
 
@@ -105,7 +103,6 @@ namespace Aspen {
   }
 
   inline State Executor::commit() {
-    m_has_update.store(false, std::memory_order_release);
     m_flag.clear();
     auto scope = CommitFlagScope(m_flag);
     auto state = m_reactor.commit(m_sequence);
@@ -138,11 +135,10 @@ namespace Aspen {
       }
       if(!has_continuation(state)) {
         auto lock = std::unique_lock(m_mutex);
-        m_is_waiting.store(true);
-        m_update_condition.wait_for(lock, INTERRUPT_INTERVAL, [&] {
-          return m_has_update.load() || is_aborted();
-        });
-        m_is_waiting.store(false);
+        while(!m_update_condition.wait_for(lock, INTERRUPT_INTERVAL, [&] {
+          return m_has_update || is_aborted();
+        })) {}
+        m_has_update = false;
       }
     }
   }
@@ -192,11 +188,11 @@ namespace Aspen {
   }
 
   inline void Executor::on_update() {
-    m_has_update.store(true);
-    if(m_is_waiting.load()) {
+    {
       auto lock = std::lock_guard(m_mutex);
-      m_update_condition.notify_one();
+      m_has_update = true;
     }
+    m_update_condition.notify_one();
   }
 
 #if defined(_WIN32)
