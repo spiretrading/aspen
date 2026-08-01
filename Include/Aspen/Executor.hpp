@@ -61,6 +61,7 @@ namespace Aspen {
       static inline std::mutex m_abort_mutex;
       static inline std::vector<Executor*> m_running_executors;
       static inline std::atomic_bool m_is_interrupted;
+      static inline auto m_is_handler_installed = false;
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
       static inline auto m_previous_action = SignalAction();
 #endif
@@ -153,13 +154,14 @@ namespace Aspen {
       if(m_running_executors.size() == 1) {
         m_is_interrupted.store(false, std::memory_order_release);
 #if defined(_WIN32)
-        ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
+        m_is_handler_installed = ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
         auto action = SignalAction();
         action.sa_handler = &ctrl_handler;
         ::sigemptyset(&action.sa_mask);
         action.sa_flags = SA_RESTART;
-        ::sigaction(SIGINT, &action, &m_previous_action);
+        m_is_handler_installed =
+          ::sigaction(SIGINT, &action, &m_previous_action) == 0;
 #endif
       }
     }
@@ -171,11 +173,14 @@ namespace Aspen {
     auto lock = std::lock_guard(m_abort_mutex);
     std::erase(m_running_executors, m_executor);
     if(m_running_executors.empty()) {
+      if(m_is_handler_installed) {
+        m_is_handler_installed = false;
 #if defined(_WIN32)
-      ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
+        ::SetConsoleCtrlHandler(&ctrl_handler, FALSE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-      ::sigaction(SIGINT, &m_previous_action, nullptr);
+        ::sigaction(SIGINT, &m_previous_action, nullptr);
 #endif
+      }
       m_is_interrupted.store(false, std::memory_order_release);
     }
   }
