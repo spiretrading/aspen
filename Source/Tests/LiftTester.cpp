@@ -404,6 +404,14 @@ TEST_SUITE("Lift") {
     REQUIRE(reactor.commit(3) == State::NONE);
   }
 
+  TEST_CASE("optional_maybe_evaluation") {
+    auto reactor = lift([] (const int& value) -> std::optional<Maybe<int>> {
+      return Maybe<int>(std::make_exception_ptr(std::runtime_error("fail")));
+    }, Constant(1));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
   TEST_CASE("noexcept_evaluation") {
     auto cell = Shared(Cell(1));
     auto safe = Lift([] (int value) noexcept {
