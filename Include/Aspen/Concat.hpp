@@ -2,7 +2,6 @@
 #define ASPEN_CONCAT_HPP
 #include <concepts>
 #include <cstdint>
-#include <exception>
 #include <iterator>
 #include <list>
 #include <optional>
@@ -35,8 +34,7 @@ namespace Aspen {
 
       /** Whether an evaluation is noexcept. */
       static constexpr auto is_noexcept =
-        is_noexcept_evaluation_v<reactor_result_t<Reactor>> &&
-        is_noexcept_reactor_v<Reactor>;
+        is_noexcept_evaluation_v<reactor_result_t<Reactor>>;
 
       /**
        * Constructs a Concat.
@@ -51,7 +49,6 @@ namespace Aspen {
     private:
       std::optional<Branch<Reactor>> m_producer;
       std::list<Branch<reactor_result_t<Reactor>>> m_children;
-      std::exception_ptr m_exception;
       bool m_is_child_complete;
   };
 
@@ -84,11 +81,7 @@ namespace Aspen {
         if(has_evaluation(producer_state)) {
           try {
             m_children.emplace_back((*m_producer)->eval());
-          } catch(...) {
-            if(!m_exception) {
-              m_exception = std::current_exception();
-            }
-          }
+          } catch(...) {}
         }
         if(has_continuation(producer_state) && !is_complete(producer_state)) {
           return State::CONTINUE;
@@ -149,22 +142,11 @@ namespace Aspen {
         (m_children.empty() || m_children.size() == 1 && m_is_child_complete)) {
       state = combine(state, State::COMPLETE);
     }
-    if(m_exception && is_complete(state)) {
-      if(has_evaluation(state)) {
-        state = combine(reset(state, State::COMPLETE), State::CONTINUE);
-      } else {
-        m_children.clear();
-        state = combine(state, State::EVALUATED);
-      }
-    }
     return state;
   }
 
   template<IsReactor R> requires IsReactor<reactor_result_t<R>>
   typename Concat<R>::Result Concat<R>::eval() const noexcept(is_noexcept) {
-    if(m_children.empty()) {
-      std::rethrow_exception(m_exception);
-    }
     return m_children.front()->eval();
   }
 }
