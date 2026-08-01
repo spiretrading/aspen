@@ -14,9 +14,19 @@ namespace {
   concept CanRange = requires {
     range(std::declval<S>(), std::declval<E>(), std::declval<T>());
   };
+
+  template<typename S, typename E>
+  concept CanBoundRange = requires {
+    range(std::declval<S>(), std::declval<E>());
+  };
 }
 
 TEST_SUITE("Range") {
+  TEST_CASE("mismatched_bounds") {
+    static_assert(!CanBoundRange<int, double>);
+    static_assert(CanBoundRange<double, double>);
+  }
+
   TEST_CASE("stop_below_the_start") {
     auto reactor = range(constant(10), constant(9));
     REQUIRE(reactor.commit(0) == State::COMPLETE);

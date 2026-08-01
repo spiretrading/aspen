@@ -1,6 +1,7 @@
 #ifndef ASPEN_RANGE_HPP
 #define ASPEN_RANGE_HPP
 #include <algorithm>
+#include <concepts>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -73,7 +74,8 @@ namespace Aspen {
    *         <i>stop</i> in turn.
    */
   template<typename S, typename E> requires IsReactor<to_reactor_t<S>> &&
-    IsReactor<to_reactor_t<E>>
+    IsReactor<to_reactor_t<E>> &&
+    std::same_as<reactor_result_t<S>, reactor_result_t<E>>
   auto range(S&& start, E&& stop) {
     return range(std::forward<S>(start), std::forward<E>(stop),
       static_cast<reactor_result_t<S>>(1));
