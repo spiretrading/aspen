@@ -68,7 +68,7 @@ namespace {
 TEST_SUITE("Maybe") {
   TEST_CASE("default_construction") {
     auto maybe = Maybe<int>();
-    REQUIRE(maybe.has_exception());
+    REQUIRE(!maybe.has_exception());
     REQUIRE(!maybe.has_value());
     REQUIRE(!maybe.get_exception());
     REQUIRE_THROWS_AS(maybe.get(), std::runtime_error);

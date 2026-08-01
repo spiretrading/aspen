@@ -244,7 +244,7 @@ namespace Details {
 
   template<typename T>
   bool Maybe<T>::has_exception() const noexcept {
-    return m_value.index() == 0;
+    return m_value.index() == 0 && std::get<std::exception_ptr>(m_value);
   }
 
   template<typename T>

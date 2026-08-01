@@ -161,7 +161,7 @@ namespace Details {
             FunctionEvaluation<T>(function(eval_argument(arguments)...));
           if(evaluation.m_value) {
             if constexpr(!IsMaybe<std::remove_reference_t<decltype(value)>>) {
-              assert(!evaluation.m_value->has_exception());
+              assert(evaluation.m_value->has_value());
             }
             value = std::move(*evaluation.m_value);
           }
