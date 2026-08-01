@@ -287,8 +287,7 @@ namespace Details {
   Lift(F&&, AF&&, AR&&...) ->
     Lift<std::decay_t<F>, to_reactor_t<AF>, to_reactor_t<AR>...>;
 
-  template<typename F> requires std::invocable<std::decay_t<F>> &&
-    (!std::derived_from<std::remove_cvref_t<F>, Lift<std::decay_t<F>>>)
+  template<typename F> requires std::invocable<std::decay_t<F>>
   Lift(F&&) -> Lift<std::decay_t<F>>;
 
   /**
