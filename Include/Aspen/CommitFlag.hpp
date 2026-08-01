@@ -61,7 +61,7 @@ namespace Details {
        * Adds a CommitFlag to raise whenever this CommitFlag is raised.
        * @param parent The CommitFlag to raise.
        */
-      void add_parent(CommitFlag& parent);
+      void add_parent(CommitFlag& parent) noexcept;
 
       /**
        * Removes a CommitFlag previously added as a dependent, returning once
@@ -145,8 +145,7 @@ namespace Details {
   }
 
   inline bool CommitFlag::has_slot() const noexcept {
-    return m_kind.load(std::memory_order_acquire) != Kind::HUB &&
-      m_word.load(std::memory_order_acquire);
+    return m_word.load(std::memory_order_acquire);
   }
 
   inline void CommitFlag::raise() noexcept {
@@ -216,7 +215,7 @@ namespace Details {
 
   inline void CommitFlag::set_slot(
       std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
-    assert(m_kind.load(std::memory_order_relaxed) != Kind::HUB);
+    assert(m_kind.load(std::memory_order_relaxed) != Kind::HUB && bit < 64);
     m_bit.store(bit, std::memory_order_release);
     m_word.store(word);
     if(word && is_raised()) {
@@ -224,7 +223,7 @@ namespace Details {
     }
   }
 
-  inline void CommitFlag::add_parent(CommitFlag& parent) {
+  inline void CommitFlag::add_parent(CommitFlag& parent) noexcept {
     assert(!has_slot());
     m_kind.store(Kind::HUB, std::memory_order_release);
     if(!m_pointer.load(std::memory_order_relaxed)) {
