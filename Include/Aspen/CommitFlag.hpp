@@ -141,7 +141,7 @@ namespace Details {
       m_kind(Kind::PLAIN) {}
 
   inline bool CommitFlag::is_raised() const noexcept {
-    return (m_flags.load(std::memory_order_acquire) & RAISED) != 0;
+    return (m_flags.load() & RAISED) != 0;
   }
 
   inline bool CommitFlag::has_slot() const noexcept {
@@ -159,41 +159,37 @@ namespace Details {
   inline void CommitFlag::propagate() noexcept {
     auto kind = m_kind.load(std::memory_order_acquire);
     if(kind == Kind::HUB) {
-      auto previous =
-        m_flags.fetch_or(RAISED | PROPAGATED, std::memory_order_acq_rel);
+      auto previous = m_flags.fetch_or(RAISED | PROPAGATED);
       if((previous & PROPAGATED) != 0) {
         return;
       }
-      if(auto parent = static_cast<CommitFlag*>(
-          m_pointer.load(std::memory_order_acquire))) {
+      if(auto parent = static_cast<CommitFlag*>(m_pointer.load())) {
         parent->raise();
       }
-      if(auto parents = m_parents.load(std::memory_order_acquire)) {
+      if(auto parents = m_parents.load()) {
         for(auto parent : *parents) {
           parent->raise();
         }
       }
     } else {
-      auto previous = m_flags.fetch_or(RAISED, std::memory_order_acq_rel);
+      auto previous = m_flags.fetch_or(RAISED);
       if((previous & RAISED) != 0) {
         return;
       }
-      if(auto word = m_word.load(std::memory_order_acquire)) {
+      if(auto word = m_word.load()) {
         word->fetch_or(
           std::uint64_t(1) << m_bit.load(std::memory_order_acquire),
           std::memory_order_release);
       }
       if(kind == Kind::ROOT) {
-        if(auto trigger = static_cast<Trigger*>(
-            m_pointer.load(std::memory_order_acquire))) {
+        if(auto trigger = static_cast<Trigger*>(m_pointer.load())) {
           trigger->signal();
         }
       } else {
-        if(auto parent = static_cast<CommitFlag*>(
-            m_pointer.load(std::memory_order_acquire))) {
+        if(auto parent = static_cast<CommitFlag*>(m_pointer.load())) {
           parent->raise();
         }
-        if(auto parents = m_parents.load(std::memory_order_acquire)) {
+        if(auto parents = m_parents.load()) {
           for(auto parent : *parents) {
             parent->raise();
           }
@@ -222,7 +218,7 @@ namespace Details {
       std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
     assert(m_kind.load(std::memory_order_relaxed) != Kind::HUB);
     m_bit.store(bit, std::memory_order_release);
-    m_word.store(word, std::memory_order_release);
+    m_word.store(word);
     if(word && is_raised()) {
       word->fetch_or(std::uint64_t(1) << bit, std::memory_order_release);
     }
@@ -232,7 +228,7 @@ namespace Details {
     assert(!has_slot());
     m_kind.store(Kind::HUB, std::memory_order_release);
     if(!m_pointer.load(std::memory_order_relaxed)) {
-      m_pointer.store(&parent, std::memory_order_release);
+      m_pointer.store(&parent);
     } else {
       auto parents = m_parents.load(std::memory_order_relaxed);
       auto updated = [&] {
@@ -242,7 +238,7 @@ namespace Details {
         return std::make_shared<Parents>();
       }();
       updated->push_back(&parent);
-      m_parents.store(std::move(updated), std::memory_order_release);
+      m_parents.store(std::move(updated));
     }
     if(is_raised()) {
       parent.raise();
@@ -254,18 +250,18 @@ namespace Details {
     if(m_pointer.load(std::memory_order_relaxed) == &parent) {
       if(parents && !parents->empty()) {
         auto updated = std::make_shared<Parents>(*parents);
-        m_pointer.store(updated->back(), std::memory_order_release);
+        m_pointer.store(updated->back());
         updated->pop_back();
-        m_parents.store(std::move(updated), std::memory_order_release);
+        m_parents.store(std::move(updated));
       } else {
-        m_pointer.store(nullptr, std::memory_order_release);
+        m_pointer.store(nullptr);
       }
     } else if(parents) {
       auto i = std::find(parents->begin(), parents->end(), &parent);
       if(i != parents->end()) {
         auto updated = std::make_shared<Parents>(*parents);
         updated->erase(updated->begin() + (i - parents->begin()));
-        m_parents.store(std::move(updated), std::memory_order_release);
+        m_parents.store(std::move(updated));
       }
     }
     auto readers = m_readers.load();

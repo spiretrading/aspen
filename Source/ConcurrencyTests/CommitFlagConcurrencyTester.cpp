@@ -1,5 +1,6 @@
 #include <array>
 #include <atomic>
+#include <barrier>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -26,6 +27,7 @@ namespace {
   constexpr auto PARENTS = std::size_t(16);
   constexpr auto PUSHES = 1000;
   constexpr auto RAISES = std::size_t(100000);
+  constexpr auto ROUNDS = std::size_t(1000);
   constexpr auto TIMEOUT = std::chrono::seconds(30);
   constexpr auto DELAY = std::chrono::milliseconds(20);
 
@@ -66,6 +68,74 @@ TEST_SUITE("CommitFlagConcurrency") {
       flag.set_parent(&parents[0]);
       flag.raise();
       REQUIRE(parents[0].is_raised());
+    }
+  }
+
+  TEST_CASE("parent_registration") {
+    auto iterations = get_iterations();
+    for(auto iteration = 0; iteration != iterations; ++iteration) {
+      auto flags = std::deque<std::unique_ptr<CommitFlag>>();
+      auto parents = std::deque<std::unique_ptr<CommitFlag>>();
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        flags.push_back(std::make_unique<CommitFlag>());
+        flags.back()->clear();
+        parents.push_back(std::make_unique<CommitFlag>());
+        parents.back()->clear();
+      }
+      auto start = std::barrier(2);
+      auto producer = std::thread([&] {
+        for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+          start.arrive_and_wait();
+          flags[i]->raise();
+        }
+      });
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        start.arrive_and_wait();
+        flags[i]->add_parent(*parents[i]);
+      }
+      producer.join();
+      auto missed = std::size_t(0);
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        if(!parents[i]->is_raised()) {
+          ++missed;
+        }
+      }
+      REQUIRE(missed == 0);
+    }
+  }
+
+  TEST_CASE("parent_removal") {
+    auto iterations = get_iterations();
+    for(auto iteration = 0; iteration != iterations; ++iteration) {
+      auto flags = std::deque<std::unique_ptr<CommitFlag>>();
+      auto parents = std::deque<std::unique_ptr<CommitFlag>>();
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        flags.push_back(std::make_unique<CommitFlag>());
+        parents.push_back(std::make_unique<CommitFlag>());
+        flags.back()->add_parent(*parents.back());
+        flags.back()->clear();
+        parents.back()->clear();
+      }
+      auto start = std::barrier(2);
+      auto producer = std::thread([&] {
+        for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+          start.arrive_and_wait();
+          flags[i]->raise();
+        }
+      });
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        start.arrive_and_wait();
+        flags[i]->remove_parent(*parents[i]);
+        parents[i]->clear();
+      }
+      producer.join();
+      auto stale = std::size_t(0);
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        if(parents[i]->is_raised()) {
+          ++stale;
+        }
+      }
+      REQUIRE(stale == 0);
     }
   }
 
