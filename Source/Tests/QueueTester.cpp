@@ -200,6 +200,24 @@ TEST_SUITE("Queue") {
     REQUIRE(!flag.is_raised());
   }
 
+  TEST_CASE("move_assignment_after_a_commit") {
+    auto flag = CommitFlag();
+    auto destination = Queue<int>();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(destination.commit(0) == State::NONE);
+    }
+    flag.clear();
+    auto source = Queue<int>();
+    source.push(5);
+    REQUIRE(source.commit(0) == State::EVALUATED);
+    REQUIRE(source.eval() == 5);
+    destination = std::move(source);
+    REQUIRE(flag.is_raised());
+    REQUIRE(destination.commit(1) == State::EVALUATED);
+    REQUIRE(destination.eval() == 5);
+  }
+
   TEST_CASE("move_assignment_in_a_graph") {
     auto flag = CommitFlag();
     auto destination = Queue<int>();

@@ -169,7 +169,7 @@ namespace Aspen {
     auto flag = [&] {
       auto lock = std::scoped_lock(m_mutex, queue.m_mutex);
       m_is_complete = queue.m_is_complete;
-      m_has_commit = queue.m_has_commit;
+      m_has_commit = false;
       m_entries = std::move(queue.m_entries);
       m_exception = std::move(queue.m_exception);
       return m_flag;
