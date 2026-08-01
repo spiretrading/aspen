@@ -95,8 +95,7 @@ namespace Aspen {
       m_flag(nullptr) {}
 
   template<typename T>
-  Cell<T>::Cell(Type value) noexcept(
-    std::is_nothrow_move_constructible_v<Type>)
+  Cell<T>::Cell(Type value) noexcept(std::is_nothrow_move_constructible_v<Type>)
     : m_is_complete(false),
       m_next(std::move(value)),
       m_flag(nullptr) {}
