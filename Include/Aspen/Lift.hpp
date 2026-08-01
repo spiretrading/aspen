@@ -485,7 +485,12 @@ namespace Details {
     std::invocable<F, Details::lift_argument_t<A>...>
   State Lift<F, A...>::invoke() {
     if constexpr(is_noexcept) {
-      return Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
+      auto state =
+        Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
+      if constexpr(std::is_same_v<Type, void>) {
+        assert(!m_value.has_exception());
+      }
+      return state;
     } else {
       try {
         return Details::FunctionEvaluator<Type>()(
@@ -526,8 +531,12 @@ namespace Details {
   template<std::invocable F>
   State Lift<F>::invoke() {
     if constexpr(is_noexcept) {
-      return Details::FunctionEvaluator<Type>()(
+      auto state = Details::FunctionEvaluator<Type>()(
         m_value, m_function, std::tuple<>());
+      if constexpr(std::is_same_v<Type, void>) {
+        assert(!m_value.has_exception());
+      }
+      return state;
     } else {
       try {
         return Details::FunctionEvaluator<Type>()(
