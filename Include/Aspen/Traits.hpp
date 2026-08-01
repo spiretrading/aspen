@@ -81,7 +81,8 @@ namespace Aspen {
   constexpr auto is_noexcept_evaluation_v = is_noexcept_reactor_v<R...> &&
     (std::is_reference_v<common_evaluation_t<R...>> ||
       std::is_void_v<common_result_t<R...>> ||
-      std::is_nothrow_copy_constructible_v<common_result_t<R...>>);
+      (std::is_nothrow_constructible_v<
+        common_result_t<R...>, reactor_evaluation_t<R>> && ...));
 
   /**
    * Applies a function to every element of a tuple.
