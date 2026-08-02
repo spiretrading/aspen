@@ -9,6 +9,7 @@
 #include "Aspen/Lift.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/StateReactor.hpp"
 
 using namespace Aspen;
 
@@ -474,5 +475,27 @@ TEST_SUITE("Lift") {
       return value;
     }, queue);
     REQUIRE(!decltype(throwing_argument)::is_noexcept);
+  }
+
+  TEST_CASE("state_result") {
+    auto value = lift([] (const State& state) {
+      return state;
+    }, StateReactor(Constant(1)));
+    REQUIRE(value.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(value.eval() == State::COMPLETE_EVALUATED);
+    auto filtered = lift([] (const State& state) {
+      return std::optional<State>(state);
+    }, StateReactor(Constant(1)));
+    REQUIRE(filtered.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(filtered.eval() == State::COMPLETE_EVALUATED);
+    auto discarded = lift([] (const State& state) {
+      return std::optional<State>();
+    }, StateReactor(Constant(1)));
+    REQUIRE(discarded.commit(0) == State::COMPLETE);
+    auto evaluation = lift([] (const State& state) {
+      return FunctionEvaluation<State>(state, State::COMPLETE);
+    }, StateReactor(Constant(1)));
+    REQUIRE(evaluation.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(evaluation.eval() == State::COMPLETE_EVALUATED);
   }
 }

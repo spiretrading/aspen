@@ -39,7 +39,7 @@ namespace Aspen {
      * Constructs an evaluation resulting in a value and an EVALUATED state.
      * @param value The value returned by the function.
      */
-    FunctionEvaluation(Type value);
+    FunctionEvaluation(Type value) requires(!std::same_as<Type, State>);
 
     /**
      * Constructs an evaluation resulting in a value if one is provided.
@@ -98,7 +98,7 @@ namespace Aspen {
      * Constructs an evaluation resulting in a value and an EVALUATED state.
      * @param value The value returned by the function.
      */
-    FunctionEvaluation(Type value);
+    FunctionEvaluation(Type value) requires(!std::same_as<Type, State>);
 
     /**
      * Constructs an evaluation resulting in a value if one is provided.
@@ -424,6 +424,7 @@ namespace Details {
 
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(Type value)
+      requires(!std::same_as<Type, State>)
     : m_value(std::move(value)),
       m_state(State::EVALUATED) {}
 
@@ -479,6 +480,7 @@ namespace Details {
 
   template<typename T>
   FunctionEvaluation<Maybe<T>>::FunctionEvaluation(Type value)
+      requires(!std::same_as<Type, State>)
     : FunctionEvaluation(Maybe(std::move(value))) {}
 
   template<typename T>
