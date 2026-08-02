@@ -57,7 +57,8 @@ namespace Aspen {
       };
       template<IsReactor R>
       struct ByValueWrapper final : BaseWrapper {
-        static constexpr auto is_noexcept = is_noexcept_reactor_v<R>;
+        static constexpr auto is_noexcept = is_noexcept_reactor_v<R> &&
+          std::is_nothrow_constructible_v<Type, reactor_evaluation_t<R>>;
         R m_reactor;
         std::conditional_t<is_noexcept, std::optional<Type>, Maybe<Type>>
           m_value;
@@ -154,8 +155,9 @@ namespace Details {
   State Box<T>::ByValueWrapper<R>::commit(std::uint64_t sequence) noexcept {
     auto state = m_reactor.commit(sequence);
     if(has_evaluation(state)) {
-      m_value = try_call(
-        [&] () noexcept(is_noexcept) { return m_reactor.eval(); });
+      m_value = try_call([&] () noexcept(is_noexcept) -> Type {
+        return m_reactor.eval();
+      });
     }
     return state;
   }

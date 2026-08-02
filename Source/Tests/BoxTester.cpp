@@ -32,6 +32,17 @@ namespace {
       throw std::runtime_error("fail");
     }
   };
+
+  struct Checked {
+    int m_value;
+
+    Checked(int value)
+        : m_value(value) {
+      if(value < 0) {
+        throw std::runtime_error("negative");
+      }
+    }
+  };
 }
 
 TEST_SUITE("Box") {
@@ -78,6 +89,12 @@ TEST_SUITE("Box") {
 
   TEST_CASE("convertible_type_that_throws") {
     auto reactor = Box<double>(ThrowingByValue());
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("throwing_conversion_of_a_noexcept_reactor") {
+    auto reactor = Box<Checked>(Constant(-1));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
