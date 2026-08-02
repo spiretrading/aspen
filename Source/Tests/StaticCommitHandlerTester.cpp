@@ -16,7 +16,7 @@ TEST_SUITE("StaticCommitHandler") {
   TEST_CASE("immediate_completion") {
     auto reactor = StaticCommitHandler(Queue<int>());
     reactor.get<0>().push(1);
-    reactor.get<0>().commit(0);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
     reactor.get<0>().set_complete();
     REQUIRE(reactor.commit(1) == State::COMPLETE);
   }

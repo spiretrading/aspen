@@ -2,8 +2,10 @@
 #include <vector>
 #include <doctest/doctest.h>
 #include "Aspen/Box.hpp"
+#include "Aspen/Chain.hpp"
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Constant.hpp"
+#include "Aspen/Last.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/Tests/ReactorTests.hpp"
@@ -22,6 +24,13 @@ TEST_SUITE("CommitHandler") {
     auto reactor = CommitHandler(std::vector{queue});
     queue->set_complete();
     REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
+  TEST_CASE("child_continuing_without_a_value") {
+    auto reactor = CommitHandler(std::vector{last(chain(3, 1))});
+    REQUIRE(reactor.commit(0) == State::CONTINUE);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.get(0).eval() == 1);
   }
 
   TEST_CASE("completion") {

@@ -217,6 +217,29 @@ TEST_SUITE("CommitFlag") {
     hub.raise();
     REQUIRE(!a.is_raised());
     REQUIRE(c.is_raised());
+    hub.remove_parent(c);
+    reset();
+    hub.raise();
+    REQUIRE(!a.is_raised());
+    REQUIRE(!b.is_raised());
+    REQUIRE(!c.is_raised());
+    REQUIRE(hub.is_raised());
+  }
+
+  TEST_CASE("removing_the_only_dependent") {
+    auto parent = CommitFlag();
+    auto hub = CommitFlag();
+    hub.add_parent(parent);
+    parent.clear();
+    hub.clear();
+    hub.raise();
+    REQUIRE(parent.is_raised());
+    hub.remove_parent(parent);
+    parent.clear();
+    hub.clear();
+    hub.raise();
+    REQUIRE(hub.is_raised());
+    REQUIRE(!parent.is_raised());
   }
 
   TEST_CASE("slot") {
@@ -231,6 +254,32 @@ TEST_SUITE("CommitFlag") {
     word.store(0);
     flag.raise();
     REQUIRE(word.load() == std::uint64_t(1) << 3);
+  }
+
+  TEST_CASE("assigning_a_slot") {
+    auto flag = CommitFlag();
+    REQUIRE(!flag.has_slot());
+    auto word = std::atomic_uint64_t(0);
+    flag.set_slot(&word, 2);
+    REQUIRE(flag.has_slot());
+    flag.set_slot(nullptr, 0);
+    REQUIRE(!flag.has_slot());
+  }
+
+  TEST_CASE("current_flag") {
+    auto previous = CommitFlag::get_current();
+    auto flag = CommitFlag();
+    {
+      auto scope = CommitFlagScope(flag);
+      REQUIRE(CommitFlag::get_current() == &flag);
+      auto nested = CommitFlag();
+      {
+        auto inner = CommitFlagScope(nested);
+        REQUIRE(CommitFlag::get_current() == &nested);
+      }
+      REQUIRE(CommitFlag::get_current() == &flag);
+    }
+    REQUIRE(CommitFlag::get_current() == previous);
   }
 
   TEST_CASE("slot_on_a_raised_flag") {

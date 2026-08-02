@@ -195,6 +195,16 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.eval() == 9);
   }
 
+  TEST_CASE("value_before_a_pending_exception") {
+    auto queue = Queue<int>();
+    queue.push(1);
+    queue.set_complete(std::runtime_error("fail"));
+    REQUIRE(queue.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(queue.eval() == 1);
+    REQUIRE(queue.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(queue.eval(), std::runtime_error);
+  }
+
   TEST_CASE("pushing_after_completion") {
     auto queue = Queue<int>();
     queue.set_complete(std::runtime_error("fail"));
