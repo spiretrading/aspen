@@ -11,8 +11,7 @@ using namespace Aspen;
 namespace {
   template<typename T, typename U>
   void require(T&& reactor, const U& value) {
-    auto state = reactor.commit(0);
-    REQUIRE(has_evaluation(state));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == value);
   }
 }

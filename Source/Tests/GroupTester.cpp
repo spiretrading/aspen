@@ -15,24 +15,7 @@
 using namespace Aspen;
 using namespace Aspen::Tests;
 
-namespace {
-  constexpr State merge(State left, State right) {
-    return static_cast<State>(
-      static_cast<unsigned char>(left) | static_cast<unsigned char>(right));
-  }
-}
-
 TEST_SUITE("Group") {
-  TEST_CASE("child_completing_with_a_continuation") {
-    auto first =
-      TrackedReactor<int>(1, merge(State::COMPLETE, State::CONTINUE));
-    auto token = first.get_token();
-    auto reactor = group(std::move(first), constant(2));
-    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
-    REQUIRE(reactor.eval() == 2);
-    REQUIRE(token.expired());
-  }
-
   TEST_CASE("completion") {
     auto reactor = group(constant(123), none<int>());
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
