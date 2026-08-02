@@ -136,9 +136,9 @@ namespace Aspen {
     auto reactor = m_evaluator->m_reactor.lock();
     if(!reactor) {
       if(m_evaluator->m_evaluation &&
-          (m_last_evaluation < m_evaluator->m_state->m_last_evaluation ||
+          (m_last_evaluation < m_evaluator->m_released_evaluation ||
             m_consumed < m_evaluator->m_evaluated)) {
-        m_last_evaluation = m_evaluator->m_state->m_last_evaluation;
+        m_last_evaluation = m_evaluator->m_released_evaluation;
         m_consumed = m_evaluator->m_evaluated;
         return State::COMPLETE_EVALUATED;
       }

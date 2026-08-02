@@ -42,6 +42,7 @@ namespace Details {
     std::weak_ptr<R> m_reactor;
     Sequence m_sequence;
     Sequence m_evaluated;
+    Sequence m_released_evaluation;
     std::optional<try_maybe_t<reactor_result_t<R>, !is_noexcept_reactor_v<R>>>
       m_evaluation;
     bool m_is_committing;
@@ -401,6 +402,8 @@ namespace Details {
     if(m_evaluator.use_count() > 1 && m_reactor.use_count() == 1 &&
         m_evaluator->m_evaluated.m_is_set) {
       try_assign(m_evaluator->m_evaluation, *m_reactor);
+      m_evaluator->m_released_evaluation =
+        m_evaluator->m_state->m_last_evaluation;
     }
   }
 
