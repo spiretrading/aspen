@@ -107,7 +107,9 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 1);
     queue->set_complete(std::runtime_error("fail"));
-    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 

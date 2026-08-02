@@ -27,6 +27,13 @@ namespace Aspen {
           FunctionEvaluation<std::remove_cvref_t<decltype(value)>> {
       if constexpr(!is_noexcept_reactor_v<Series>) {
         if(has_evaluation(state) && value.has_exception()) {
+          if(is_complete(state) && !is_absorbed && previous) {
+            is_absorbed = true;
+            auto result = std::move(*previous);
+            previous = std::nullopt;
+            return FunctionEvaluation<std::remove_cvref_t<decltype(value)>>(
+              std::move(result), State::CONTINUE);
+          }
           return Maybe<Type>(value.get_exception());
         }
       }
