@@ -112,7 +112,7 @@ TEST_SUITE("When") {
 
   TEST_CASE("by_value_series") {
     auto reactor = When(Constant(true), ByValueReactor(CountedValue(1)));
-    test_evaluation_lifetime(reactor);
+    test_by_value_evaluation(reactor, 1);
   }
 
   TEST_CASE("by_value_series_after_the_trigger") {

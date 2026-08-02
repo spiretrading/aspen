@@ -83,6 +83,6 @@ TEST_SUITE("Proxy") {
   TEST_CASE("by_value_reactor") {
     auto reactor = Proxy<ByValueReactor<CountedValue>>();
     reactor.set_reactor(ByValueReactor(CountedValue(1)));
-    test_evaluation_lifetime(reactor);
+    test_by_value_evaluation(reactor, 1);
   }
 }

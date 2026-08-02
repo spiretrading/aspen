@@ -139,16 +139,18 @@ namespace Aspen::Tests {
   };
 
   /**
-   * Tests that committing and evaluating a reactor does not evaluate to a
-   * value that has already been destroyed.
+   * Tests that a reactor whose children evaluate by value evaluates to the
+   * expected value without destroying it.
    * @param reactor The reactor to commit and evaluate.
+   * @param expected The value the reactor is expected to evaluate to.
    */
   template<IsReactor R>
-  void test_evaluation_lifetime(R& reactor) {
+  void test_by_value_evaluation(R& reactor, int expected) {
     auto state = reactor.commit(0);
     REQUIRE(has_evaluation(state));
     CountedValue::reset_counts();
-    [[maybe_unused]] const auto& value = reactor.eval();
+    const auto& value = reactor.eval();
+    REQUIRE(value.get_value() == expected);
     REQUIRE(CountedValue::get_destructions() == 0);
   }
 

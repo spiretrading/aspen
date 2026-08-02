@@ -35,6 +35,6 @@ TEST_SUITE("ReactorTests") {
 
   TEST_CASE("evaluation_lifetime") {
     auto reactor = ByValueReactor(CountedValue(9));
-    test_evaluation_lifetime(reactor);
+    test_by_value_evaluation(reactor, 9);
   }
 }

@@ -122,7 +122,7 @@ TEST_SUITE("Chain") {
   TEST_CASE("by_value_children") {
     auto reactor = Chain(
       ByValueReactor(CountedValue(1)), ByValueReactor(CountedValue(2)));
-    test_evaluation_lifetime(reactor);
+    test_by_value_evaluation(reactor, 1);
   }
 
   TEST_CASE("by_value_continuation") {

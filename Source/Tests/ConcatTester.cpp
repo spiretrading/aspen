@@ -140,7 +140,7 @@ TEST_SUITE("Concat") {
 
   TEST_CASE("by_value_child") {
     auto reactor = Concat(Constant(ByValueReactor(CountedValue(1))));
-    test_evaluation_lifetime(reactor);
+    test_by_value_evaluation(reactor, 1);
   }
 
   TEST_CASE("releasing_a_completed_child") {

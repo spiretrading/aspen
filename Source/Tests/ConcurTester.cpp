@@ -307,7 +307,7 @@ TEST_SUITE("Concur") {
 
   TEST_CASE("by_value_child") {
     auto reactor = Concur(Constant(ByValueReactor(CountedValue(1))));
-    test_evaluation_lifetime(reactor);
+    test_by_value_evaluation(reactor, 1);
   }
 
   TEST_CASE("child_completing_without_a_value") {
