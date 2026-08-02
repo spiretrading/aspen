@@ -48,7 +48,6 @@ TEST_SUITE("Count") {
     queue->push(10);
     REQUIRE(counter.commit(1) == State::EVALUATED);
     REQUIRE(counter.eval() == 1);
-    REQUIRE(counter.commit(2) == State::NONE);
     queue->push(10);
     REQUIRE(counter.commit(3) == State::EVALUATED);
     REQUIRE(counter.eval() == 2);

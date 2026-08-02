@@ -71,12 +71,23 @@ TEST_SUITE("Executor") {
   }
 
   TEST_CASE("run_until_none_restores_the_trigger") {
+    auto previous = Trigger::get_trigger();
     auto trigger = Trigger();
     Trigger::set_trigger(trigger);
     auto executor = Executor(constant(5));
     executor.run_until_none();
     REQUIRE(Trigger::get_trigger() == &trigger);
-    Trigger::set_trigger(nullptr);
+    Trigger::set_trigger(previous);
+  }
+
+  TEST_CASE("run_until_complete_restores_the_trigger") {
+    auto previous = Trigger::get_trigger();
+    auto trigger = Trigger();
+    Trigger::set_trigger(trigger);
+    auto executor = Executor(constant(5));
+    executor.run_until_complete();
+    REQUIRE(Trigger::get_trigger() == &trigger);
+    Trigger::set_trigger(previous);
   }
 
   TEST_CASE("run_until_complete") {

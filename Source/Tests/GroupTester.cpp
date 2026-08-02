@@ -62,7 +62,7 @@ TEST_SUITE("Group") {
     auto second = Shared(Queue<int>());
     auto reactor = group(last(chain(3, 1)), second);
     REQUIRE(reactor.commit(0) == State::CONTINUE);
-    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
   }
 
@@ -101,10 +101,11 @@ TEST_SUITE("Group") {
   TEST_CASE("by_reference_children") {
     auto reactor = Group(
       Constant(CountedValue(1)), Constant(CountedValue(2)));
-    REQUIRE(has_evaluation(reactor.commit(0)));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     CountedValue::reset_counts();
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_copies() == 0);
+    REQUIRE(CountedValue::get_moves() == 0);
   }
 
   TEST_CASE("child_completing_with_a_value") {
@@ -142,11 +143,11 @@ TEST_SUITE("Group") {
     auto token = first.get_token();
     auto second = Shared(Queue<int>());
     auto reactor = group(std::move(first), second);
-    REQUIRE(has_evaluation(reactor.commit(0)));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 1);
     REQUIRE(!token.expired());
     second->push(2);
-    REQUIRE(has_evaluation(reactor.commit(1)));
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval() == 2);
     REQUIRE(token.expired());
   }

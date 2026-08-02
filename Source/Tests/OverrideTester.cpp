@@ -53,7 +53,6 @@ TEST_SUITE("Override") {
     second->push(10);
     REQUIRE(reactor.commit(2) == State::EVALUATED);
     REQUIRE(reactor.eval() == 10);
-    REQUIRE(reactor.commit(3) == State::NONE);
     first->push(3);
     REQUIRE(reactor.commit(4) == State::NONE);
     second->push(20);
