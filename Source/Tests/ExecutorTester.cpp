@@ -5,6 +5,7 @@
 #include <mutex>
 #include <optional>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
@@ -15,6 +16,7 @@
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
+#include "Aspen/Traits.hpp"
 #include "Aspen/Trigger.hpp"
 
 using namespace Aspen;
@@ -34,6 +36,44 @@ namespace {
 
     const int& eval() const noexcept {
       return *m_commits;
+    }
+  };
+
+  struct Idler {
+    using Type = int;
+    std::shared_ptr<int> m_commits;
+
+    Idler()
+      : m_commits(std::make_shared<int>(0)) {}
+
+    State commit(std::uint64_t sequence) noexcept {
+      ++*m_commits;
+      return State::EVALUATED;
+    }
+
+    const int& eval() const noexcept {
+      return *m_commits;
+    }
+  };
+
+  template<IsReactor R>
+  struct Tally {
+    using Type = reactor_result_t<R>;
+    static constexpr auto is_noexcept = is_noexcept_reactor_v<R>;
+    R m_reactor;
+    std::shared_ptr<std::atomic_int> m_commits;
+
+    Tally(R reactor, std::shared_ptr<std::atomic_int> commits)
+      : m_reactor(std::move(reactor)),
+        m_commits(std::move(commits)) {}
+
+    State commit(std::uint64_t sequence) noexcept {
+      m_commits->fetch_add(1);
+      return m_reactor.commit(sequence);
+    }
+
+    decltype(auto) eval() const noexcept(is_noexcept) {
+      return m_reactor.eval();
     }
   };
 }
@@ -171,6 +211,34 @@ TEST_SUITE("Executor") {
     REQUIRE(results == std::vector{0, 1, 2, 3});
   }
 
+  TEST_CASE("waiting_after_a_continuation") {
+    auto queue = Shared(Queue<int>());
+    auto commits = std::make_shared<std::atomic_int>(0);
+    auto mutex = std::mutex();
+    auto condition = std::condition_variable();
+    auto results = std::vector<int>();
+    queue->push(10);
+    queue->push(20);
+    auto executor = Executor(Tally(lift([&] (int value) {
+      auto lock = std::lock_guard(mutex);
+      results.push_back(value);
+      condition.notify_all();
+    }, queue), commits));
+    auto executor_thread = std::thread([&] {
+      executor.run_until_complete();
+    });
+    {
+      auto lock = std::unique_lock(mutex);
+      condition.wait(lock, [&] {
+        return results.size() == 2;
+      });
+    }
+    queue->set_complete();
+    executor_thread.join();
+    REQUIRE(results == std::vector{10, 20});
+    REQUIRE(commits->load() == 3);
+  }
+
   TEST_CASE("aborting_while_waiting") {
     auto queue = Shared(Queue<int>());
     auto mutex = std::mutex();
@@ -233,6 +301,15 @@ TEST_SUITE("Executor") {
     REQUIRE(*counter.m_commits == 1);
     executor.run_until_none();
     REQUIRE(*counter.m_commits == 1);
+  }
+
+  TEST_CASE("resuming_without_an_update") {
+    auto idler = Idler();
+    auto executor = Executor(idler);
+    executor.run_until_none();
+    REQUIRE(*idler.m_commits == 1);
+    executor.run_until_none();
+    REQUIRE(*idler.m_commits == 1);
   }
 
   TEST_CASE("run_until_complete_twice") {
