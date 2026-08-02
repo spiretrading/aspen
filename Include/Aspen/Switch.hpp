@@ -105,10 +105,12 @@ namespace Aspen {
     auto state = State::NONE;
     if(m_is_on) {
       state = m_series->commit(sequence);
-      if(has_evaluation(state) || m_has_evaluation && was_off) {
+      if(has_evaluation(state)) {
         try_assign(m_value, **m_series);
         state = combine(state, State::EVALUATED);
         m_has_evaluation = true;
+      } else if(m_has_evaluation && was_off) {
+        state = combine(state, State::EVALUATED);
       }
       if(is_complete(state)) {
         m_series = std::nullopt;

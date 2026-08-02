@@ -13,6 +13,50 @@
 using namespace Aspen;
 using namespace Aspen::Tests;
 
+namespace {
+  class Series {
+    public:
+      using Type = int;
+
+      Series()
+        : m_violations(std::make_shared<int>(0)),
+          m_state(State::NONE),
+          m_value(0) {}
+
+      const std::shared_ptr<int>& get_violations() const {
+        return m_violations;
+      }
+
+      void push(int value) {
+        m_next = value;
+      }
+
+      State commit(std::uint64_t sequence) noexcept {
+        if(m_next) {
+          m_value = *m_next;
+          m_next = std::nullopt;
+          m_state = State::CONTINUE_EVALUATED;
+        } else {
+          m_state = State::NONE;
+        }
+        return m_state;
+      }
+
+      const int& eval() const noexcept {
+        if(!has_evaluation(m_state)) {
+          ++*m_violations;
+        }
+        return m_value;
+      }
+
+    private:
+      std::shared_ptr<int> m_violations;
+      std::optional<int> m_next;
+      State m_state;
+      int m_value;
+  };
+}
+
 TEST_SUITE("Switch") {
   TEST_CASE("no_values") {
     auto reactor = Switch(Constant(false), Constant(10));
@@ -45,6 +89,23 @@ TEST_SUITE("Switch") {
     toggle->push(true);
     REQUIRE(reactor.commit(4) == State::EVALUATED);
     REQUIRE(reactor.eval() == 321);
+  }
+
+  TEST_CASE("toggling_on_without_a_series_evaluation") {
+    auto toggle = Shared(Queue<bool>());
+    auto series = Series();
+    auto violations = series.get_violations();
+    series.push(321);
+    auto reactor = Switch(toggle, std::move(series));
+    toggle->push(true);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 321);
+    toggle->push(false);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    toggle->push(true);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 321);
+    REQUIRE(*violations == 0);
   }
 
   TEST_CASE("toggle_completing_while_on") {
