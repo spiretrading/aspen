@@ -105,6 +105,19 @@ TEST_SUITE("Queue") {
     REQUIRE(moved.eval() == 2);
   }
 
+  TEST_CASE("move_construction_after_a_commit") {
+    auto queue = Queue<int>();
+    queue.push(5);
+    REQUIRE(queue.commit(0) == State::EVALUATED);
+    REQUIRE(queue.eval() == 5);
+    auto moved = Queue<int>(std::move(queue));
+    REQUIRE(moved.commit(0) == State::EVALUATED);
+    REQUIRE(moved.eval() == 5);
+    moved.push(6);
+    REQUIRE(moved.commit(1) == State::EVALUATED);
+    REQUIRE(moved.eval() == 6);
+  }
+
   TEST_CASE("move_assignment") {
     auto queue = Queue<int>();
     queue.push(1);
@@ -169,13 +182,17 @@ TEST_SUITE("Queue") {
     REQUIRE(queue.commit(0) == State::COMPLETE);
   }
 
-  TEST_CASE("evaluating_without_a_value") {
-    auto destination = Queue<int>();
-    destination.push(7);
-    REQUIRE(destination.commit(0) == State::EVALUATED);
-    REQUIRE(destination.eval() == 7);
-    destination = Queue<int>();
-    REQUIRE_THROWS_AS(destination.eval(), std::runtime_error);
+  TEST_CASE("assignment_after_an_evaluation") {
+    auto queue = Queue<int>();
+    queue.push(7);
+    REQUIRE(queue.commit(0) == State::EVALUATED);
+    REQUIRE(queue.eval() == 7);
+    auto source = Queue<int>();
+    source.push(9);
+    queue = std::move(source);
+    REQUIRE(queue.eval() == 7);
+    REQUIRE(queue.commit(1) == State::EVALUATED);
+    REQUIRE(queue.eval() == 9);
   }
 
   TEST_CASE("pushing_after_completion") {

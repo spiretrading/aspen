@@ -82,7 +82,7 @@ namespace Aspen {
   Queue<T>::Queue(Queue&& queue) {
     auto lock = std::lock_guard(queue.m_mutex);
     m_is_complete = queue.m_is_complete;
-    m_has_commit = queue.m_has_commit;
+    m_has_commit = false;
     m_entries = std::move(queue.m_entries);
     m_exception = std::move(queue.m_exception);
     m_flag = nullptr;
@@ -169,8 +169,16 @@ namespace Aspen {
     auto flag = [&] {
       auto lock = std::scoped_lock(m_mutex, queue.m_mutex);
       m_is_complete = queue.m_is_complete;
-      m_has_commit = false;
-      m_entries = std::move(queue.m_entries);
+      auto entries = std::move(queue.m_entries);
+      if(m_has_commit && !m_entries.empty()) {
+        m_entries.erase(m_entries.begin() + 1, m_entries.end());
+        for(auto& entry : entries) {
+          m_entries.push_back(std::move(entry));
+        }
+      } else {
+        m_entries = std::move(entries);
+        m_has_commit = false;
+      }
       m_exception = std::move(queue.m_exception);
       return m_flag;
     }();
