@@ -136,6 +136,49 @@ TEST_SUITE("CommitFlagConcurrency") {
     }
   }
 
+  TEST_CASE("parent_promotion") {
+    auto iterations = get_iterations();
+    for(auto iteration = 0; iteration != iterations; ++iteration) {
+      auto flags = std::deque<std::unique_ptr<CommitFlag>>();
+      auto removed = std::deque<std::unique_ptr<CommitFlag>>();
+      auto retained = std::deque<std::unique_ptr<CommitFlag>>();
+      auto promoted = std::deque<std::unique_ptr<CommitFlag>>();
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        flags.push_back(std::make_unique<CommitFlag>());
+        removed.push_back(std::make_unique<CommitFlag>());
+        retained.push_back(std::make_unique<CommitFlag>());
+        promoted.push_back(std::make_unique<CommitFlag>());
+        flags.back()->add_parent(*removed.back());
+        flags.back()->add_parent(*retained.back());
+        flags.back()->add_parent(*promoted.back());
+        flags.back()->clear();
+        removed.back()->clear();
+        retained.back()->clear();
+        promoted.back()->clear();
+      }
+      auto start = std::barrier(2);
+      auto producer = std::thread([&] {
+        for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+          start.arrive_and_wait();
+          flags[i]->raise();
+        }
+      });
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        start.arrive_and_wait();
+        flags[i]->remove_parent(*removed[i]);
+      }
+      producer.join();
+      auto dropped = std::size_t(0);
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        if(flags[i]->is_raised() && (!retained[i]->is_raised() ||
+            !promoted[i]->is_raised())) {
+          ++dropped;
+        }
+      }
+      REQUIRE(dropped == 0);
+    }
+  }
+
   TEST_CASE("parent_destruction") {
     auto iterations = get_iterations();
     for(auto iteration = 0; iteration != iterations; ++iteration) {

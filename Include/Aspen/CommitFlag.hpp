@@ -187,10 +187,12 @@ namespace Details {
 
   inline void CommitFlag::remove_parent(CommitFlag& parent) noexcept {
     auto parents = m_parents.load(std::memory_order_relaxed);
+    auto promoted = static_cast<CommitFlag*>(nullptr);
     if(m_pointer.load(std::memory_order_relaxed) == &parent) {
       if(parents && !parents->empty()) {
         auto updated = std::make_shared<Parents>(*parents);
-        m_pointer.store(updated->back());
+        promoted = updated->back();
+        m_pointer.store(promoted);
         updated->pop_back();
         m_parents.store(std::move(updated));
       } else {
@@ -208,6 +210,9 @@ namespace Details {
     while(readers != 0) {
       m_readers.wait(readers);
       readers = m_readers.load();
+    }
+    if(promoted && is_raised()) {
+      promoted->raise();
     }
   }
 
