@@ -72,6 +72,9 @@ TEST_SUITE("Unconsecutive") {
     queue->push("b");
     REQUIRE(reactor.commit(2) == State::EVALUATED);
     REQUIRE(reactor.eval() == "b");
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
   TEST_CASE("completion_with_a_repeat") {

@@ -157,17 +157,4 @@ TEST_SUITE("Previous") {
     REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 2);
   }
-
-  TEST_CASE("completion_with_a_queued_value") {
-    auto queue = Shared(Queue<int>());
-    auto reactor = previous(queue);
-    queue->push(1);
-    queue->push(2);
-    queue->set_complete();
-    REQUIRE(reactor.commit(0) == State::CONTINUE);
-    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
-    REQUIRE(reactor.eval() == 1);
-    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
-    REQUIRE(reactor.eval() == 2);
-  }
 }

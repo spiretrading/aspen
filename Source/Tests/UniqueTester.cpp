@@ -36,13 +36,16 @@ TEST_SUITE("Unique") {
   TEST_CASE("move_construction") {
     auto reactor = Unique(new Constant(7));
     auto moved = std::move(reactor);
+    REQUIRE(!reactor.operator ->());
     REQUIRE(moved.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(moved.eval() == 7);
   }
 
   TEST_CASE("move_assignment") {
     auto reactor = Unique<Constant<int>>();
-    reactor = Unique(new Constant(9));
+    auto source = Unique(new Constant(9));
+    reactor = std::move(source);
+    REQUIRE(!source.operator ->());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 9);
   }

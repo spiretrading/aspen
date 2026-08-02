@@ -141,7 +141,7 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.commit(6) == State::COMPLETE);
   }
 
-  TEST_CASE("step_wider_than_one") {
+  TEST_CASE("fractional_step") {
     static_assert(!CanRange<int, double, double>);
     static_assert(CanRange<double, double, double>);
     auto reactor = range(0.0, 2.5, 0.5);

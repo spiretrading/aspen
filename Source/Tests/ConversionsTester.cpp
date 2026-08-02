@@ -1,3 +1,4 @@
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -69,14 +70,23 @@ TEST_SUITE("Conversions") {
     REQUIRE(reactor.eval() == 4);
   }
 
-  TEST_CASE("converting_once") {
+  TEST_CASE("converting_once_per_evaluation") {
     auto queue = Shared(Queue<int>());
-    auto reactor = ConversionReactor(queue, [] (int value) noexcept {
+    auto conversions = std::make_shared<int>(0);
+    auto reactor = ConversionReactor(queue, [conversions] (int value) noexcept {
+      ++*conversions;
       return value;
     });
     queue->push(1);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
-    REQUIRE(&reactor.eval() == &reactor.eval());
+    REQUIRE(reactor.eval() == 1);
+    REQUIRE(*conversions == 1);
+    REQUIRE(reactor.commit(1) == State::NONE);
+    REQUIRE(*conversions == 1);
+    queue->push(2);
+    REQUIRE(reactor.commit(2) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(*conversions == 2);
   }
 
   TEST_CASE("conversion_returning_a_reference") {

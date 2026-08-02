@@ -199,7 +199,9 @@ TEST_SUITE("Executor") {
     while(counter->load() < 10) {}
     executor.abort();
     executor_thread.join();
-    REQUIRE(counter->load() >= 10);
+    auto stopped = counter->load();
+    executor.run_until_complete();
+    REQUIRE(counter->load() == stopped);
   }
 
   TEST_CASE("aborting_before_a_run") {
@@ -242,18 +244,38 @@ TEST_SUITE("Executor") {
   TEST_CASE("aborting_an_overlapping_run") {
     auto first_queue = Shared(Queue<int>());
     auto second_queue = Shared(Queue<int>());
-    auto first = Executor(first_queue);
-    auto second = Executor(second_queue);
+    auto mutex = std::mutex();
+    auto condition = std::condition_variable();
+    auto first_values = std::vector<int>();
+    auto second_values = std::vector<int>();
+    auto first = Executor(lift([&] (int value) {
+      auto lock = std::lock_guard(mutex);
+      first_values.push_back(value);
+      condition.notify_all();
+    }, first_queue));
+    auto second = Executor(lift([&] (int value) {
+      auto lock = std::lock_guard(mutex);
+      second_values.push_back(value);
+      condition.notify_all();
+    }, second_queue));
     auto first_thread = std::thread([&] {
       first.run_until_complete();
     });
     auto second_thread = std::thread([&] {
       second.run_until_complete();
     });
+    second_queue->push(2);
+    {
+      auto lock = std::unique_lock(mutex);
+      condition.wait(lock, [&] {
+        return !second_values.empty();
+      });
+    }
     first_queue->set_complete(1);
     first_thread.join();
-    second_queue->push(2);
     second.abort();
     second_thread.join();
+    REQUIRE(first_values == std::vector{1});
+    REQUIRE(second_values == std::vector{2});
   }
 }

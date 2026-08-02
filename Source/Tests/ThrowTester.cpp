@@ -37,9 +37,10 @@ TEST_SUITE("Throw") {
     REQUIRE_THROWS_WITH_AS(reactor.eval(), "fail", std::runtime_error);
   }
 
-  TEST_CASE("null_exception") {
+  TEST_CASE("null_exception_throws_a_runtime_error") {
     auto reactor = Throw<int>(std::exception_ptr());
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
-    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+    REQUIRE_THROWS_WITH_AS(
+      reactor.eval(), "Uninitialized.", std::runtime_error);
   }
 }
