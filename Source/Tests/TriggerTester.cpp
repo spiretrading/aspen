@@ -16,10 +16,16 @@ TEST_SUITE("Trigger") {
     REQUIRE(count == 2);
   }
 
-  TEST_CASE("signalling_without_a_slot") {
+  TEST_CASE("signalling_a_default_trigger") {
+    auto count = 0;
     auto trigger = Trigger();
+    auto previous = Trigger::get_trigger();
+    Trigger::set_trigger(trigger);
+    REQUIRE(Trigger::get_trigger() == &trigger);
     trigger.signal();
     trigger.signal();
+    Trigger::set_trigger(previous);
+    REQUIRE(count == 0);
   }
 
   TEST_CASE("current_trigger") {

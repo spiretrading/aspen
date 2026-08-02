@@ -19,6 +19,14 @@ namespace {
     }
   };
 
+  struct Unevaluated {
+    using Type = int;
+
+    State commit(std::uint64_t sequence) noexcept {
+      return State::NONE;
+    }
+  };
+
   struct Mismatched {
     using Type = int;
 
@@ -69,6 +77,10 @@ TEST_SUITE("Reactor") {
   }
 
   TEST_CASE("type_without_an_evaluation") {
+    REQUIRE(!IsReactor<Unevaluated>);
+  }
+
+  TEST_CASE("type_without_a_result") {
     REQUIRE(!IsReactor<Commiter>);
     REQUIRE(!IsReactor<Branch<Constant<int>>>);
     REQUIRE(!IsReactor<CommitHandler<Constant<int>>>);

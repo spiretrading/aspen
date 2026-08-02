@@ -116,10 +116,13 @@ TEST_SUITE("Branch") {
     auto count = counter.get_count();
     auto branch = Branch(std::move(counter));
     branch.set_slot(&word, 0);
+    REQUIRE(word.load() == 1);
+    word.store(0);
     REQUIRE(branch.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(*count == 1);
     REQUIRE(branch.commit(1) == State::COMPLETE);
     REQUIRE(*count == 1);
+    REQUIRE(word.load() == 0);
   }
 
   TEST_CASE("assignment") {
@@ -155,9 +158,11 @@ TEST_SUITE("Branch") {
       auto scope = CommitFlagScope(second);
       REQUIRE(branch.commit(1) == State::EVALUATED);
     }
+    first.clear();
     second.clear();
     cell->set(3);
     REQUIRE(second.is_raised());
+    REQUIRE(!first.is_raised());
   }
 
   TEST_CASE("copy_construction") {

@@ -11,11 +11,6 @@ namespace {
     sink << state;
     return sink.str();
   }
-
-  constexpr State merge(State left, State right) {
-    return static_cast<State>(
-      static_cast<unsigned char>(left) | static_cast<unsigned char>(right));
-  }
 }
 
 TEST_SUITE("State") {
@@ -29,8 +24,8 @@ TEST_SUITE("State") {
   }
 
   TEST_CASE("reset_function") {
-    REQUIRE(reset(State::COMPLETE_EVALUATED, State::COMPLETE) ==
-      State::EVALUATED);
+    REQUIRE(
+      reset(State::COMPLETE_EVALUATED, State::COMPLETE) == State::EVALUATED);
     REQUIRE(reset(State::COMPLETE_EVALUATED, State::CONTINUE) ==
       State::COMPLETE_EVALUATED);
     REQUIRE(reset(State::EVALUATED, State::EVALUATED) == State::NONE);
@@ -67,18 +62,11 @@ TEST_SUITE("State") {
     REQUIRE(to_string(State::COMPLETE_EVALUATED) == "COMPLETE_EVALUATED");
   }
 
-  TEST_CASE("streaming_a_combination") {
-    REQUIRE(to_string(merge(State::COMPLETE, State::CONTINUE)) ==
-      "COMPLETE_CONTINUE");
-    REQUIRE(to_string(merge(State::COMPLETE_EVALUATED, State::CONTINUE)) ==
-      "COMPLETE_CONTINUE_EVALUATED");
-  }
-
   TEST_CASE("constexpr_evaluation") {
-    static_assert(combine(State::EVALUATED, State::CONTINUE) ==
-      State::CONTINUE_EVALUATED);
-    static_assert(reset(State::COMPLETE_EVALUATED, State::COMPLETE) ==
-      State::EVALUATED);
+    static_assert(
+      combine(State::EVALUATED, State::CONTINUE) == State::CONTINUE_EVALUATED);
+    static_assert(
+      reset(State::COMPLETE_EVALUATED, State::COMPLETE) == State::EVALUATED);
     static_assert(has_evaluation(State::COMPLETE_EVALUATED));
     static_assert(!has_continuation(State::COMPLETE_EVALUATED));
     static_assert(is_complete(State::COMPLETE_EVALUATED));

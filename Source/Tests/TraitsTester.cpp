@@ -45,6 +45,18 @@ namespace {
     }
   };
 
+  struct ThrowingVoid {
+    using Type = void;
+
+    State commit(std::uint64_t sequence) noexcept {
+      return State::EVALUATED;
+    }
+
+    void eval() const {
+      throw std::runtime_error("fail");
+    }
+  };
+
   template<typename R>
   concept HasEvaluation = requires {
     typename reactor_evaluation_t<R>;
@@ -156,8 +168,18 @@ TEST_SUITE("Traits") {
   TEST_CASE("try_assign_void") {
     auto reactor = Perpetual();
     reactor.commit(0);
-    auto value = Maybe<void>();
+    auto value = Maybe<void>(std::make_exception_ptr(std::runtime_error("x")));
+    REQUIRE(value.has_exception());
     try_assign(value, reactor);
     REQUIRE(!value.has_exception());
+  }
+
+  TEST_CASE("try_assign_a_throwing_void") {
+    auto reactor = ThrowingVoid();
+    reactor.commit(0);
+    auto value = Maybe<void>();
+    try_assign(value, reactor);
+    REQUIRE(value.has_exception());
+    REQUIRE_THROWS_AS(value.get(), std::runtime_error);
   }
 }
