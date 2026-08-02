@@ -60,7 +60,7 @@ namespace Aspen {
       static constexpr auto INTERRUPT_INTERVAL = std::chrono::seconds(1);
       static inline std::mutex m_abort_mutex;
       static inline std::vector<Executor*> m_running_executors;
-      static inline std::atomic_bool m_is_interrupted;
+      static inline std::atomic_uint64_t m_interrupts;
       static inline auto m_is_handler_installed = false;
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
       static inline auto m_previous_action = SignalAction();
@@ -70,6 +70,7 @@ namespace Aspen {
       Trigger m_trigger;
       CommitFlag m_flag;
       std::uint64_t m_sequence;
+      std::uint64_t m_start_interrupts;
       Box<void> m_reactor;
       std::atomic_bool m_is_aborted;
       bool m_is_complete;
@@ -91,6 +92,7 @@ namespace Aspen {
   Executor::Executor(R&& reactor)
       : m_trigger([this] { on_update(); }),
         m_sequence(0),
+        m_start_interrupts(0),
         m_reactor(std::forward<R>(reactor)),
         m_is_aborted(false),
         m_is_complete(false),
@@ -100,7 +102,7 @@ namespace Aspen {
 
   inline bool Executor::is_aborted() const noexcept {
     return m_is_aborted.load(std::memory_order_acquire) ||
-      m_is_interrupted.load(std::memory_order_acquire);
+      m_interrupts.load(std::memory_order_acquire) != m_start_interrupts;
   }
 
   inline State Executor::commit() {
@@ -150,9 +152,10 @@ namespace Aspen {
         m_previous(Trigger::get_trigger()) {
     {
       auto lock = std::lock_guard(m_abort_mutex);
+      executor.m_start_interrupts =
+        m_interrupts.load(std::memory_order_acquire);
       m_running_executors.push_back(&executor);
       if(m_running_executors.size() == 1) {
-        m_is_interrupted.store(false, std::memory_order_release);
 #if defined(_WIN32)
         m_is_handler_installed = ::SetConsoleCtrlHandler(&ctrl_handler, TRUE);
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -181,7 +184,6 @@ namespace Aspen {
         ::sigaction(SIGINT, &m_previous_action, nullptr);
 #endif
       }
-      m_is_interrupted.store(false, std::memory_order_release);
     }
   }
 
@@ -206,12 +208,12 @@ namespace Aspen {
     if(ctrl != CTRL_C_EVENT) {
       return FALSE;
     }
-    m_is_interrupted.store(true, std::memory_order_release);
+    m_interrupts.fetch_add(1, std::memory_order_release);
     return TRUE;
   }
 #elif defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
   inline void Executor::ctrl_handler(int) {
-    m_is_interrupted.store(true, std::memory_order_release);
+    m_interrupts.fetch_add(1, std::memory_order_release);
   }
 #endif
 }
