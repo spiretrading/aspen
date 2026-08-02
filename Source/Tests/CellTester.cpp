@@ -118,6 +118,22 @@ TEST_SUITE("Cell") {
     REQUIRE(copy.eval() == 1);
   }
 
+  TEST_CASE("move_construction_after_a_commit") {
+    auto cell = Cell(1);
+    REQUIRE(cell.commit(0) == State::EVALUATED);
+    REQUIRE(cell.eval() == 1);
+    auto moved = Cell(std::move(cell));
+    REQUIRE(moved.commit(0) == State::EVALUATED);
+    REQUIRE(moved.eval() == 1);
+    auto completed = Cell<int>();
+    completed.set_complete(2);
+    REQUIRE(completed.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(completed.eval() == 2);
+    auto moved_completion = Cell<int>(std::move(completed));
+    REQUIRE(moved_completion.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(moved_completion.eval() == 2);
+  }
+
   TEST_CASE("assignment") {
     auto cell = Cell(1);
     REQUIRE(cell.commit(0) == State::EVALUATED);
