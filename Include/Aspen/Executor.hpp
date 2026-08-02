@@ -78,6 +78,7 @@ namespace Aspen {
       Box<void> m_reactor;
       std::atomic_bool m_is_aborted;
       bool m_is_complete;
+      bool m_has_continuation;
 
       void on_update();
       bool is_aborted() const noexcept;
@@ -98,7 +99,8 @@ namespace Aspen {
         m_start_interrupts(0),
         m_reactor(std::forward<R>(reactor)),
         m_is_aborted(false),
-        m_is_complete(false) {
+        m_is_complete(false),
+        m_has_continuation(false) {
     m_flag.set_trigger(&m_trigger);
   }
 
@@ -112,6 +114,7 @@ namespace Aspen {
     auto scope = CommitFlagScope(m_flag);
     auto state = m_reactor.commit(m_sequence);
     ++m_sequence;
+    m_has_continuation = has_continuation(state);
     if(is_complete(state)) {
       m_is_complete = true;
     }
@@ -119,7 +122,8 @@ namespace Aspen {
   }
 
   inline void Executor::run_until_none() {
-    if(m_is_complete || (m_sequence != 0 && !m_flag.is_raised())) {
+    if(m_is_complete ||
+        (m_sequence != 0 && !m_has_continuation && !m_flag.is_raised())) {
       return;
     }
     auto old_trigger = Trigger::get_trigger();
@@ -134,18 +138,14 @@ namespace Aspen {
       return;
     }
     auto scope = RunningScope(*this);
-    auto state = State::NONE;
     while(!is_aborted()) {
-      if(m_sequence != 0 && !has_continuation(state) && !m_flag.is_raised()) {
+      if(m_sequence != 0 && !m_has_continuation && !m_flag.is_raised()) {
         auto lock = std::unique_lock(m_mutex);
         while(!m_update_condition.wait_for(lock, INTERRUPT_INTERVAL, [&] {
           return m_flag.is_raised() || is_aborted();
         })) {}
-      } else {
-        state = commit();
-        if(is_complete(state)) {
-          break;
-        }
+      } else if(is_complete(commit())) {
+        break;
       }
     }
   }

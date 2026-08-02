@@ -1,5 +1,6 @@
 #include <atomic>
 #include <condition_variable>
+#include <csignal>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -282,6 +283,31 @@ TEST_SUITE("Executor") {
     executor.run_until_complete();
     REQUIRE(counter->load() == stopped);
   }
+
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+  TEST_CASE("resuming_after_an_interrupt") {
+    auto counter = std::make_shared<std::atomic_int>(0);
+    auto is_continuing = std::make_shared<std::atomic_bool>(true);
+    auto executor = Executor(
+      lift([counter, is_continuing] (const auto& value) {
+        ++*counter;
+        if(is_continuing->load()) {
+          return FunctionEvaluation<int>(value, State::CONTINUE);
+        }
+        return FunctionEvaluation<int>(value, State::COMPLETE);
+      }, constant(1)));
+    auto executor_thread = std::thread([&] {
+      executor.run_until_complete();
+    });
+    while(counter->load() < 10) {}
+    std::raise(SIGINT);
+    executor_thread.join();
+    auto stopped = counter->load();
+    is_continuing->store(false);
+    executor.run_until_none();
+    REQUIRE(counter->load() > stopped);
+  }
+#endif
 
   TEST_CASE("aborting_before_a_run") {
     auto counter = std::make_shared<std::atomic_int>(0);
