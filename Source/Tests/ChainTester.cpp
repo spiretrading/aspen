@@ -116,6 +116,7 @@ TEST_SUITE("Chain") {
     CountedValue::reset_counts();
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_copies() == 0);
+    REQUIRE(CountedValue::get_moves() == 0);
     REQUIRE(CountedValue::get_destructions() == 0);
   }
 

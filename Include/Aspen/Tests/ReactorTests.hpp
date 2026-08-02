@@ -12,14 +12,17 @@
 namespace Aspen::Tests {
 
   /**
-   * Stores a value and counts how many values of its type are copied and
-   * destroyed.
+   * Stores a value and counts how many values of its type are copied, moved
+   * and destroyed.
    */
   class CountedValue {
     public:
 
       /** Returns the number of copies counted since the last reset. */
       static std::size_t get_copies() noexcept;
+
+      /** Returns the number of moves counted since the last reset. */
+      static std::size_t get_moves() noexcept;
 
       /** Returns the number of destructions counted since the last reset. */
       static std::size_t get_destructions() noexcept;
@@ -48,6 +51,7 @@ namespace Aspen::Tests {
 
     private:
       static inline auto m_copies = std::size_t(0);
+      static inline auto m_moves = std::size_t(0);
       static inline auto m_destructions = std::size_t(0);
       int m_value;
   };
@@ -160,12 +164,17 @@ namespace Aspen::Tests {
     return m_copies;
   }
 
+  inline std::size_t CountedValue::get_moves() noexcept {
+    return m_moves;
+  }
+
   inline std::size_t CountedValue::get_destructions() noexcept {
     return m_destructions;
   }
 
   inline void CountedValue::reset_counts() noexcept {
     m_copies = 0;
+    m_moves = 0;
     m_destructions = 0;
   }
 
@@ -182,7 +191,7 @@ namespace Aspen::Tests {
 
   inline CountedValue::CountedValue(CountedValue&& value) noexcept
       : m_value(value.m_value) {
-    ++m_copies;
+    ++m_moves;
   }
 
   inline CountedValue::~CountedValue() {

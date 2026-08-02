@@ -33,6 +33,30 @@ TEST_SUITE("ReactorTests") {
     REQUIRE(CountedValue::get_copies() == 1);
   }
 
+  TEST_CASE("tracked_reactor") {
+    auto token = std::weak_ptr<void>();
+    {
+      auto reactor = TrackedReactor<int>(5, State::COMPLETE_EVALUATED);
+      token = reactor.get_token();
+      REQUIRE(!token.expired());
+      REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+      REQUIRE(reactor.eval() == 5);
+      auto moved = std::move(reactor);
+      REQUIRE(!token.expired());
+    }
+    REQUIRE(token.expired());
+  }
+
+  TEST_CASE("counting_reactor") {
+    auto reactor = CountingReactor<int>(7, State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.get_commits() == 0);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.get_commits() == 1);
+    REQUIRE(reactor.eval() == 7);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.get_commits() == 2);
+  }
+
   TEST_CASE("evaluation_lifetime") {
     auto reactor = ByValueReactor(CountedValue(9));
     test_by_value_evaluation(reactor, 9);

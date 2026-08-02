@@ -130,6 +130,7 @@ TEST_SUITE("Shared") {
     CountedValue::reset_counts();
     reactor = std::nullopt;
     REQUIRE(CountedValue::get_copies() == 0);
+    REQUIRE(CountedValue::get_moves() == 0);
   }
 
   TEST_CASE("cyclic_commit_observed_by_a_sibling") {
