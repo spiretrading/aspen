@@ -162,7 +162,7 @@ namespace Aspen {
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>
   bool Group<A, B>::is_child_complete(std::uint8_t position) const noexcept {
-    return m_completions & (1 << position);
+    return (m_completions & (1 << position)) != 0;
   }
 
   template<IsReactor A, IsReactorOf<reactor_result_t<A>> B>

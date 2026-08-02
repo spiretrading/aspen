@@ -14,7 +14,7 @@ namespace Aspen {
   /**
    * Evaluates its child reactor and then applies a conversion function to the
    * result.
-   * @param <R> The type of reactor to perform the conversion to.
+   * @param <R> The type of reactor whose evaluation is converted.
    * @param <F> The conversion function to apply to the reactor.
    */
   template<IsReactor R, std::invocable<reactor_evaluation_t<R>> F>
@@ -55,6 +55,7 @@ namespace Aspen {
 
   /**
    * Performs a static_cast on the result of a reactor.
+   * @param <T> The type to cast the evaluation to.
    * @param reactor The reactor whose evaluation is to be cast.
    * @return A reactor evaluating to the <i>reactor</i> cast to the given type.
    */

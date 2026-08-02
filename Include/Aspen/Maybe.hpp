@@ -179,9 +179,9 @@ namespace Details {
   Maybe(std::exception_ptr) -> Maybe<void>;
 
   /**
-   * Type trait that wraps a type in a Maybe depending on a condition.
-   * @param <T> The type to potentially wrap.
-   * @param <C> The condition used to test if <code>T</code> is wrapped.
+   * Type trait used to store a value that may be an exception.
+   * @param <T> The type of value to store.
+   * @param <C> Whether the value may be an exception.
    */
   template<typename T, bool C>
   struct try_maybe {
@@ -197,9 +197,9 @@ namespace Details {
   /**
    * Tries calling a function, capturing any thrown exception.
    * @param f The function to call.
-   * @return The result of <i>f</i>.
+   * @return The result of <i>f</i>, or the exception it threw.
    */
-  template<typename F>
+  template<std::invocable F>
   decltype(auto) try_call(F&& f) noexcept {
     using Type = std::decay_t<std::invoke_result_t<F>>;
     if constexpr(noexcept(std::forward<F>(f)())) {
@@ -264,7 +264,7 @@ namespace Details {
     if(has_exception()) {
       return std::get<std::exception_ptr>(m_value);
     }
-    return {};
+    return std::exception_ptr();
   }
 
   template<typename T>

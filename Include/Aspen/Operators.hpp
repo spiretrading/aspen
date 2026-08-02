@@ -19,8 +19,8 @@ namespace Aspen {
   auto operator +(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left + right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left + right)) {
       return left + right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -36,8 +36,8 @@ namespace Aspen {
   auto operator -(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left - right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left - right)) {
       return left - right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -53,8 +53,8 @@ namespace Aspen {
   auto operator *(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left * right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left * right)) {
       return left * right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -70,8 +70,8 @@ namespace Aspen {
   auto operator /(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left / right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left / right)) {
       return left / right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -87,8 +87,8 @@ namespace Aspen {
   auto operator %(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left % right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left % right)) {
       return left % right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -104,8 +104,8 @@ namespace Aspen {
   auto operator ^(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left ^ right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left ^ right)) {
       return left ^ right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -121,8 +121,8 @@ namespace Aspen {
   auto operator &(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left & right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left & right)) {
       return left & right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -138,8 +138,8 @@ namespace Aspen {
   auto operator |(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left | right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left | right)) {
       return left | right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -180,8 +180,8 @@ namespace Aspen {
   auto operator <<(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left << right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left << right)) {
       return left << right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -196,8 +196,8 @@ namespace Aspen {
   auto operator >>(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left >> right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left >> right)) {
       return left >> right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -214,8 +214,8 @@ namespace Aspen {
   auto operator <(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left < right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left < right)) {
       return left < right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -232,8 +232,8 @@ namespace Aspen {
   auto operator <=(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left <= right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left <= right)) {
       return left <= right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -249,8 +249,8 @@ namespace Aspen {
   auto operator ==(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left == right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left == right)) {
       return left == right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -266,8 +266,8 @@ namespace Aspen {
   auto operator !=(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left != right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left != right)) {
       return left != right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -284,8 +284,8 @@ namespace Aspen {
   auto operator >=(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left >= right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left >= right)) {
       return left >= right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -302,8 +302,8 @@ namespace Aspen {
   auto operator >(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left > right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left > right)) {
       return left > right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -345,8 +345,8 @@ namespace Aspen {
   auto operator &&(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left && right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left && right)) {
       return left && right;
     }, std::forward<L>(left), std::forward<R>(right));
   }
@@ -362,8 +362,8 @@ namespace Aspen {
   auto operator ||(L&& left, R&& right) {
     using Left = reactor_result_t<L>;
     using Right = reactor_result_t<R>;
-    return lift([] (const Left& left, const Right& right)
-        noexcept(noexcept(left || right)) {
+    return lift([] (const Left& left, const Right& right) noexcept(
+        noexcept(left || right)) {
       return left || right;
     }, std::forward<L>(left), std::forward<R>(right));
   }

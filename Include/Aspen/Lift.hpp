@@ -18,7 +18,7 @@ namespace Aspen {
 
   /**
    * Stores the result of a function evaluation within a reactor.
-   * @param <T> The result of the function.
+   * @param <T> The type of result produced by the function.
    */
   template<typename T>
   struct FunctionEvaluation {
@@ -324,7 +324,8 @@ namespace Details {
   /**
    * A reactor that applies a function to its parameters.
    * @param <F> The type of function to apply.
-   * @param <A> The types of arguments to apply the function to.
+   * @param <A> The types of reactors whose evaluations the function is applied
+   *        to.
    */
   template<typename F, IsReactor... A> requires
     std::invocable<F, Details::lift_argument_t<A>...>
