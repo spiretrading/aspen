@@ -1,10 +1,8 @@
-#include <array>
 #include <atomic>
 #include <barrier>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
 #include <latch>
 #include <memory>
@@ -19,8 +17,10 @@
 #include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
 #include "Aspen/Trigger.hpp"
+#include "ConcurrencyTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 namespace {
   constexpr auto HOLDERS = std::size_t(8);
@@ -30,18 +30,6 @@ namespace {
   constexpr auto ROUNDS = std::size_t(1000);
   constexpr auto TIMEOUT = std::chrono::seconds(30);
   constexpr auto DELAY = std::chrono::milliseconds(20);
-
-  int get_iterations() {
-    auto variable = std::getenv("ASPEN_CONCURRENCY_ITERATIONS");
-    if(!variable) {
-      return 1000;
-    }
-    auto count = std::atoi(variable);
-    if(count <= 0) {
-      return 1000;
-    }
-    return count;
-  }
 }
 
 TEST_SUITE("CommitFlagConcurrency") {

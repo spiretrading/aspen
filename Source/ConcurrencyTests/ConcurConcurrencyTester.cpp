@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <latch>
 #include <thread>
 #include <vector>
@@ -12,25 +10,15 @@
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
 #include "Aspen/State.hpp"
+#include "ConcurrencyTests.hpp"
 
 using namespace Aspen;
+using namespace Aspen::Tests;
 
 namespace {
   constexpr auto CHILDREN = 8;
   constexpr auto VALUES = 200;
   constexpr auto TIMEOUT = std::chrono::seconds(30);
-
-  int get_iterations() {
-    auto variable = std::getenv("ASPEN_CONCURRENCY_ITERATIONS");
-    if(!variable) {
-      return 1000;
-    }
-    auto count = std::atoi(variable);
-    if(count <= 0) {
-      return 1000;
-    }
-    return count;
-  }
 }
 
 TEST_SUITE("ConcurConcurrency") {

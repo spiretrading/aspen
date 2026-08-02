@@ -1,7 +1,7 @@
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <atomic>
 #include <chrono>
-#include <csignal>
+#include <signal.h>
 #include <cstdlib>
 #include <thread>
 #include <pthread.h>
