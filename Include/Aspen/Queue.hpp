@@ -30,7 +30,7 @@ namespace Aspen {
       Queue(Queue&& queue);
 
       /**
-       * Pushes a value to the queue.
+       * Pushes a value to the queue, ignored once complete.
        * @param value The value to push.
        */
       void push(Type value);
@@ -45,7 +45,8 @@ namespace Aspen {
       void set_complete(Type value);
 
       /**
-       * Sets an exception and brings this reactor to a completion state.
+       * Sets an exception and brings this reactor to a completion state,
+       * ignored once complete. A null exception completes without one.
        * @param exception The exception to throw.
        */
       void set_complete(std::exception_ptr exception);
@@ -55,7 +56,7 @@ namespace Aspen {
        * @param exception The exception to throw.
        */
       template<std::derived_from<std::exception> E>
-      void set_complete(const E& exception);
+      void set_complete(E exception);
 
       State commit(std::uint64_t sequence) noexcept;
       eval_result_t<Type> eval() const;
@@ -79,13 +80,13 @@ namespace Aspen {
       m_flag(nullptr) {}
 
   template<typename T>
-  Queue<T>::Queue(Queue&& queue) {
+  Queue<T>::Queue(Queue&& queue)
+      : m_has_commit(false),
+        m_flag(nullptr) {
     auto lock = std::lock_guard(queue.m_mutex);
     m_is_complete = queue.m_is_complete;
-    m_has_commit = false;
     m_entries = std::move(queue.m_entries);
     m_exception = std::move(queue.m_exception);
-    m_flag = nullptr;
   }
 
   template<typename T>
@@ -120,8 +121,8 @@ namespace Aspen {
 
   template<typename T>
   template<std::derived_from<std::exception> E>
-  void Queue<T>::set_complete(const E& exception) {
-    set_complete(std::make_exception_ptr(exception));
+  void Queue<T>::set_complete(E exception) {
+    set_complete(std::make_exception_ptr(std::move(exception)));
   }
 
   template<typename T>
