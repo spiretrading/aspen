@@ -48,26 +48,35 @@ TEST_SUITE("CommitFlagConcurrency") {
   TEST_CASE("parent_assignment") {
     auto iterations = get_iterations();
     for(auto iteration = 0; iteration != iterations; ++iteration) {
-      auto parents = std::array<CommitFlag, 2>();
-      auto flag = CommitFlag();
-      auto start = std::latch(2);
+      auto flags = std::deque<std::unique_ptr<CommitFlag>>();
+      auto parents = std::deque<std::unique_ptr<CommitFlag>>();
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        flags.push_back(std::make_unique<CommitFlag>());
+        flags.back()->clear();
+        parents.push_back(std::make_unique<CommitFlag>());
+        parents.back()->clear();
+      }
+      auto observed = std::vector<char>(ROUNDS);
+      auto start = std::barrier(2);
       auto producer = std::thread([&] {
-        start.arrive_and_wait();
-        for(auto i = std::size_t(0); i != RAISES; ++i) {
-          flag.raise();
+        for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+          start.arrive_and_wait();
+          flags[i]->raise();
         }
       });
-      start.arrive_and_wait();
-      for(auto i = std::size_t(0); i != RAISES; ++i) {
-        flag.clear();
-        flag.set_parent(&parents[i % 2]);
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        start.arrive_and_wait();
+        flags[i]->set_parent(parents[i].get());
+        observed[i] = flags[i]->is_raised();
       }
       producer.join();
-      parents[0].clear();
-      flag.clear();
-      flag.set_parent(&parents[0]);
-      flag.raise();
-      REQUIRE(parents[0].is_raised());
+      auto lost = std::size_t(0);
+      for(auto i = std::size_t(0); i != ROUNDS; ++i) {
+        if(!observed[i] && !parents[i]->is_raised()) {
+          ++lost;
+        }
+      }
+      REQUIRE(lost == 0);
     }
   }
 

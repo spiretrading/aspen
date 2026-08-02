@@ -203,7 +203,7 @@ namespace Details {
 
   inline void CommitFlag::set_parent(CommitFlag* parent) noexcept {
     assert(m_kind.load(std::memory_order_relaxed) != Kind::ROOT);
-    m_pointer.store(parent, std::memory_order_release);
+    m_pointer.store(parent);
   }
 
   inline void CommitFlag::set_trigger(Trigger* trigger) noexcept {
