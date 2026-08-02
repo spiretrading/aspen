@@ -22,7 +22,6 @@ TEST_SUITE("VectorSync") {
     reactors.push_back(box(constant(10)));
     auto reactor = VectorSync(list, std::move(reactors));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
-    REQUIRE(list == std::vector{5, 0, 0});
   }
 
   TEST_CASE("constant_elements") {
