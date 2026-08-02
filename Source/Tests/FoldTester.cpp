@@ -140,7 +140,7 @@ TEST_SUITE("Fold") {
     REQUIRE(reactor.eval() == 3);
   }
 
-  TEST_CASE("deferred_final_evaluation") {
+  TEST_CASE("discarding_a_continuation_at_completion") {
     auto left = make_fold_argument<int>();
     auto right = make_fold_argument<int>();
     auto count = std::make_shared<int>(0);

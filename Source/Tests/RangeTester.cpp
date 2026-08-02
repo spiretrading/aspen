@@ -32,6 +32,11 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
+  TEST_CASE("descending_range") {
+    auto reactor = range(constant(4), constant(0), constant(-1));
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
   TEST_CASE("stop_at_the_start") {
     auto reactor = range(constant(1), constant(1));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
@@ -236,7 +241,7 @@ TEST_SUITE("Range") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
-  TEST_CASE("negative_step") {
+  TEST_CASE("non_positive_step") {
     auto reactor = range(constant(0), constant(10), constant(-1));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.eval() == 0);
