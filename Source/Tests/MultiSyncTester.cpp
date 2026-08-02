@@ -21,7 +21,14 @@ TEST_SUITE("MultiSync") {
       Sync(std::get<1>(record), constant("hello")),
       Sync(std::get<2>(record), constant(3.14)));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
-    REQUIRE(record == std::tuple(0, "", 0.0));
+  }
+
+  TEST_CASE("no_values_from_a_later_element") {
+    auto record = std::tuple<int, std::string, double>();
+    auto reactor = MultiSync(record, Sync(std::get<0>(record), constant(5)),
+      Sync(std::get<1>(record), none<std::string>()),
+      Sync(std::get<2>(record), constant(3.14)));
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 
   TEST_CASE("value") {
