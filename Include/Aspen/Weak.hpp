@@ -135,7 +135,11 @@ namespace Aspen {
   State Weak<R>::commit(std::uint64_t sequence) noexcept {
     auto reactor = m_evaluator->m_reactor.lock();
     if(!reactor) {
-      if(m_consumed < m_evaluator->m_evaluated) {
+      if(m_evaluator->m_evaluation &&
+          (m_last_evaluation < m_evaluator->m_state->m_last_evaluation ||
+            m_consumed < m_evaluator->m_evaluated)) {
+        m_last_evaluation = m_evaluator->m_state->m_last_evaluation;
+        m_consumed = m_evaluator->m_evaluated;
         return State::COMPLETE_EVALUATED;
       }
       return State::COMPLETE;

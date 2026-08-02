@@ -115,6 +115,20 @@ TEST_SUITE("Weak") {
     REQUIRE(weak.commit(3) == State::COMPLETE);
   }
 
+  TEST_CASE("releasing_with_an_unconsumed_evaluation") {
+    auto cell = Shared(Cell(1));
+    auto boxed = std::optional(Shared<Box<int>>(cell));
+    auto observer = Weak(*boxed);
+    REQUIRE(boxed->commit(0) == State::EVALUATED);
+    REQUIRE(observer.commit(0) == State::EVALUATED);
+    REQUIRE(observer.eval() == 1);
+    cell->set(2);
+    REQUIRE(cell.commit(1) == State::EVALUATED);
+    boxed = std::nullopt;
+    REQUIRE(observer.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE(observer.eval() == 2);
+  }
+
   TEST_CASE("copy_assigning_the_shared") {
     auto first = Shared(Queue<int>());
     auto second = Shared(Queue<int>());
