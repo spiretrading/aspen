@@ -1,5 +1,5 @@
-#include <utility>
 #include <stdexcept>
+#include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"

@@ -73,10 +73,10 @@ TEST_SUITE("MultiSync") {
     auto second = Shared(Queue<std::string>());
     auto reactor = MultiSync(record, Sync(std::get<0>(record), first),
       Sync(std::get<1>(record), second));
-    REQUIRE(reactor.get_exception() == nullptr);
+    REQUIRE(!reactor.get_exception());
     second->set_complete(std::runtime_error("fail"));
     REQUIRE(has_evaluation(reactor.commit(0)));
-    REQUIRE(reactor.get_exception() != nullptr);
+    REQUIRE(reactor.get_exception());
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
     REQUIRE(std::get<0>(record) == 1);
   }
@@ -86,10 +86,10 @@ TEST_SUITE("MultiSync") {
     auto queue = Shared(Queue<int>());
     auto reactor = MultiSync(record, Sync(std::get<0>(record), queue),
       Sync(std::get<1>(record), constant("hello")));
-    REQUIRE(reactor.get_exception() == nullptr);
+    REQUIRE(!reactor.get_exception());
     queue->set_complete(std::runtime_error("fail"));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
-    REQUIRE(reactor.get_exception() != nullptr);
+    REQUIRE(reactor.get_exception());
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 }

@@ -4,10 +4,10 @@
 #include "Aspen/Box.hpp"
 #include "Aspen/Cell.hpp"
 #include "Aspen/Chain.hpp"
+#include "Aspen/Constant.hpp"
 #include "Aspen/None.hpp"
 #include "Aspen/Queue.hpp"
 #include "Aspen/Shared.hpp"
-#include "Aspen/Sync.hpp"
 #include "Aspen/Throw.hpp"
 #include "Aspen/VectorSync.hpp"
 
@@ -121,10 +121,10 @@ TEST_SUITE("VectorSync") {
     reactors.push_back(box(constant(3)));
     auto reactor = VectorSync(list, std::move(reactors));
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
-    REQUIRE(reactor.get_exception() != nullptr);
+    REQUIRE(reactor.get_exception());
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
     REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
-    REQUIRE(reactor.get_exception() == nullptr);
+    REQUIRE(!reactor.get_exception());
     REQUIRE(reactor.eval() == std::vector{12, 3});
   }
 
@@ -153,7 +153,7 @@ TEST_SUITE("VectorSync") {
     reactors.push_back(box(first));
     reactors.push_back(box(second));
     auto reactor = VectorSync(list, std::move(reactors));
-    REQUIRE(reactor.get_exception() == nullptr);
+    REQUIRE(!reactor.get_exception());
     first->push(1);
     second->set_complete(std::runtime_error("fail"));
     REQUIRE(has_evaluation(reactor.commit(0)));

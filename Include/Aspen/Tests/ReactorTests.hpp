@@ -11,8 +11,10 @@
 
 namespace Aspen::Tests {
 
-  /** Stores a value and counts how many values of its type are copied and
-      destroyed. */
+  /**
+   * Stores a value and counts how many values of its type are copied and
+   * destroyed.
+   */
   class CountedValue {
     public:
 

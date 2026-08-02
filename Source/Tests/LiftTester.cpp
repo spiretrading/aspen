@@ -26,7 +26,7 @@ namespace {
   }
 
   struct Counted {
-    static inline auto copies = 0;
+    static inline auto m_copies = 0;
 
     int m_value;
 
@@ -38,7 +38,7 @@ namespace {
 
     Counted(const Counted& counted)
         : m_value(counted.m_value) {
-      ++copies;
+      ++m_copies;
     }
 
     Counted(Counted&& counted) noexcept
@@ -46,7 +46,7 @@ namespace {
 
     Counted& operator =(const Counted& counted) {
       m_value = counted.m_value;
-      ++copies;
+      ++m_copies;
       return *this;
     }
 
@@ -248,11 +248,11 @@ TEST_SUITE("Lift") {
     }, left, right);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval().m_value == 3);
-    auto copies = Counted::copies;
+    auto copies = Counted::m_copies;
     left->set(Counted(10));
     REQUIRE(reactor.commit(1) == State::EVALUATED);
     REQUIRE(reactor.eval().m_value == 12);
-    REQUIRE(Counted::copies == copies);
+    REQUIRE(Counted::m_copies == copies);
   }
 
   TEST_CASE("generic_function") {

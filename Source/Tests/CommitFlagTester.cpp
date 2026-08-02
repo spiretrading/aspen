@@ -7,7 +7,7 @@
 #include "Aspen/Constant.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Shared.hpp"
-#include "Aspen/StaticCommitHandler.hpp"
+#include "Aspen/Trigger.hpp"
 
 using namespace Aspen;
 

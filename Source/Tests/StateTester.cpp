@@ -39,7 +39,7 @@ TEST_SUITE("State") {
       State::CONTINUE);
   }
 
-  TEST_CASE("state_predicates") {
+  TEST_CASE("predicates") {
     REQUIRE(!has_evaluation(State::NONE));
     REQUIRE(has_evaluation(State::EVALUATED));
     REQUIRE(has_evaluation(State::CONTINUE_EVALUATED));

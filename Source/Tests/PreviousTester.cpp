@@ -1,7 +1,6 @@
 #include <stdexcept>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
-#include "Aspen/Constant.hpp"
 #include "Aspen/Distinct.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Previous.hpp"

@@ -1,5 +1,6 @@
 #include <exception>
 #include <stdexcept>
+#include <type_traits>
 #include <doctest/doctest.h>
 #include "Aspen/Reactor.hpp"
 #include "Aspen/Throw.hpp"

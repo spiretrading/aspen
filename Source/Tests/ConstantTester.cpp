@@ -28,7 +28,7 @@ TEST_SUITE("Constant") {
     REQUIRE(text.eval() == "hello world"s);
   }
 
-  TEST_CASE("constant_function") {
+  TEST_CASE("make_constant") {
     auto value = 123;
     auto integer = constant(value);
     REQUIRE((std::is_same_v<decltype(integer), Constant<int>>));

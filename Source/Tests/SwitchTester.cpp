@@ -1,5 +1,5 @@
-#include <utility>
 #include <stdexcept>
+#include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Cell.hpp"
 #include "Aspen/Constant.hpp"
@@ -166,7 +166,7 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.commit(2) == State::NONE);
   }
 
-  TEST_CASE("switch_function") {
+  TEST_CASE("make_switch") {
     auto reactor = switch_(Constant(true), Constant(10));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == 10);

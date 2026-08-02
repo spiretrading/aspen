@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <doctest/doctest.h>
