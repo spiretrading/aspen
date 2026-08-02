@@ -18,7 +18,7 @@ TEST_SUITE("Perpetual") {
 
   TEST_CASE("make_perpetual") {
     auto reactor = perpetual();
-    REQUIRE(is_noexcept_reactor_v<decltype(reactor)>);
+    static_assert(is_noexcept_reactor_v<decltype(reactor)>);
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
     reactor.eval();
   }

@@ -31,14 +31,14 @@ TEST_SUITE("Constant") {
   TEST_CASE("make_constant") {
     auto value = 123;
     auto integer = constant(value);
-    REQUIRE((std::is_same_v<decltype(integer), Constant<int>>));
+    static_assert(std::is_same_v<decltype(integer), Constant<int>>);
     REQUIRE(integer.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(integer.eval() == 123);
     auto text = constant("hello world"s);
-    REQUIRE((std::is_same_v<decltype(text), Constant<std::string>>));
+    static_assert(std::is_same_v<decltype(text), Constant<std::string>>);
     REQUIRE(text.eval() == "hello world"s);
     auto literal = constant("hello world");
-    REQUIRE((std::is_same_v<decltype(literal), Constant<const char*>>));
+    static_assert(std::is_same_v<decltype(literal), Constant<const char*>>);
     REQUIRE(literal.eval() == "hello world"s);
   }
 

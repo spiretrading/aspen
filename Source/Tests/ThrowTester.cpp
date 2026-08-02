@@ -11,7 +11,7 @@ TEST_SUITE("Throw") {
   TEST_CASE("evaluation") {
     static_assert(IsReactorOf<Throw<int>, int>);
     auto reactor = Throw<int>(std::runtime_error(""));
-    REQUIRE(!is_noexcept_reactor_v<Throw<int>>);
+    static_assert(!is_noexcept_reactor_v<Throw<int>>);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
@@ -32,7 +32,7 @@ TEST_SUITE("Throw") {
 
   TEST_CASE("throws_function") {
     auto reactor = throws<int>(std::runtime_error("fail"));
-    REQUIRE((std::is_same_v<decltype(reactor), Throw<int>>));
+    static_assert(std::is_same_v<decltype(reactor), Throw<int>>);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_WITH_AS(reactor.eval(), "fail", std::runtime_error);
   }

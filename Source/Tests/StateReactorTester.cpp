@@ -26,7 +26,7 @@ TEST_SUITE("StateReactor") {
 
   TEST_CASE("value") {
     auto reactor = StateReactor(10);
-    REQUIRE(is_noexcept_reactor_v<decltype(reactor)>);
+    static_assert(is_noexcept_reactor_v<decltype(reactor)>);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(reactor.eval() == State::COMPLETE_EVALUATED);
   }
