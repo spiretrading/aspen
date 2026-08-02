@@ -1,5 +1,7 @@
-#include <utility>
+#include <cstdint>
+#include <memory>
 #include <stdexcept>
+#include <utility>
 #include <doctest/doctest.h>
 #include "Aspen/Box.hpp"
 #include "Aspen/Chain.hpp"
@@ -13,6 +15,33 @@
 
 using namespace Aspen;
 using namespace Aspen::Tests;
+
+namespace {
+  class Tracked {
+    public:
+      using Type = int;
+
+      explicit Tracked(Shared<Queue<int>> queue)
+        : m_token(std::make_shared<int>(0)),
+          m_queue(std::move(queue)) {}
+
+      std::weak_ptr<int> get_token() const {
+        return m_token;
+      }
+
+      State commit(std::uint64_t sequence) noexcept {
+        return m_queue.commit(sequence);
+      }
+
+      const int& eval() const {
+        return m_queue.eval();
+      }
+
+    private:
+      std::shared_ptr<int> m_token;
+      Shared<Queue<int>> m_queue;
+  };
+}
 
 TEST_SUITE("Concat") {
   TEST_CASE("constant_then_none") {
@@ -167,6 +196,22 @@ TEST_SUITE("Concat") {
     producer.set_complete(shared_box(std::move(child)));
     auto reactor = concat(std::move(producer));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
+    REQUIRE(token.expired());
+  }
+
+  TEST_CASE("releasing_a_completed_child_ahead_of_another") {
+    auto first = Shared(Queue<int>());
+    auto child = Tracked(first);
+    auto token = child.get_token();
+    auto series = Shared<Queue<SharedBox<int>>>();
+    auto second = Shared(Queue<int>());
+    series->push(shared_box(std::move(child)));
+    auto reactor = concat(series);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    REQUIRE(!token.expired());
+    series->push(shared_box(second));
+    first->set_complete();
+    REQUIRE(reactor.commit(1) == State::NONE);
     REQUIRE(token.expired());
   }
 
