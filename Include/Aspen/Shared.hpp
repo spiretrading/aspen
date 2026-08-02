@@ -350,7 +350,10 @@ namespace Details {
       }
       return skipped;
     }
-    flag.clear();
+    if(!evaluator.m_state->m_sequence.m_is_set ||
+        evaluator.m_state->m_sequence.m_value < sequence) {
+      flag.clear();
+    }
     auto is_nested = evaluator.m_is_committing;
     evaluator.m_is_committing = true;
     auto reactor_state = [&] {
