@@ -124,6 +124,18 @@ TEST_SUITE("CommitHandler") {
     REQUIRE(reactor.get(0).eval() == 2);
   }
 
+  TEST_CASE("self_move_assignment") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = CommitHandler(std::vector{queue, queue});
+    queue->push(1);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    auto& alias = reactor;
+    reactor = std::move(alias);
+    queue->push(2);
+    REQUIRE(reactor.commit(1) == State::EVALUATED);
+    REQUIRE(reactor.get(0).eval() == 2);
+  }
+
   TEST_CASE("excluding_a_completed_child") {
     auto first = CountingReactor<int>(1, State::COMPLETE_EVALUATED);
     auto second = Shared(Queue<int>());

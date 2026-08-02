@@ -1,4 +1,5 @@
 #include <utility>
+#include <vector>
 #include <doctest/doctest.h>
 #include "Aspen/Constant.hpp"
 #include "Aspen/Queue.hpp"
@@ -95,6 +96,26 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(handler.commit(1) == State::COMPLETE_EVALUATED);
     REQUIRE(handler.get<0>().eval() == 10);
     REQUIRE(handler.get<1>().eval() == 20);
+  }
+
+  TEST_CASE("self_assignment") {
+    auto handler =
+      StaticCommitHandler(Constant(std::vector{1, 2, 3}), constant(4));
+    auto& alias = handler;
+    handler = alias;
+    REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(handler.get<0>().eval() == std::vector{1, 2, 3});
+    REQUIRE(handler.get<1>().eval() == 4);
+  }
+
+  TEST_CASE("self_move_assignment") {
+    auto handler =
+      StaticCommitHandler(Constant(std::vector{1, 2, 3}), constant(4));
+    auto& alias = handler;
+    handler = std::move(alias);
+    REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(handler.get<0>().eval() == std::vector{1, 2, 3});
+    REQUIRE(handler.get<1>().eval() == 4);
   }
 
   TEST_CASE("apply_function") {
