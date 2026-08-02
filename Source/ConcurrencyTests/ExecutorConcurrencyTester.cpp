@@ -1,13 +1,17 @@
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <atomic>
 #include <chrono>
+#include <cstdio>
 #include <signal.h>
 #include <cstdlib>
+#include <iostream>
+#include <optional>
 #include <thread>
 #include <pthread.h>
 #include <doctest/doctest.h>
 #include "Aspen/Constant.hpp"
 #include "Aspen/Executor.hpp"
+#include "Aspen/Lift.hpp"
 
 using namespace Aspen;
 
@@ -31,9 +35,12 @@ TEST_SUITE("ExecutorConcurrency") {
     ::sigaction(SIGINT, &action, &previous);
     auto stop = std::atomic_bool(false);
     auto progress = std::atomic_uint64_t(0);
+    auto commits = std::atomic_uint64_t(0);
     auto runner = std::thread([&] {
       while(!stop.load(std::memory_order_relaxed)) {
-        auto executor = Executor(constant(1));
+        auto executor = Executor(lift([&] (int value) {
+          commits.fetch_add(1, std::memory_order_relaxed);
+        }, constant(1)));
         executor.run_until_complete();
         progress.fetch_add(1, std::memory_order_relaxed);
       }
@@ -48,14 +55,21 @@ TEST_SUITE("ExecutorConcurrency") {
     auto deadline = std::chrono::steady_clock::now() + DURATION;
     auto observed = progress.load(std::memory_order_relaxed);
     auto advanced = std::chrono::steady_clock::now();
+    auto baseline = std::optional<std::uint64_t>();
     while(std::chrono::steady_clock::now() < deadline) {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      if(!baseline) {
+        baseline = commits.load(std::memory_order_relaxed);
+      }
       auto current = progress.load(std::memory_order_relaxed);
       if(current != observed) {
         observed = current;
         advanced = std::chrono::steady_clock::now();
       } else if(std::chrono::steady_clock::now() - advanced > STALL) {
         MESSAGE("stalled after " << observed << " runs");
+        std::cout.flush();
+        std::cerr.flush();
+        std::fflush(nullptr);
         std::_Exit(70);
       }
     }
@@ -64,6 +78,8 @@ TEST_SUITE("ExecutorConcurrency") {
     runner.join();
     ::sigaction(SIGINT, &previous, nullptr);
     REQUIRE(progress.load(std::memory_order_relaxed) != 0);
+    REQUIRE(baseline);
+    REQUIRE(commits.load(std::memory_order_relaxed) > *baseline);
   }
 }
 #endif
