@@ -26,7 +26,7 @@ namespace Aspen {
         decltype(std::declval<F&>()(std::declval<reactor_evaluation_t<R>>()))>;
 
       /** Whether an evaluation is noexcept. */
-      static constexpr auto is_noexcept = noexcept(
+      static constexpr auto is_noexcept = is_noexcept_reactor_v<R> && noexcept(
         std::declval<F&>()(std::declval<reactor_evaluation_t<R>>()));
 
       /**

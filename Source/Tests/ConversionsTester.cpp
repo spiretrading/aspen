@@ -123,6 +123,17 @@ TEST_SUITE("Conversions") {
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }
 
+  TEST_CASE("child_exception_with_a_noexcept_conversion") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = ConversionReactor(queue, [] (int value) noexcept {
+      return value;
+    });
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    queue->set_complete(std::runtime_error("fail"));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
   TEST_CASE("casting_to_another_type") {
     auto reactor = static_reactor_cast<double>(Constant(5));
     REQUIRE((std::is_same_v<decltype(reactor)::Type, double>));
