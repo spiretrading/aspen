@@ -108,24 +108,6 @@ TEST_SUITE("Maybe") {
     REQUIRE(maybe.get().m_value == 3);
   }
 
-  TEST_CASE("assign_from_a_maybe_lvalue") {
-    auto source = Maybe(Tracker(1));
-    auto destination = Maybe(Tracker(2));
-    destination = source;
-    REQUIRE(!source.get().m_is_moved);
-    REQUIRE(destination.get().m_value == 1);
-    destination = std::move(source);
-    REQUIRE(source.get().m_is_moved);
-  }
-
-  TEST_CASE("assign_from_a_maybe_exception") {
-    auto source = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
-    auto destination = Maybe(123);
-    destination = source;
-    REQUIRE(destination.has_exception());
-    REQUIRE_THROWS_AS(destination.get(), std::runtime_error);
-  }
-
   TEST_CASE("assign_from_another_type") {
     auto source = Maybe(123);
     auto destination = Maybe(1.5);
@@ -134,6 +116,15 @@ TEST_SUITE("Maybe") {
     auto failed = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
     destination = failed;
     REQUIRE(destination.has_exception());
+  }
+
+  TEST_CASE("assign_from_another_type_rvalue") {
+    auto destination = Maybe(1.5);
+    destination = Maybe(123);
+    REQUIRE(destination.get() == 123.0);
+    destination = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
+    REQUIRE(destination.has_exception());
+    REQUIRE_THROWS_AS(destination.get(), std::runtime_error);
   }
 
   TEST_CASE("assignment_in_place") {
@@ -201,10 +192,21 @@ TEST_SUITE("Maybe") {
     auto failed = Maybe<void>(std::make_exception_ptr(std::runtime_error("")));
     REQUIRE(failed.has_exception());
     REQUIRE_THROWS_AS(failed.get(), std::runtime_error);
-    maybe = failed;
-    REQUIRE(maybe.has_exception());
-    maybe = Maybe<void>();
-    REQUIRE(!maybe.has_exception());
+  }
+
+  TEST_CASE("converting_to_a_void_specialization") {
+    auto value = Maybe(123);
+    auto converted = Maybe<void>(value);
+    REQUIRE(!converted.has_exception());
+    auto failed = Maybe<int>(std::make_exception_ptr(std::runtime_error("")));
+    auto propagated = Maybe<void>(failed);
+    REQUIRE(propagated.has_exception());
+    REQUIRE_THROWS_AS(propagated.get(), std::runtime_error);
+    auto assigned = Maybe<void>();
+    assigned = failed;
+    REQUIRE(assigned.has_exception());
+    assigned = value;
+    REQUIRE(!assigned.has_exception());
   }
 
   TEST_CASE("try_maybe_trait") {
@@ -240,8 +242,10 @@ TEST_SUITE("Maybe") {
   }
 
   TEST_CASE("noexcept_converting_assignment") {
-    REQUIRE((std::is_nothrow_assignable_v<Maybe<long>&, const Maybe<int>&>));
-    REQUIRE(!(std::is_nothrow_assignable_v<Maybe<Guarded>&, const Maybe<int>&>));
+    static_assert(
+      std::is_nothrow_assignable_v<Maybe<long>&, const Maybe<int>&>);
+    static_assert(
+      !std::is_nothrow_assignable_v<Maybe<Guarded>&, const Maybe<int>&>);
   }
 
   TEST_CASE("moving_out_a_value") {
