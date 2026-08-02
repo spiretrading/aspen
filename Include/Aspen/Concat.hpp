@@ -121,6 +121,10 @@ namespace Aspen {
           return State::NONE;
         } else if(!m_children.empty()) {
           auto child_state = m_children.front().commit(sequence);
+          if(is_complete(child_state) && !has_evaluation(child_state)) {
+            m_children.pop_front();
+            continue;
+          }
           m_is_child_complete = is_complete(child_state);
           if(!m_is_child_complete || has_evaluation(child_state)) {
             return child_state;
