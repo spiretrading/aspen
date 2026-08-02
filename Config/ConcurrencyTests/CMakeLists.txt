@@ -5,12 +5,11 @@ target_include_directories(
 if(UNIX)
   target_link_libraries(aspen_concurrency_tester PRIVATE pthread)
 endif()
-foreach(case parent_assignment parent_destruction parent_list_mutation
-    completed_child_removal interrupt_while_registering)
-  add_test(NAME concurrency_${case}
-    COMMAND aspen_concurrency_tester -tc=${case})
-  set_tests_properties(concurrency_${case} PROPERTIES TIMEOUT 600)
-endforeach()
+list(APPEND CMAKE_MODULE_PATH ${DOCTEST_INCLUDE_PATH}/scripts/cmake)
+include(doctest)
+doctest_discover_tests(aspen_concurrency_tester
+  TEST_PREFIX concurrency_
+  PROPERTIES TIMEOUT 600)
 install(TARGETS aspen_concurrency_tester CONFIGURATIONS Debug
   DESTINATION ${TEST_INSTALL_DIRECTORY}/Debug)
 install(TARGETS aspen_concurrency_tester CONFIGURATIONS Release RelWithDebInfo
