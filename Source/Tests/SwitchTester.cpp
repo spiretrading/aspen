@@ -69,9 +69,20 @@ TEST_SUITE("Switch") {
     REQUIRE(reactor.eval() == 10);
   }
 
-  TEST_CASE("empty_series") {
+  TEST_CASE("toggle_without_an_evaluation") {
     auto reactor = Switch(none<bool>(), Constant(10));
     REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
+  TEST_CASE("series_completing_while_off") {
+    auto toggle = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    auto reactor = Switch(toggle, series);
+    REQUIRE(reactor.commit(0) == State::NONE);
+    series->set_complete();
+    REQUIRE(reactor.commit(1) == State::NONE);
+    toggle->push(true);
+    REQUIRE(reactor.commit(2) == State::COMPLETE);
   }
 
   TEST_CASE("toggling") {
@@ -108,7 +119,7 @@ TEST_SUITE("Switch") {
     REQUIRE(*violations == 0);
   }
 
-  TEST_CASE("toggle_completing_while_on") {
+  TEST_CASE("series_completing_while_on") {
     auto series = Shared(Queue<int>());
     auto reactor = Switch(Constant(true), series);
     REQUIRE(reactor.commit(0) == State::NONE);
@@ -156,7 +167,9 @@ TEST_SUITE("Switch") {
     auto toggle = Shared(Cell(true));
     auto series = Shared(Cell(5));
     auto reactor = Switch(toggle, series);
-    REQUIRE(decltype(reactor)::is_noexcept);
+    static_assert(decltype(reactor)::is_noexcept);
+    static_assert(!decltype(Switch(toggle, Shared(Queue<int>())))::
+      is_noexcept);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 5);
     series->set(6);

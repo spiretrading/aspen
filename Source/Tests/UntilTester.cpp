@@ -32,6 +32,19 @@ TEST_SUITE("Until") {
     REQUIRE(reactor.commit(2) == State::COMPLETE);
   }
 
+  TEST_CASE("condition_reached_with_a_pending_value") {
+    auto condition = Shared(Queue<bool>());
+    auto series = Shared(Queue<int>());
+    auto reactor = until(condition, series);
+    condition->push(false);
+    series->push(1);
+    REQUIRE(reactor.commit(0) == State::EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+    series->push(2);
+    condition->push(true);
+    REQUIRE(reactor.commit(1) == State::COMPLETE);
+  }
+
   TEST_CASE("continuing_condition") {
     auto condition = Shared(Queue<bool>());
     auto series = Shared(Queue<int>());
@@ -103,7 +116,9 @@ TEST_SUITE("Until") {
     auto condition = Shared(Cell(false));
     auto series = Shared(Cell(7));
     auto reactor = until(condition, series);
-    REQUIRE(decltype(reactor)::is_noexcept);
+    static_assert(decltype(reactor)::is_noexcept);
+    static_assert(!decltype(until(condition, Shared(Queue<int>())))::
+      is_noexcept);
     REQUIRE(reactor.commit(0) == State::EVALUATED);
     REQUIRE(reactor.eval() == 7);
     series->set(8);

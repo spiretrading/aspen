@@ -90,7 +90,9 @@ TEST_SUITE("When") {
     auto condition = Shared(Cell(false));
     auto series = Shared(Cell(9));
     auto reactor = when(condition, series);
-    REQUIRE(decltype(reactor)::is_noexcept);
+    static_assert(decltype(reactor)::is_noexcept);
+    static_assert(!decltype(when(condition, Shared(Queue<int>())))::
+      is_noexcept);
     REQUIRE(reactor.commit(0) == State::NONE);
     condition->set(true);
     REQUIRE(reactor.commit(1) == State::EVALUATED);
@@ -132,6 +134,16 @@ TEST_SUITE("When") {
     CountedValue::reset_counts();
     [[maybe_unused]] const auto& value = reactor.eval();
     REQUIRE(CountedValue::get_copies() == 0);
+    REQUIRE(CountedValue::get_moves() == 0);
+  }
+
+  TEST_CASE("releasing_a_triggered_condition") {
+    auto condition = TrackedReactor<bool>(true, State::EVALUATED);
+    auto token = condition.get_token();
+    auto reactor = when(std::move(condition), Constant(5));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    REQUIRE(token.expired());
   }
 
   TEST_CASE("releasing_a_completed_condition") {
