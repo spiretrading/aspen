@@ -18,10 +18,9 @@ namespace Aspen {
    */
   template<typename Source> requires IsReactor<to_reactor_t<Source>>
   auto last(Source&& source) {
-    using Type = reactor_result_t<Source>;
     auto source_reactor = Shared(std::forward<Source>(source));
     return lift([] (const auto& value, State state) noexcept ->
-        FunctionEvaluation<Type> {
+        FunctionEvaluation<std::remove_cvref_t<decltype(value)>> {
       if(is_complete(state)) {
         return FunctionEvaluation(value, State::COMPLETE_EVALUATED);
       }

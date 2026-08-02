@@ -203,7 +203,7 @@ TEST_SUITE("Lift") {
     auto total = std::make_shared<int>(0);
     auto reactor = Lift([total] (int value) {
       *total += value;
-      return FunctionEvaluation<void>(Maybe<void>(), State::CONTINUE);
+      return FunctionEvaluation<void>(State::CONTINUE_EVALUATED);
     }, queue);
     queue->push(1);
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
@@ -408,6 +408,53 @@ TEST_SUITE("Lift") {
     auto reactor = lift([] (const int& value) -> std::optional<Maybe<int>> {
       return Maybe<int>(std::make_exception_ptr(std::runtime_error("fail")));
     }, Constant(1));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("noexcept_function_returning_a_maybe_evaluation") {
+    auto reactor = lift([] (const int& value) noexcept ->
+        std::optional<Maybe<int>> {
+      return Maybe<int>(std::make_exception_ptr(std::runtime_error("fail")));
+    }, Constant(1));
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("noexcept_function_returning_a_maybe_void_evaluation") {
+    auto reactor = lift([] (const int& value) noexcept {
+      return FunctionEvaluation<Maybe<void>>(
+        Maybe<void>(std::make_exception_ptr(std::runtime_error("fail"))));
+    }, Constant(1));
+    REQUIRE(!decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("noexcept_void_evaluation") {
+    auto reactor = lift([] (const int& value) noexcept {
+      return FunctionEvaluation<void>(State::CONTINUE_EVALUATED);
+    }, Constant(1));
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+  }
+
+  TEST_CASE("noexcept_function_evaluation") {
+    auto reactor = lift([] (const int& value) noexcept {
+      return FunctionEvaluation(value + 1, State::CONTINUE);
+    }, Constant(1));
+    REQUIRE(decltype(reactor)::is_noexcept);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+  }
+
+  TEST_CASE("noexcept_function_returning_a_maybe_function_evaluation") {
+    auto reactor = lift([] (const int& value) noexcept {
+      return FunctionEvaluation<Maybe<int>>(
+        Maybe<int>(std::make_exception_ptr(std::runtime_error("fail"))));
+    }, Constant(1));
+    REQUIRE(!decltype(reactor)::is_noexcept);
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
   }

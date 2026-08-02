@@ -24,7 +24,7 @@ namespace Aspen {
     auto source_reactor = Shared(std::forward<Source>(source));
     return lift([previous = std::optional<Type>(), is_absorbed = false] (
         const auto& value, State state) mutable noexcept ->
-          FunctionEvaluation<Type> {
+          FunctionEvaluation<std::remove_cvref_t<decltype(value)>> {
       if constexpr(!is_noexcept_reactor_v<Series>) {
         if(has_evaluation(state) && value.has_exception()) {
           return Maybe<Type>(value.get_exception());
@@ -39,7 +39,8 @@ namespace Aspen {
           }
           auto result = std::move(*previous);
           *previous = value;
-          return FunctionEvaluation(std::move(result), State::CONTINUE);
+          return FunctionEvaluation<std::remove_cvref_t<decltype(value)>>(
+            std::move(result), State::CONTINUE);
         }
         if(!previous) {
           return State::NONE;

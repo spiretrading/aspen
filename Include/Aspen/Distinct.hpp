@@ -25,7 +25,8 @@ namespace Aspen {
   auto distinct(Source&& source) {
     using Type = reactor_result_t<Source>;
     return lift([production = std::unordered_set<Type>()] (
-        const auto& value) mutable noexcept -> FunctionEvaluation<Type> {
+        const auto& value) mutable noexcept ->
+          FunctionEvaluation<std::remove_cvref_t<decltype(value)>> {
       if constexpr(!is_noexcept_reactor_v<to_reactor_t<Source>>) {
         if(value.has_exception()) {
           return value;

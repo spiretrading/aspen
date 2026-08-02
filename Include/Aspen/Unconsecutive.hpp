@@ -24,7 +24,8 @@ namespace Aspen {
     using Type = reactor_result_t<Series>;
     using Source = to_reactor_t<Series>;
     return lift([previous = std::optional<Type>()] (
-        const auto& value) mutable noexcept -> FunctionEvaluation<Type> {
+        const auto& value) mutable noexcept ->
+          FunctionEvaluation<std::remove_cvref_t<decltype(value)>> {
       if constexpr(!is_noexcept_reactor_v<Source>) {
         if(value.has_exception()) {
           return Maybe<Type>(value.get_exception());

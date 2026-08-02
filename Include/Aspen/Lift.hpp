@@ -27,6 +27,59 @@ namespace Aspen {
     using Type = T;
 
     /** The value returned by the function. */
+    std::optional<Type> m_value;
+
+    /** The state of the reactor after the function evaluation. */
+    State m_state;
+
+    /** Constructs an uninitialized evaluation. */
+    FunctionEvaluation();
+
+    /**
+     * Constructs an evaluation resulting in a value and an EVALUATED state.
+     * @param value The value returned by the function.
+     */
+    FunctionEvaluation(Type value);
+
+    /**
+     * Constructs an evaluation resulting in a value if one is provided.
+     * @param value The value returned by the function.
+     */
+    FunctionEvaluation(std::optional<Type> value);
+
+    /**
+     * Constructs an evaluation resulting in a value and an update.
+     * @param value The value returned by the function.
+     * @param state The State of the reactor after the evaluation.
+     */
+    FunctionEvaluation(Type value, State state);
+
+    /**
+     * Constructs an evaluation resulting in a value and an update.
+     * @param value The value returned by the function.
+     * @param state The State of the reactor after the evaluation.
+     */
+    FunctionEvaluation(std::optional<Type> value, State state);
+
+    /**
+     * Constructs an evaluation resulting in just an update.
+     * @param state The State of the reactor after the evaluation.
+     */
+    FunctionEvaluation(State state);
+  };
+
+  /**
+   * Stores the result of a function evaluation that is able to result in an
+   * exception.
+   * @param <T> The result of the function.
+   */
+  template<typename T>
+  struct FunctionEvaluation<Maybe<T>> {
+
+    /** The result of the function. */
+    using Type = T;
+
+    /** The value returned by the function. */
     std::optional<Maybe<Type>> m_value;
 
     /** The state of the reactor after the function evaluation. */
@@ -100,6 +153,28 @@ namespace Aspen {
     /** The result of the function. */
     using Type = void;
 
+    /** Whether the function produced an evaluation. */
+    bool m_value;
+
+    /** The state of the reactor after the function evaluation. */
+    State m_state;
+
+    /** Constructs an uninitialized evaluation. */
+    FunctionEvaluation();
+
+    /**
+     * Constructs an evaluation resulting in an update.
+     * @param state The State of the reactor after the evaluation.
+     */
+    FunctionEvaluation(State state);
+  };
+
+  template<>
+  struct FunctionEvaluation<Maybe<void>> {
+
+    /** The result of the function. */
+    using Type = void;
+
     std::optional<Maybe<Type>> m_value;
     State m_state;
 
@@ -129,7 +204,7 @@ namespace Details {
 
   template<typename T>
   struct function_reactor_result<FunctionEvaluation<T>> {
-    using type = T;
+    using type = typename FunctionEvaluation<T>::Type;
   };
 
   template<typename T>
@@ -140,6 +215,45 @@ namespace Details {
   template<typename T>
   using function_reactor_result_t =
     typename function_reactor_result<std::remove_cvref_t<T>>::type;
+
+  template<typename T>
+  struct is_maybe_result : std::false_type {};
+
+  template<typename T>
+  struct is_maybe_result<Maybe<T>> : std::true_type {};
+
+  template<typename T>
+  struct is_maybe_result<std::optional<Maybe<T>>> : std::true_type {};
+
+  template<typename T>
+  struct is_maybe_result<FunctionEvaluation<Maybe<T>>> : std::true_type {};
+
+  template<typename T>
+  constexpr auto is_maybe_result_v =
+    is_maybe_result<std::remove_cvref_t<T>>::value;
+
+  template<typename T>
+  struct is_function_evaluation : std::false_type {};
+
+  template<typename T>
+  struct is_function_evaluation<FunctionEvaluation<T>> : std::true_type {};
+
+  template<typename T>
+  constexpr auto is_function_evaluation_v =
+    is_function_evaluation<std::remove_cvref_t<T>>::value;
+
+  template<typename T>
+  auto make_evaluation(auto&& result) {
+    using Result = std::remove_cvref_t<decltype(result)>;
+    if constexpr(is_function_evaluation_v<Result>) {
+      return std::forward<decltype(result)>(result);
+    } else if constexpr(is_maybe_result_v<Result>) {
+      return FunctionEvaluation<Maybe<T>>(
+        std::forward<decltype(result)>(result));
+    } else {
+      return FunctionEvaluation<T>(std::forward<decltype(result)>(result));
+    }
+  }
 
   decltype(auto) eval_argument(const auto& reactor) {
     return try_call([&] () noexcept(noexcept(reactor.eval())) ->
@@ -158,11 +272,8 @@ namespace Details {
           return State::EVALUATED;
         } else {
           auto evaluation =
-            FunctionEvaluation<T>(function(eval_argument(arguments)...));
+            make_evaluation<T>(function(eval_argument(arguments)...));
           if(evaluation.m_value) {
-            if constexpr(!IsMaybe<std::remove_reference_t<decltype(value)>>) {
-              assert(evaluation.m_value->has_value());
-            }
             value = std::move(*evaluation.m_value);
           }
           return evaluation.m_state;
@@ -183,9 +294,13 @@ namespace Details {
           return State::EVALUATED;
         } else {
           auto evaluation =
-            FunctionEvaluation<void>(function(eval_argument(arguments)...));
+            make_evaluation<void>(function(eval_argument(arguments)...));
           if(evaluation.m_value) {
-            value = std::move(*evaluation.m_value);
+            if constexpr(std::is_same_v<decltype(evaluation.m_value), bool>) {
+              value = Maybe<void>();
+            } else {
+              value = std::move(*evaluation.m_value);
+            }
           }
           return evaluation.m_state;
         }
@@ -200,7 +315,7 @@ namespace Details {
   struct is_lift_noexcept : std::bool_constant<
     std::is_nothrow_invocable_v<F, lift_argument_t<A>...> &&
     is_noexcept_reactor_v<A...> &&
-    !IsMaybe<std::invoke_result_t<F, lift_argument_t<A>...>>> {};
+    !is_maybe_result_v<std::invoke_result_t<F, lift_argument_t<A>...>>> {};
 
   template<typename F, typename... A>
   constexpr auto is_lift_noexcept_v = is_lift_noexcept<F, A...>::value;
@@ -307,16 +422,12 @@ namespace Details {
     : m_state(State::NONE) {}
 
   template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(Maybe<Type> value)
+  FunctionEvaluation<T>::FunctionEvaluation(Type value)
     : m_value(std::move(value)),
       m_state(State::EVALUATED) {}
 
   template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(Type value)
-    : FunctionEvaluation(Maybe(std::move(value))) {}
-
-  template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(std::optional<Maybe<Type>> value)
+  FunctionEvaluation<T>::FunctionEvaluation(std::optional<Type> value)
       : m_value(std::move(value)) {
     if(m_value) {
       m_state = State::EVALUATED;
@@ -326,28 +437,12 @@ namespace Details {
   }
 
   template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(std::optional<Type> value)
-    : FunctionEvaluation(std::optional<Maybe<Type>>(std::move(value))) {}
-
-  template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(Maybe<Type> value, State state)
-      : m_value(std::move(value)) {
-    if(is_complete(state)) {
-      m_state = State::COMPLETE_EVALUATED;
-    } else if(has_continuation(state)) {
-      m_state = State::CONTINUE_EVALUATED;
-    } else {
-      m_state = State::EVALUATED;
-    }
-  }
-
-  template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(Type value, State state)
-    : FunctionEvaluation(Maybe(std::move(value)), state) {}
+    : FunctionEvaluation(std::optional<Type>(std::move(value)), state) {}
 
   template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(
-      std::optional<Maybe<Type>> value, State state)
+      std::optional<Type> value, State state)
       : m_value(std::move(value)) {
     if(m_value) {
       if(is_complete(state)) {
@@ -367,25 +462,26 @@ namespace Details {
   }
 
   template<typename T>
-  FunctionEvaluation<T>::FunctionEvaluation(
-    std::optional<Type> value, State state)
-    : FunctionEvaluation(
-        std::optional<Maybe<Type>>(std::move(value)), state) {}
-
-  template<typename T>
   FunctionEvaluation<T>::FunctionEvaluation(State state)
       : m_state(state) {
     assert(!has_evaluation(m_state));
   }
 
-  inline FunctionEvaluation<void>::FunctionEvaluation()
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation()
     : m_state(State::NONE) {}
 
-  inline FunctionEvaluation<void>::FunctionEvaluation(Maybe<Type> value)
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(Maybe<Type> value)
     : m_value(std::move(value)),
       m_state(State::EVALUATED) {}
 
-  inline FunctionEvaluation<void>::FunctionEvaluation(
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(Type value)
+    : FunctionEvaluation(Maybe(std::move(value))) {}
+
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(
       std::optional<Maybe<Type>> value)
       : m_value(std::move(value)) {
     if(m_value) {
@@ -395,7 +491,12 @@ namespace Details {
     }
   }
 
-  inline FunctionEvaluation<void>::FunctionEvaluation(
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(std::optional<Type> value)
+    : FunctionEvaluation(std::optional<Maybe<Type>>(std::move(value))) {}
+
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(
       Maybe<Type> value, State state)
       : m_value(std::move(value)) {
     if(is_complete(state)) {
@@ -407,7 +508,12 @@ namespace Details {
     }
   }
 
-  inline FunctionEvaluation<void>::FunctionEvaluation(
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(Type value, State state)
+    : FunctionEvaluation(Maybe(std::move(value)), state) {}
+
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(
       std::optional<Maybe<Type>> value, State state)
       : m_value(std::move(value)) {
     if(m_value) {
@@ -427,7 +533,76 @@ namespace Details {
     }
   }
 
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(
+    std::optional<Type> value, State state)
+    : FunctionEvaluation(
+        std::optional<Maybe<Type>>(std::move(value)), state) {}
+
+  template<typename T>
+  FunctionEvaluation<Maybe<T>>::FunctionEvaluation(State state)
+      : m_state(state) {
+    assert(!has_evaluation(m_state));
+  }
+
+  inline FunctionEvaluation<void>::FunctionEvaluation()
+    : m_value(false),
+      m_state(State::NONE) {}
+
   inline FunctionEvaluation<void>::FunctionEvaluation(State state)
+    : m_value(has_evaluation(state)),
+      m_state(state) {}
+
+  inline FunctionEvaluation<Maybe<void>>::FunctionEvaluation()
+    : m_state(State::NONE) {}
+
+  inline FunctionEvaluation<Maybe<void>>::FunctionEvaluation(Maybe<Type> value)
+    : m_value(std::move(value)),
+      m_state(State::EVALUATED) {}
+
+  inline FunctionEvaluation<Maybe<void>>::FunctionEvaluation(
+      std::optional<Maybe<Type>> value)
+      : m_value(std::move(value)) {
+    if(m_value) {
+      m_state = State::EVALUATED;
+    } else {
+      m_state = State::NONE;
+    }
+  }
+
+  inline FunctionEvaluation<Maybe<void>>::FunctionEvaluation(
+      Maybe<Type> value, State state)
+      : m_value(std::move(value)) {
+    if(is_complete(state)) {
+      m_state = State::COMPLETE_EVALUATED;
+    } else if(has_continuation(state)) {
+      m_state = State::CONTINUE_EVALUATED;
+    } else {
+      m_state = State::EVALUATED;
+    }
+  }
+
+  inline FunctionEvaluation<Maybe<void>>::FunctionEvaluation(
+      std::optional<Maybe<Type>> value, State state)
+      : m_value(std::move(value)) {
+    if(m_value) {
+      if(is_complete(state)) {
+        m_state = State::COMPLETE_EVALUATED;
+      } else if(has_continuation(state)) {
+        m_state = State::CONTINUE_EVALUATED;
+      } else {
+        m_state = State::EVALUATED;
+      }
+    } else if(is_complete(state)) {
+      m_state = State::COMPLETE;
+    } else if(has_continuation(state)) {
+      m_state = State::CONTINUE;
+    } else {
+      m_state = State::NONE;
+    }
+  }
+
+  inline FunctionEvaluation<Maybe<void>>::FunctionEvaluation(State state)
       : m_state(state) {
     assert(!has_evaluation(m_state));
   }
@@ -487,12 +662,8 @@ namespace Details {
     std::invocable<F, Details::lift_argument_t<A>...>
   State Lift<F, A...>::invoke() {
     if constexpr(is_noexcept) {
-      auto state =
-        Details::FunctionEvaluator<Type>()(m_value, m_function, m_handler);
-      if constexpr(std::is_same_v<Type, void>) {
-        assert(!m_value.has_exception());
-      }
-      return state;
+      return Details::FunctionEvaluator<Type>()(
+        m_value, m_function, m_handler);
     } else {
       try {
         return Details::FunctionEvaluator<Type>()(
@@ -533,12 +704,8 @@ namespace Details {
   template<std::invocable F>
   State Lift<F>::invoke() {
     if constexpr(is_noexcept) {
-      auto state = Details::FunctionEvaluator<Type>()(
+      return Details::FunctionEvaluator<Type>()(
         m_value, m_function, std::tuple<>());
-      if constexpr(std::is_same_v<Type, void>) {
-        assert(!m_value.has_exception());
-      }
-      return state;
     } else {
       try {
         return Details::FunctionEvaluator<Type>()(

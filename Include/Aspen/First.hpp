@@ -17,8 +17,7 @@ namespace Aspen {
   template<typename Source> requires IsReactor<to_reactor_t<Source>>
   auto first(Source&& source) {
     return lift([] (const auto& value) noexcept {
-      return FunctionEvaluation<reactor_result_t<Source>>(
-        value, State::COMPLETE_EVALUATED);
+      return FunctionEvaluation(value, State::COMPLETE_EVALUATED);
     }, std::forward<Source>(source));
   }
 }
