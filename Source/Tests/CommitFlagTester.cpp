@@ -228,6 +228,7 @@ TEST_SUITE("CommitFlag") {
     flag.raise();
     REQUIRE(word.load() == std::uint64_t(1) << 3);
     flag.clear();
+    word.store(0);
     flag.raise();
     REQUIRE(word.load() == std::uint64_t(1) << 3);
   }

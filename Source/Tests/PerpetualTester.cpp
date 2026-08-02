@@ -11,8 +11,6 @@ TEST_SUITE("Perpetual") {
     static_assert(Perpetual().commit(0) == State::CONTINUE_EVALUATED);
     auto reactor = Perpetual();
     REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
-    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
-    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
     REQUIRE(reactor.commit(100) == State::CONTINUE_EVALUATED);

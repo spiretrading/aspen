@@ -63,11 +63,14 @@ TEST_SUITE("Traits") {
     REQUIRE((std::is_same_v<reactor_result_t<int>, int>));
     REQUIRE((std::is_same_v<reactor_result_t<Constant<int>>, int>));
     REQUIRE((std::is_same_v<reactor_result_t<Perpetual>, void>));
+  }
+
+  TEST_CASE("eval_result_trait") {
     REQUIRE((std::is_same_v<eval_result_t<int>, const int&>));
     REQUIRE((std::is_same_v<eval_result_t<void>, void>));
   }
 
-  TEST_CASE("eval_result_trait") {
+  TEST_CASE("evaluation_trait") {
     REQUIRE((std::is_same_v<reactor_evaluation_t<Constant<int>>, const int&>));
     REQUIRE((std::is_same_v<reactor_evaluation_t<ByValueReactor<int>>, int>));
     REQUIRE(is_reference_evaluation_v<Constant<int>>);

@@ -92,6 +92,8 @@ TEST_SUITE("StaticCommitHandler") {
     REQUIRE(handler.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE(handler.get<0>().eval() == 10);
     handler = std::move(other);
+    REQUIRE(handler.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(handler.get<0>().eval() == 10);
     REQUIRE(handler.get<1>().eval() == 20);
   }
 
