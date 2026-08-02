@@ -36,8 +36,11 @@ namespace Aspen {
     auto stop_updates = StateReactor(stop_reactor);
     return lift([value = std::optional<Type>()] (const Type& start,
         const Type& stop, State stop_state, const Type& step) mutable noexcept(
-          std::is_nothrow_copy_constructible_v<Type> && noexcept(
-            std::declval<const Type&>() + std::declval<const Type&>())) {
+          std::is_nothrow_copy_constructible_v<Type> &&
+          noexcept(std::declval<const Type&>() +
+            std::declval<const Type&>()) &&
+          noexcept(std::declval<const Type&>() -
+            std::declval<const Type&>())) {
       auto current = [&] () -> Type {
         if(!value) {
           return start;
@@ -55,7 +58,7 @@ namespace Aspen {
         return FunctionEvaluation<Type>(State::NONE);
       }
       value = current;
-      if(*value + step >= stop) {
+      if(stop - *value <= step) {
         if(is_complete(stop_state)) {
           return FunctionEvaluation(*value, State::COMPLETE);
         }

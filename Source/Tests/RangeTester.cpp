@@ -1,3 +1,4 @@
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <doctest/doctest.h>
@@ -239,6 +240,13 @@ TEST_SUITE("Range") {
     queue->set_complete(std::runtime_error("fail"));
     REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
     REQUIRE_THROWS_AS(reactor.eval(), std::runtime_error);
+  }
+
+  TEST_CASE("step_wider_than_the_range") {
+    auto reactor = range(constant(5u), constant(10u),
+      constant(std::numeric_limits<unsigned>::max()));
+    REQUIRE(reactor.commit(0) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 5u);
   }
 
   TEST_CASE("non_positive_step") {
