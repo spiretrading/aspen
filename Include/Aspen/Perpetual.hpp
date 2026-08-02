@@ -19,7 +19,10 @@ namespace Aspen {
       constexpr void eval() const noexcept;
   };
 
-  /** Returns a reactor that perpetually evaluates. */
+  /**
+   * Makes a reactor that perpetually evaluates.
+   * @return A reactor that perpetually evaluates.
+   */
   constexpr auto perpetual() noexcept {
     return Perpetual();
   }

@@ -55,10 +55,15 @@ namespace Aspen {
     return state;
   }
 
-  /** Resets a state flag. */
-  constexpr State reset(State state, State update) {
+  /**
+   * Clears a set of flags from a state.
+   * @param state The state to clear the flags from.
+   * @param flags The flags to clear.
+   * @return The <i>state</i> with the <i>flags</i> cleared.
+   */
+  constexpr State reset(State state, State flags) {
     return static_cast<State>(static_cast<unsigned char>(state) &
-      ~static_cast<unsigned char>(update));
+      ~static_cast<unsigned char>(flags));
   }
 
   inline std::ostream& operator <<(std::ostream& sink, State state) {

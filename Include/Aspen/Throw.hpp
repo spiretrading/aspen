@@ -23,7 +23,8 @@ namespace Aspen {
 
       /**
        * Constructs a Throw.
-       * @param exception The exception to throw.
+       * @param exception The exception to throw, where a null exception
+       *        throws a std::runtime_error instead.
        */
       explicit Throw(std::exception_ptr exception) noexcept;
 
