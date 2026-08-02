@@ -54,6 +54,7 @@ namespace Aspen {
     private:
       std::shared_ptr<Details::SharedEvaluator<Reactor>> m_evaluator;
       Details::Sequence m_last_evaluation;
+      Details::Sequence m_consumed;
       CommitFlag* m_parent;
 
       void set_parent(CommitFlag* parent) noexcept;
@@ -73,6 +74,7 @@ namespace Aspen {
   Weak<R>::Weak(Weak&& weak) noexcept
       : m_evaluator(std::move(weak.m_evaluator)),
         m_last_evaluation(weak.m_last_evaluation),
+        m_consumed(weak.m_consumed),
         m_parent(nullptr) {
     if(weak.m_parent) {
       m_evaluator->m_state->m_flag.remove_parent(*weak.m_parent);
@@ -97,6 +99,7 @@ namespace Aspen {
     }
     m_evaluator = weak.m_evaluator;
     m_last_evaluation = Details::Sequence();
+    m_consumed = Details::Sequence();
     return *this;
   }
 
@@ -110,6 +113,7 @@ namespace Aspen {
     }
     m_evaluator = std::move(weak.m_evaluator);
     m_last_evaluation = weak.m_last_evaluation;
+    m_consumed = weak.m_consumed;
     m_parent = nullptr;
     if(weak.m_parent) {
       m_evaluator->m_state->m_flag.remove_parent(*weak.m_parent);
@@ -131,7 +135,7 @@ namespace Aspen {
   State Weak<R>::commit(std::uint64_t sequence) noexcept {
     auto reactor = m_evaluator->m_reactor.lock();
     if(!reactor) {
-      if(m_last_evaluation < m_evaluator->m_evaluated) {
+      if(m_consumed < m_evaluator->m_evaluated) {
         return State::COMPLETE_EVALUATED;
       }
       return State::COMPLETE;
@@ -139,6 +143,9 @@ namespace Aspen {
     auto current = CommitFlag::get_current();
     auto state = Shared<Reactor>::commit_state(
       sequence, *reactor, *m_evaluator, m_last_evaluation, current);
+    if(has_evaluation(state)) {
+      m_consumed = m_evaluator->m_evaluated;
+    }
     if(current != m_parent) {
       set_parent(current);
     }

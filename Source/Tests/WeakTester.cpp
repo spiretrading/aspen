@@ -83,15 +83,36 @@ TEST_SUITE("Weak") {
     REQUIRE(moved.lock());
   }
 
-  TEST_CASE("moved_shared") {
+  TEST_CASE("moving_the_observed_shared") {
     auto shared = std::optional(Shared(Queue<int>()));
     (*shared)->push(5);
-    REQUIRE(shared->commit(0) == State::EVALUATED);
-    REQUIRE(shared->eval() == 5);
-    auto weak = Weak(std::move(*shared));
-    shared = std::nullopt;
-    REQUIRE(weak.commit(1) == State::COMPLETE_EVALUATED);
+    auto weak = Weak(*shared);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
     REQUIRE(weak.eval() == 5);
+    auto moved = std::optional(std::move(*shared));
+    shared = std::nullopt;
+    (*moved)->push(10);
+    REQUIRE(weak.commit(1) == State::EVALUATED);
+    REQUIRE(weak.eval() == 10);
+    moved = std::nullopt;
+    REQUIRE(weak.commit(2) == State::COMPLETE);
+  }
+
+  TEST_CASE("completing_after_a_consumed_evaluation") {
+    auto cell = Shared(Cell(1));
+    auto boxed = std::optional(Shared<Box<double>>(cell));
+    auto weak = Weak(*boxed);
+    REQUIRE(cell.commit(0) == State::EVALUATED);
+    REQUIRE(boxed->commit(0) == State::EVALUATED);
+    REQUIRE(weak.commit(0) == State::EVALUATED);
+    cell->set(2);
+    REQUIRE(cell.commit(1) == State::EVALUATED);
+    REQUIRE(boxed->commit(2) == State::EVALUATED);
+    REQUIRE(weak.commit(2) == State::EVALUATED);
+    REQUIRE(weak.eval() == 2);
+    boxed = std::nullopt;
+    cell->set(3);
+    REQUIRE(weak.commit(3) == State::COMPLETE);
   }
 
   TEST_CASE("copy_assigning_the_shared") {
