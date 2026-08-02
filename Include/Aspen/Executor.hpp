@@ -16,6 +16,7 @@
 #include "Aspen/Box.hpp"
 #include "Aspen/CommitFlag.hpp"
 #include "Aspen/Reactor.hpp"
+#include "Aspen/State.hpp"
 #include "Aspen/Trigger.hpp"
 
 namespace Aspen {
@@ -40,7 +41,10 @@ namespace Aspen {
       /** Repeatedly executes the reactor until it completes. */
       void run_until_complete();
 
-      /** Stops a run in progress, callable from any thread. */
+      /**
+       * Permanently stops this executor, callable from any thread.
+       * Any run in progress returns and no further run executes.
+       */
       void abort();
 
     private:

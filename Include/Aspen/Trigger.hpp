@@ -29,13 +29,19 @@ namespace Details {
       /** Returns the Trigger currently being used. */
       static Trigger* get_trigger() noexcept;
 
-      /** Sets the Trigger to use within this thread. */
+      /**
+       * Sets the Trigger to use within this thread.
+       * @param trigger The Trigger to use, or <code>nullptr</code> for none.
+       */
       static void set_trigger(Trigger* trigger) noexcept;
 
-      /** Sets the Trigger to use within this thread. */
+      /**
+       * Sets the Trigger to use within this thread.
+       * @param trigger The Trigger to use.
+       */
       static void set_trigger(Trigger& trigger) noexcept;
 
-      /** Constructs a Trigger with no slot. */
+      /** Constructs a Trigger whose signal does nothing. */
       Trigger();
 
       /**

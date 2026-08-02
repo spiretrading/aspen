@@ -27,7 +27,8 @@ namespace Details {
 
   /**
    * Records whether a reactor requires a commit and propagates that requirement
-   * to the reactors depending on it.
+   * to its parents. Raising is safe to perform from any thread; every other
+   * operation is performed by the thread committing the reactor.
    */
   class CommitFlag {
     public:
@@ -64,15 +65,14 @@ namespace Details {
       void add_parent(CommitFlag& parent) noexcept;
 
       /**
-       * Removes a CommitFlag previously added as a dependent, returning once
-       * no propagation still in progress can reach it.
+       * Removes a CommitFlag previously added as a parent, returning once no
+       * propagation still in progress can reach it.
        * @param parent The CommitFlag to stop raising.
        */
       void remove_parent(CommitFlag& parent) noexcept;
 
       /**
-       * Sets a bit to raise whenever this CommitFlag is raised, letting a
-       * dependent locate its raised children without scanning all of them.
+       * Sets a bit to raise whenever this CommitFlag is raised.
        * @param word The word containing the bit to raise.
        * @param bit The index of the bit to raise.
        */
@@ -155,48 +155,6 @@ namespace Details {
     m_readers.notify_all();
   }
 
-  inline void CommitFlag::propagate() noexcept {
-    auto kind = m_kind.load(std::memory_order_acquire);
-    if(kind == Kind::HUB) {
-      auto previous = m_flags.fetch_or(RAISED | PROPAGATED);
-      if((previous & PROPAGATED) != 0) {
-        return;
-      }
-      if(auto parent = static_cast<CommitFlag*>(m_pointer.load())) {
-        parent->raise();
-      }
-      if(auto parents = m_parents.load()) {
-        for(auto parent : *parents) {
-          parent->raise();
-        }
-      }
-    } else {
-      auto previous = m_flags.fetch_or(RAISED);
-      if((previous & RAISED) != 0) {
-        return;
-      }
-      if(auto word = m_word.load()) {
-        word->fetch_or(
-          std::uint64_t(1) << m_bit.load(std::memory_order_acquire),
-          std::memory_order_release);
-      }
-      if(kind == Kind::ROOT) {
-        if(auto trigger = static_cast<Trigger*>(m_pointer.load())) {
-          trigger->signal();
-        }
-      } else {
-        if(auto parent = static_cast<CommitFlag*>(m_pointer.load())) {
-          parent->raise();
-        }
-        if(auto parents = m_parents.load()) {
-          for(auto parent : *parents) {
-            parent->raise();
-          }
-        }
-      }
-    }
-  }
-
   inline void CommitFlag::clear() noexcept {
     m_flags.exchange(0, std::memory_order_acq_rel);
   }
@@ -204,23 +162,6 @@ namespace Details {
   inline void CommitFlag::set_parent(CommitFlag* parent) noexcept {
     assert(m_kind.load(std::memory_order_relaxed) != Kind::ROOT);
     m_pointer.store(parent);
-  }
-
-  inline void CommitFlag::set_trigger(Trigger* trigger) noexcept {
-    assert(m_kind.load(std::memory_order_relaxed) == Kind::PLAIN &&
-      !m_pointer.load(std::memory_order_relaxed));
-    m_pointer.store(trigger, std::memory_order_release);
-    m_kind.store(Kind::ROOT, std::memory_order_release);
-  }
-
-  inline void CommitFlag::set_slot(
-      std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
-    assert(m_kind.load(std::memory_order_relaxed) != Kind::HUB && bit < 64);
-    m_bit.store(bit, std::memory_order_release);
-    m_word.store(word);
-    if(word && is_raised()) {
-      word->fetch_or(std::uint64_t(1) << bit, std::memory_order_release);
-    }
   }
 
   inline void CommitFlag::add_parent(CommitFlag& parent) noexcept {
@@ -267,6 +208,65 @@ namespace Details {
     while(readers != 0) {
       m_readers.wait(readers);
       readers = m_readers.load();
+    }
+  }
+
+  inline void CommitFlag::set_slot(
+      std::atomic_uint64_t* word, std::uint8_t bit) noexcept {
+    assert(m_kind.load(std::memory_order_relaxed) != Kind::HUB && bit < 64);
+    m_bit.store(bit, std::memory_order_release);
+    m_word.store(word);
+    if(word && is_raised()) {
+      word->fetch_or(std::uint64_t(1) << bit, std::memory_order_release);
+    }
+  }
+
+  inline void CommitFlag::set_trigger(Trigger* trigger) noexcept {
+    assert(m_kind.load(std::memory_order_relaxed) == Kind::PLAIN &&
+      !m_pointer.load(std::memory_order_relaxed));
+    m_pointer.store(trigger, std::memory_order_release);
+    m_kind.store(Kind::ROOT, std::memory_order_release);
+  }
+
+  inline void CommitFlag::propagate() noexcept {
+    auto kind = m_kind.load(std::memory_order_acquire);
+    if(kind == Kind::HUB) {
+      auto previous = m_flags.fetch_or(RAISED | PROPAGATED);
+      if((previous & PROPAGATED) != 0) {
+        return;
+      }
+      if(auto parent = static_cast<CommitFlag*>(m_pointer.load())) {
+        parent->raise();
+      }
+      if(auto parents = m_parents.load()) {
+        for(auto parent : *parents) {
+          parent->raise();
+        }
+      }
+    } else {
+      auto previous = m_flags.fetch_or(RAISED);
+      if((previous & RAISED) != 0) {
+        return;
+      }
+      if(auto word = m_word.load()) {
+        word->fetch_or(
+          std::uint64_t(1) << m_bit.load(std::memory_order_acquire),
+          std::memory_order_release);
+      }
+      if(kind == Kind::ROOT) {
+        if(auto trigger = static_cast<Trigger*>(m_pointer.load())) {
+          trigger->signal();
+        }
+      } else {
+        if(auto parent = static_cast<CommitFlag*>(m_pointer.load())) {
+          parent->raise();
+        }
+        if(auto parents = m_parents.load()) {
+          for(auto parent : *parents) {
+            parent->raise();
+          }
+        }
+      }
     }
   }
 

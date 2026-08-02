@@ -33,9 +33,8 @@ namespace Details {
        * Constructs a StaticCommitHandler.
        * @param children The reactors whose commits are to be managed.
        */
-      template<typename... A> requires(sizeof...(A) != 1 ||
-        (!std::derived_from<std::remove_cvref_t<A>,
-          StaticCommitHandler<R...>> && ...))
+      template<typename... A> requires(sizeof...(A) != 1 || (!std::derived_from<
+        std::remove_cvref_t<A>, StaticCommitHandler<R...>> && ...))
       explicit StaticCommitHandler(A&&... children);
 
       StaticCommitHandler(const StaticCommitHandler& handler);
@@ -147,9 +146,8 @@ namespace Details {
   }
 
   template<IsReactor... R>
-  template<typename... A> requires(sizeof...(A) != 1 ||
-    (!std::derived_from<std::remove_cvref_t<A>,
-      StaticCommitHandler<R...>> && ...))
+  template<typename... A> requires(sizeof...(A) != 1 || (!std::derived_from<
+    std::remove_cvref_t<A>, StaticCommitHandler<R...>> && ...))
   StaticCommitHandler<R...>::StaticCommitHandler(A&&... children)
     : m_children(std::forward<A>(children)...),
       m_is_initializing(true),
