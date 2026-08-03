@@ -89,7 +89,7 @@ namespace Aspen {
         if(is_complete(producer_state)) {
           m_producer = std::nullopt;
           if(m_children.empty() ||
-              m_children.size() == 1 && m_is_child_complete) {
+              (m_children.size() == 1 && m_is_child_complete)) {
             return State::COMPLETE;
           }
         }
@@ -142,8 +142,8 @@ namespace Aspen {
     }
     if(has_continuation(child_state)) {
       state = combine(state, State::CONTINUE);
-    } else if(!m_producer &&
-        (m_children.empty() || m_children.size() == 1 && m_is_child_complete)) {
+    } else if(!m_producer && (m_children.empty() ||
+        (m_children.size() == 1 && m_is_child_complete))) {
       state = combine(state, State::COMPLETE);
     }
     return state;
