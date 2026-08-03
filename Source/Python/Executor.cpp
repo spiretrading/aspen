@@ -46,5 +46,6 @@ void Aspen::export_executor(pybind11::module& module) {
       }))
     .def("run_until_none", &Executor::run_until_none)
     .def("run_until_complete", &Executor::run_until_complete,
-      call_guard<gil_scoped_release>());
+      call_guard<gil_scoped_release>())
+    .def("abort", &Executor::abort, call_guard<gil_scoped_release>());
 }
