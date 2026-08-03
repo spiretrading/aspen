@@ -5,6 +5,7 @@ using namespace Aspen;
 using namespace pybind11;
 
 PYBIND11_MODULE(aspen, m) {
+  register_python_exception();
   export_box(m);
   export_cell(m);
   export_chain(m);

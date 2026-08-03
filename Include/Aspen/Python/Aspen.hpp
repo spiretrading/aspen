@@ -12,6 +12,7 @@
 #include "Aspen/Python/Discard.hpp"
 #include "Aspen/Python/Distinct.hpp"
 #include "Aspen/Python/DllExports.hpp"
+#include "Aspen/Python/Exception.hpp"
 #include "Aspen/Python/Executor.hpp"
 #include "Aspen/Python/First.hpp"
 #include "Aspen/Python/Fold.hpp"

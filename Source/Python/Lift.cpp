@@ -2,6 +2,7 @@
 #include "Aspen/CommitHandler.hpp"
 #include "Aspen/Lift.hpp"
 #include "Aspen/Python/Box.hpp"
+#include "Aspen/Python/Exception.hpp"
 #include "Aspen/Python/Reactor.hpp"
 
 using namespace Aspen;
@@ -10,7 +11,11 @@ using namespace pybind11;
 namespace {
   struct CallableWrapper {
     object operator ()(const args& arguments) {
-      return m_callable(*arguments);
+      try {
+        return m_callable(*arguments);
+      } catch(const error_already_set& error) {
+        throw PythonException(error);
+      }
     }
 
     object m_callable;
@@ -31,6 +36,9 @@ namespace {
           }()) {}
 
     State commit(std::uint64_t sequence) noexcept {
+      if(m_arguments.size() == 0) {
+        return State::COMPLETE_EVALUATED;
+      }
       return m_arguments.commit(sequence);
     }
 

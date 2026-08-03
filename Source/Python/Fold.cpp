@@ -1,5 +1,6 @@
 #include "Aspen/Python/Fold.hpp"
 #include "Aspen/Fold.hpp"
+#include "Aspen/Python/Exception.hpp"
 
 using namespace Aspen;
 using namespace pybind11;
@@ -25,7 +26,11 @@ void Aspen::export_fold(pybind11::module& module) {
     [] (object f, object series) {
       return shared_box(fold(
         [f = std::move(f)] (const object& a, const object& b) {
-          return f(a, b);
+          try {
+            return f(a, b);
+          } catch(const error_already_set& error) {
+            throw PythonException(error);
+          }
         }, to_python_reactor(std::move(series))));
     });
 }
