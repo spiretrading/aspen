@@ -17,6 +17,9 @@ namespace Aspen {
     public:
       using Type = reactor_result_t<R>;
 
+      /** The type returned by an evaluation. */
+      using Result = reactor_evaluation_t<R>;
+
       /**
        * Constructs a GilAcquireReactor.
        * @param reactor Initializes the reactor to wrap.
@@ -26,7 +29,7 @@ namespace Aspen {
 
       State commit(std::uint64_t sequence) noexcept;
 
-      eval_result_t<Type> eval() const noexcept(is_noexcept_reactor_v<R>);
+      Result eval() const noexcept(is_noexcept_reactor_v<R>);
 
     private:
       try_ptr_t<R> m_reactor;
@@ -47,8 +50,8 @@ namespace Aspen {
   }
 
   template<typename R>
-  eval_result_t<typename GilAcquireReactor<R>::Type>
-      GilAcquireReactor<R>::eval() const noexcept(is_noexcept_reactor_v<R>) {
+  typename GilAcquireReactor<R>::Result GilAcquireReactor<R>::eval() const
+      noexcept(is_noexcept_reactor_v<R>) {
     auto lock = pybind11::gil_scoped_acquire();
     return m_reactor->eval();
   }
