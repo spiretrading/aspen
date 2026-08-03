@@ -29,7 +29,6 @@ namespace {
   constexpr auto RAISES = std::size_t(100000);
   constexpr auto ROUNDS = std::size_t(1000);
   constexpr auto TIMEOUT = std::chrono::seconds(30);
-  constexpr auto DELAY = std::chrono::milliseconds(20);
 }
 
 TEST_SUITE("CommitFlagConcurrency") {
@@ -184,9 +183,10 @@ TEST_SUITE("CommitFlagConcurrency") {
     for(auto iteration = 0; iteration != iterations; ++iteration) {
       auto source = Shared(Cell<int>(0));
       auto entered = std::binary_semaphore(0);
+      auto released = std::binary_semaphore(0);
       auto trigger = Trigger([&] {
         entered.release();
-        std::this_thread::sleep_for(DELAY);
+        released.acquire();
       });
       auto word = std::atomic_uint64_t(0);
       auto parents = std::deque<std::unique_ptr<CommitFlag>>();
@@ -206,11 +206,22 @@ TEST_SUITE("CommitFlagConcurrency") {
         source->set(1);
       });
       auto is_entered = entered.try_acquire_for(TIMEOUT);
-      holders[PARENTS - 1].reset();
-      auto is_reached = word.load() != 0;
+      auto is_pending = word.load() == 0;
+      auto is_removing = std::atomic_bool(false);
+      auto is_reached = false;
+      auto remover = std::thread([&] {
+        is_removing = true;
+        is_removing.notify_one();
+        holders[PARENTS - 1].reset();
+        is_reached = word.load() != 0;
+      });
+      is_removing.wait(false);
+      released.release();
+      remover.join();
       parents[PARENTS - 1].reset();
       producer.join();
       REQUIRE(is_entered);
+      REQUIRE(is_pending);
       REQUIRE(is_reached);
     }
   }
