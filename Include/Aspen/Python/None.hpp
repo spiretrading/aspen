@@ -18,7 +18,7 @@ namespace Aspen {
    */
   template<typename T>
   void export_none(pybind11::module& module, const std::string& prefix) {
-    auto name = prefix + std::string("None");
+    auto name = prefix + std::string("NoneReactor");
     if(pybind11::hasattr(module, name.c_str())) {
       return;
     }
