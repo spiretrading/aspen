@@ -39,8 +39,8 @@ namespace Aspen {
           std::is_nothrow_copy_constructible_v<Type> &&
           noexcept(std::declval<const Type&>() + std::declval<const Type&>()) &&
           noexcept(std::declval<const Type&>() - std::declval<const Type&>())) {
-      auto is_descending = step < Type();
-      auto current = [&] () -> Type {
+      auto is_descending = step < step - step;
+      auto current = [&] {
         if(!value) {
           return start;
         }
