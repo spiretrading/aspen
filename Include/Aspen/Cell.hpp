@@ -134,7 +134,9 @@ namespace Aspen {
 
   template<typename T>
   void Cell<T>::set(Type value) {
+    auto discarded = std::optional<Type>();
     update([&] {
+      discarded.swap(m_next);
       m_next = std::move(value);
     });
   }
@@ -142,7 +144,9 @@ namespace Aspen {
   template<typename T>
   template<typename... A>
   void Cell<T>::emplace(A&&... args) {
+    auto discarded = std::optional<Type>();
     update([&] {
+      discarded.swap(m_next);
       m_next.emplace(std::forward<A>(args)...);
     });
   }
@@ -156,7 +160,9 @@ namespace Aspen {
 
   template<typename T>
   void Cell<T>::set_complete(Type value) {
+    auto discarded = std::optional<Type>();
     update([&] {
+      discarded.swap(m_next);
       m_next = std::move(value);
       m_is_complete = true;
     });
@@ -165,7 +171,9 @@ namespace Aspen {
   template<typename T>
   template<typename... A>
   void Cell<T>::emplace_complete(A&&... args) {
+    auto discarded = std::optional<Type>();
     update([&] {
+      discarded.swap(m_next);
       m_next.emplace(std::forward<A>(args)...);
       m_is_complete = true;
     });
@@ -173,10 +181,12 @@ namespace Aspen {
 
   template<typename T>
   State Cell<T>::commit(std::uint64_t sequence) noexcept {
+    auto discarded = std::optional<Type>();
     auto lock = std::lock_guard(m_mutex);
     m_flag = CommitFlag::get_current();
     auto state = State::NONE;
     if(m_next) {
+      discarded.swap(m_current);
       m_current = std::move(m_next);
       m_next = std::nullopt;
       state = State::EVALUATED;

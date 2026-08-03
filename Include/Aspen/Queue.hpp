@@ -5,6 +5,7 @@
 #include <deque>
 #include <exception>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include "Aspen/CommitFlag.hpp"
@@ -127,10 +128,13 @@ namespace Aspen {
 
   template<typename T>
   State Queue<T>::commit(std::uint64_t sequence) noexcept {
+    auto discarded = std::optional<Type>();
+    auto discarded_entries = std::optional<std::deque<Type>>();
     auto lock = std::lock_guard(m_mutex);
     m_flag = CommitFlag::get_current();
     if(m_entries.size() > 1 || (m_entries.size() == 1 && !m_has_commit)) {
       if(m_has_commit) {
+        discarded.emplace(std::move(m_entries.front()));
         m_entries.pop_front();
       } else {
         m_has_commit = true;
@@ -142,7 +146,8 @@ namespace Aspen {
       }
       return State::EVALUATED;
     } else if(m_exception) {
-      m_entries.clear();
+      discarded_entries.emplace();
+      discarded_entries->swap(m_entries);
       return State::COMPLETE_EVALUATED;
     } else if(m_is_complete) {
       return State::COMPLETE;
