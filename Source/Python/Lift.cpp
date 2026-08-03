@@ -10,9 +10,13 @@ using namespace pybind11;
 
 namespace {
   struct CallableWrapper {
-    object operator ()(const args& arguments) {
+    FunctionEvaluation<object> operator ()(const args& arguments) {
       try {
-        return m_callable(*arguments);
+        auto result = m_callable(*arguments);
+        if(isinstance<State>(result)) {
+          return FunctionEvaluation<object>(result.cast<State>());
+        }
+        return FunctionEvaluation<object>(std::move(result));
       } catch(const error_already_set& error) {
         throw PythonException(error);
       }
