@@ -24,8 +24,9 @@ namespace Aspen {
     }
     export_reactor<Proxy<T>>(module, name)
       .def(pybind11::init<>())
-      .def("set_reactor", [] (Proxy<T>& self, T& reactor) {
-        self.set_reactor(reactor);
+      .def("set_reactor", [] (Proxy<T>& self, pybind11::object reactor) {
+        self.set_reactor(
+          to_python_reactor<reactor_result_t<T>>(std::move(reactor)));
       });
     if constexpr(!std::is_same_v<T, SharedBox<pybind11::object>>) {
       pybind11::implicitly_convertible<Proxy<T>,
