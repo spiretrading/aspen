@@ -3,7 +3,7 @@ import unittest
 from fixtures import aspen, drive
 
 
-class Distinct(unittest.TestCase):
+class TestDistinct(unittest.TestCase):
   def test_duplicate_values(self):
     queue = aspen.Queue()
     queue.push(1)

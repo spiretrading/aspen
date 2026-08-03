@@ -31,7 +31,7 @@ class Counting:
     return self.commits
 
 
-class PythonReactor(unittest.TestCase):
+class TestPythonReactor(unittest.TestCase):
   def test_commit(self):
     reactor = aspen.Box(Counting())
     self.assertEqual(reactor.commit(0), aspen.State.COMPLETE_EVALUATED)
@@ -52,7 +52,7 @@ class PythonReactor(unittest.TestCase):
       reactor.eval()
 
 
-class NonReactorArgument(unittest.TestCase):
+class TestNonReactorArgument(unittest.TestCase):
   def test_concur(self):
     with self.assertRaises(TypeError):
       aspen.concur(5)

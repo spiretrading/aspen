@@ -3,7 +3,7 @@ import unittest
 from fixtures import aspen, drive
 
 
-class Range(unittest.TestCase):
+class TestRange(unittest.TestCase):
   def test_ascending_range(self):
     reactor = aspen.range(0, 3)
     self.assertEqual(reactor.commit(0), aspen.State.CONTINUE_EVALUATED)
