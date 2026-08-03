@@ -13,8 +13,8 @@ namespace {
     FunctionEvaluation<object> operator ()(const args& arguments) {
       try {
         auto result = m_callable(*arguments);
-        if(isinstance<State>(result)) {
-          return FunctionEvaluation<object>(result.cast<State>());
+        if(isinstance<FunctionEvaluation<object>>(result)) {
+          return result.cast<FunctionEvaluation<object>>();
         }
         return FunctionEvaluation<object>(std::move(result));
       } catch(const error_already_set& error) {
@@ -57,6 +57,17 @@ namespace {
 }
 
 void Aspen::export_lift(pybind11::module& module) {
+  class_<FunctionEvaluation<object>>(module, "FunctionEvaluation")
+    .def(init<>())
+    .def(init(
+      [] (State state) {
+        if(has_evaluation(state)) {
+          throw value_error("An evaluation requires a value.");
+        }
+        return FunctionEvaluation<object>(state);
+      }))
+    .def(init<object>())
+    .def(init<object, State>());
   using PythonLift = Lift<CallableWrapper, SharedBox<args>>;
   export_reactor<PythonLift>(module, "Lift")
     .def(init(

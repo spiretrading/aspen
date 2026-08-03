@@ -18,27 +18,33 @@ class TestLift(unittest.TestCase):
     self.assertEqual(reactor.commit(0), aspen.State.COMPLETE_EVALUATED)
     self.assertEqual(reactor.eval(), 42)
 
-  def test_none_evaluation(self):
-    reactor = aspen.lift(lambda value: None, aspen.constant(1))
+  def test_state_value(self):
+    reactor = aspen.lift(lambda state: state,
+      aspen.StateReactor(aspen.constant(1)))
     self.assertTrue(aspen.has_evaluation(reactor.commit(0)))
-    self.assertIsNone(reactor.eval())
+    self.assertEqual(reactor.eval(), aspen.State.COMPLETE_EVALUATED)
 
-  def test_returning_no_evaluation(self):
+  def test_evaluation_without_a_value(self):
     queue = aspen.Queue()
     queue.push(1)
     queue.push(2)
     reactor = aspen.lift(
-      lambda value: aspen.State.NONE if value == 1 else value, queue)
+      lambda value: aspen.FunctionEvaluation(aspen.State.NONE)
+        if value == 1 else value, queue)
     self.assertFalse(aspen.has_evaluation(reactor.commit(0)))
     self.assertTrue(aspen.has_evaluation(reactor.commit(1)))
     self.assertEqual(reactor.eval(), 2)
 
-  def test_returning_a_completion(self):
-    queue = aspen.Queue()
-    queue.push(1)
-    queue.push(2)
-    reactor = aspen.lift(lambda value: aspen.State.COMPLETE, queue)
-    self.assertTrue(aspen.is_complete(reactor.commit(0)))
+  def test_evaluation_with_a_state(self):
+    reactor = aspen.lift(
+      lambda value: aspen.FunctionEvaluation(value * 2, aspen.State.COMPLETE),
+      aspen.constant(21))
+    self.assertEqual(reactor.commit(0), aspen.State.COMPLETE_EVALUATED)
+    self.assertEqual(reactor.eval(), 42)
+
+  def test_evaluating_state_without_a_value(self):
+    with self.assertRaises(ValueError):
+      aspen.FunctionEvaluation(aspen.State.EVALUATED)
 
   def test_raising_evaluation(self):
     reactor = aspen.lift(failing, aspen.constant(1))
