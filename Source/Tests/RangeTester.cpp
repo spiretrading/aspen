@@ -35,7 +35,72 @@ TEST_SUITE("Range") {
 
   TEST_CASE("descending_range") {
     auto reactor = range(constant(4), constant(0), constant(-1));
-    REQUIRE(reactor.commit(0) == State::COMPLETE);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 4);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 3);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+  }
+
+  TEST_CASE("descending_step") {
+    auto reactor = range(constant(10), constant(0), constant(-3));
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 7);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 4);
+    REQUIRE(reactor.commit(3) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+  }
+
+  TEST_CASE("descending_fractional_step") {
+    auto reactor = range(2.5, 1.0, -0.5);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2.5);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2.0);
+    REQUIRE(reactor.commit(2) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 1.5);
+  }
+
+  TEST_CASE("descending_start_moving_behind") {
+    auto start = Shared(Cell(10));
+    auto reactor = range(start, -100, -1);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 9);
+    start->set(2);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(3) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
+  }
+
+  TEST_CASE("descending_start_moving_ahead") {
+    auto start = Shared(Cell(10));
+    auto reactor = range(start, -100, -5);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 10);
+    REQUIRE(reactor.commit(1) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 5);
+    start->set(8);
+    REQUIRE(reactor.commit(2) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 0);
+  }
+
+  TEST_CASE("descending_completing_stop") {
+    auto queue = Shared(Queue<int>());
+    auto reactor = range(queue, constant(0), constant(-1));
+    queue->push(2);
+    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
+    REQUIRE(reactor.eval() == 2);
+    REQUIRE(reactor.commit(1) == State::COMPLETE_EVALUATED);
+    REQUIRE(reactor.eval() == 1);
   }
 
   TEST_CASE("stop_at_the_start") {
@@ -249,10 +314,13 @@ TEST_SUITE("Range") {
     REQUIRE(reactor.eval() == 5u);
   }
 
-  TEST_CASE("non_positive_step") {
+  TEST_CASE("stop_above_a_descending_start") {
     auto reactor = range(constant(0), constant(10), constant(-1));
-    REQUIRE(reactor.commit(0) == State::CONTINUE_EVALUATED);
-    REQUIRE(reactor.eval() == 0);
-    REQUIRE(reactor.commit(1) == State::COMPLETE);
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
+  }
+
+  TEST_CASE("stop_at_a_descending_start") {
+    auto reactor = range(constant(1), constant(1), constant(-1));
+    REQUIRE(reactor.commit(0) == State::COMPLETE);
   }
 }

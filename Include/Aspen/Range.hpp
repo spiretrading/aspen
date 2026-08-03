@@ -20,8 +20,8 @@ namespace Aspen {
    * (exclusive).
    * @param start The first value to evaluate to.
    * @param stop The value to stop evaluating at (exclusive).
-   * @param step The value to increment the evaluation by, which must be
-   *        positive for the count to advance.
+   * @param step The value to increment the evaluation by, counting down when it
+   *        is negative.
    * @return A reactor evaluating to each value from <i>start</i> to <i>stop</i>
    *         in turn.
    */
@@ -37,28 +37,49 @@ namespace Aspen {
     return lift([value = std::optional<Type>()] (const Type& start,
         const Type& stop, State stop_state, const Type& step) mutable noexcept(
           std::is_nothrow_copy_constructible_v<Type> &&
-          noexcept(std::declval<const Type&>() +
-            std::declval<const Type&>()) &&
-          noexcept(std::declval<const Type&>() -
-            std::declval<const Type&>())) {
+          noexcept(std::declval<const Type&>() + std::declval<const Type&>()) &&
+          noexcept(std::declval<const Type&>() - std::declval<const Type&>())) {
+      auto is_descending = step < Type();
       auto current = [&] () -> Type {
         if(!value) {
           return start;
         }
         auto increment = *value + step;
+        if(is_descending) {
+          return std::min<Type>(start, increment);
+        }
         return std::max<Type>(start, increment);
       }();
-      if(value && current <= *value) {
+      auto is_stalled = value && [&] {
+        if(is_descending) {
+          return current >= *value;
+        }
+        return current <= *value;
+      }();
+      if(is_stalled) {
         return FunctionEvaluation<Type>(State::NONE);
       }
-      if(current >= stop) {
+      auto is_past_stop = [&] {
+        if(is_descending) {
+          return current <= stop;
+        }
+        return current >= stop;
+      }();
+      if(is_past_stop) {
         if(is_complete(stop_state)) {
           return FunctionEvaluation<Type>(State::COMPLETE);
         }
         return FunctionEvaluation<Type>(State::NONE);
       }
       value = current;
-      if(stop - *value <= step) {
+      auto distance = stop - *value;
+      auto is_last = [&] {
+        if(is_descending) {
+          return distance >= step;
+        }
+        return distance <= step;
+      }();
+      if(is_last) {
         if(is_complete(stop_state)) {
           return FunctionEvaluation(*value, State::COMPLETE);
         }
