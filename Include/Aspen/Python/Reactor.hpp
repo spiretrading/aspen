@@ -62,7 +62,9 @@ namespace Aspen {
       if constexpr(std::is_same_v<T, void>) {
         return SharedBox<void>(value);
       } else if constexpr(std::is_same_v<T, SharedBox<pybind11::object>>) {
-        return shared_box(PythonBox<T>(std::move(value)));
+        throw pybind11::type_error("Expected a reactor, received a " +
+          std::string(pybind11::str(
+            value.get_type().attr("__name__"))) + ".");
       } else {
         return shared_box(value.cast<T>());
       }
