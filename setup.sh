@@ -40,7 +40,7 @@ build_python() {
   local cores
   cores=$(get_core_count)
   export CFLAGS="-fPIC"
-  ./configure --prefix="$ROOT/Python-3.14.4" || return 1
+  ./configure --prefix="$ROOT/Python-3.14.4" --with-ensurepip=no || return 1
   make -j "$cores" || return 1
   make install || return 1
   unset CFLAGS
