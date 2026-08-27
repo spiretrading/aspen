@@ -28,9 +28,9 @@ main() {
   add_dependency "pybind11-3.0.1" \
     "https://github.com/pybind/pybind11/archive/refs/tags/v3.0.1.zip" \
     "20fb420fe163d0657a262a8decb619b7c3101ea91db35f1a7227e67c426d4c7e"
-  add_dependency "Python-3.12.3" \
-    "https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz" \
-    "a6b9459f45a6ebbbc1af44f5762623fa355a0c87208ed417628b379d762dddb0" \
+  add_dependency "Python-3.14.4" \
+    "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tgz" \
+    "b4c059d5895f030e7df9663894ce3732bfa1b32cd3ab2883980266a45ce3cb3b" \
     "build_python"
   install_dependencies || return 1
   commit
@@ -40,7 +40,7 @@ build_python() {
   local cores
   cores=$(get_core_count)
   export CFLAGS="-fPIC"
-  ./configure --prefix="$ROOT/Python-3.12.3" || return 1
+  ./configure --prefix="$ROOT/Python-3.14.4" || return 1
   make -j "$cores" || return 1
   make install || return 1
   unset CFLAGS

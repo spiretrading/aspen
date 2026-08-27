@@ -9,9 +9,9 @@ CALL :AddDependency "doctest-2.4.12" ^
 CALL :AddDependency "pybind11-3.0.1" ^
   "https://github.com/pybind/pybind11/archive/refs/tags/v3.0.1.zip" ^
   "20fb420fe163d0657a262a8decb619b7c3101ea91db35f1a7227e67c426d4c7e"
-CALL :AddDependency "Python-3.14.2" ^
-  "https://www.python.org/ftp/python/3.14.2/Python-3.14.2.tgz" ^
-  "c609e078adab90e2c6bacb6afafacd5eaf60cd94cf670f1e159565725fcd448d" ^
+CALL :AddDependency "Python-3.14.4" ^
+  "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tgz" ^
+  "b4c059d5895f030e7df9663894ce3732bfa1b32cd3ab2883980266a45ce3cb3b" ^
   ":BuildPython"
 CALL :InstallDependencies || EXIT /B 1
 CALL :Commit
