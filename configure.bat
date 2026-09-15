@@ -24,6 +24,7 @@ EXIT /B 0
 :ParseArgs
 SET "DEPENDENCIES="
 SET "IS_DEPENDENCY="
+SET "CONFIG="
 :ParseArgsLoop
 SET "ARG=%~1"
 IF "!ARG!"=="" (
@@ -47,11 +48,32 @@ IF "!IS_DEPENDENCY!"=="1" (
     )
   ) ELSE IF "!ARG!"=="-DD" (
     SET "IS_DEPENDENCY=1"
+  ) ELSE (
+    SET "CONFIG=!ARG!"
   )
   SHIFT
   GOTO ParseArgsLoop
 )
 :ParseArgsDone
+IF "!CONFIG!"=="" (
+  IF EXIST "CMakeFiles\config.txt" (
+    SET /P CONFIG=<"CMakeFiles\config.txt"
+  ) ELSE (
+    SET "CONFIG=Release"
+  )
+)
+IF /I "!CONFIG!"=="release" (
+  SET "CONFIG=Release"
+) ELSE IF /I "!CONFIG!"=="debug" (
+  SET "CONFIG=Debug"
+) ELSE IF /I "!CONFIG!"=="relwithdebinfo" (
+  SET "CONFIG=RelWithDebInfo"
+) ELSE IF /I "!CONFIG!"=="minsizerel" (
+  SET "CONFIG=MinSizeRel"
+) ELSE (
+  ECHO Error: Invalid configuration "!CONFIG!".
+  EXIT /B 1
+)
 IF "!DEPENDENCIES!"=="" (
   SET "DEPENDENCIES=!ROOT!\Dependencies"
 )
@@ -98,6 +120,8 @@ FOR /R %%F IN (*) DO (
 )
 POPD
 CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\cmake_hash.txt"
+>"!TEMP_FILE!" ECHO !CONFIG!
+CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\config_hash.txt"
 >"!TEMP_FILE!" ECHO !DEPENDENCIES!
 CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\dependencies_hash.txt"
 DIR /a-d /b /s "!DIRECTORY!Include\*" > "!TEMP_FILE!"
@@ -127,7 +151,8 @@ EXIT /B 0
 
 :RunCMake
 IF "!RUN_CMAKE!"=="1" (
-  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" || (
+  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" ^
+    -DCMAKE_BUILD_TYPE="!CONFIG!" || (
     DEL /Q "CMakeFiles\cmake_hash.txt"
     EXIT /B 1
   )
