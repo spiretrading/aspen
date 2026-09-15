@@ -1,5 +1,5 @@
+set(outputs "@clean_outputs@")
 if("@CMAKE_GENERATOR@" MATCHES "^Visual Studio ")
-  set(outputs "@clean_outputs@")
   set(tracking_directories "@clean_tracking_directories@")
   string(TOLOWER "@PROJECT_BINARY_DIR@" build_directory)
   foreach(directory IN LISTS tracking_directories)
@@ -20,8 +20,6 @@ if("@CMAKE_GENERATOR@" MATCHES "^Visual Studio ")
       endforeach()
     endforeach()
   endforeach()
-  list(REMOVE_DUPLICATES outputs)
-  file(REMOVE ${outputs})
 else()
   execute_process(COMMAND "@CMAKE_COMMAND@" --build "@PROJECT_BINARY_DIR@"
     --config "$<CONFIG>" --target clean RESULT_VARIABLE clean_result)
@@ -31,8 +29,15 @@ else()
 endif()
 set(library_directory "@LIB_INSTALL_DIRECTORY@/$<CONFIG>")
 set(test_directory "@TEST_INSTALL_DIRECTORY@/$<CONFIG>")
-file(REMOVE
+list(APPEND outputs
   "${library_directory}/$<TARGET_FILE_NAME:python>"
   "${library_directory}/$<TARGET_LINKER_FILE_NAME:python>"
   "${test_directory}/$<TARGET_FILE_NAME:aspen_tester>"
   "${test_directory}/$<TARGET_FILE_NAME:aspen_concurrency_tester>")
+list(REMOVE_DUPLICATES outputs)
+file(REMOVE ${outputs})
+foreach(output IN LISTS outputs)
+  if(EXISTS "${output}" OR IS_SYMLINK "${output}")
+    message(FATAL_ERROR "Failed to remove ${output}.")
+  endif()
+endforeach()

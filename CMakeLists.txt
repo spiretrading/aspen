@@ -21,7 +21,8 @@ elseif(UNIX)
   set(configure_script "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
     "${CMAKE_BUILD_TYPE}")
 endif()
-execute_process(COMMAND ${configure_script}
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E env "ASPEN_SKIP_CMAKE=1" ${configure_script}
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" RESULT_VARIABLE configure_result
   OUTPUT_VARIABLE configure_output ERROR_VARIABLE configure_error
   OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)

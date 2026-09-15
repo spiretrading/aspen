@@ -107,6 +107,7 @@ EXIT /B 0
 
 :CheckHashes
 SET "RUN_CMAKE="
+IF NOT EXIST CMakeCache.txt SET "RUN_CMAKE=1"
 IF NOT EXIST CMakeFiles (
   MD CMakeFiles || EXIT /B 1
   SET "RUN_CMAKE=1"
@@ -150,6 +151,7 @@ SET CACHED_HASH=
 EXIT /B 0
 
 :RunCMake
+IF "!ASPEN_SKIP_CMAKE!"=="1" EXIT /B 0
 IF "!RUN_CMAKE!"=="1" (
   cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" ^
     -DCMAKE_BUILD_TYPE="!CONFIG!" || (

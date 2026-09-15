@@ -100,6 +100,9 @@ md5hash() {
 }
 
 check_hashes() {
+  if [[ ! -f "CMakeCache.txt" ]]; then
+    RUN_CMAKE=1
+  fi
   if [[ ! -d "CMakeFiles" ]]; then
     mkdir -p CMakeFiles || return 1
     RUN_CMAKE=1
@@ -155,6 +158,9 @@ check_directory_hash() {
 }
 
 run_cmake() {
+  if [[ "${ASPEN_SKIP_CMAKE:-}" == "1" ]]; then
+    return 0
+  fi
   if [[ "$RUN_CMAKE" == "1" ]]; then
     if ! cmake -S "$DIRECTORY" -DCMAKE_BUILD_TYPE="$CONFIG" \
         -DD="$DEPENDENCIES"; then
