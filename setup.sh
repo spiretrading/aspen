@@ -98,12 +98,10 @@ download_and_extract() {
   local expected_hash="$3"
   local build_func="$4"
   local archive="${url##*/}"
-  if [[ -d "$folder" ]]; then
-    if [[ -z "$build_func" ]] || [[ -f "$folder/.aspen_build_complete" ]]; then
-      return 0
-    fi
+  if [[ -f "$folder/.aspen_build_complete" ]]; then
+    return 0
   fi
-  if [[ ! -d "$folder" ]]; then
+  if [[ ! -f "$folder/.aspen_extract_complete" ]]; then
     if [[ ! -f "$archive" ]]; then
       curl -fsSL -o "$archive" "$url" || return 1
     fi
@@ -118,11 +116,11 @@ download_and_extract() {
     fi
     mkdir -p "$folder" || return 1
     if [[ "$archive" == *.zip ]]; then
-      unzip -q "$archive" -d "$folder" || { rm -rf "$folder"; return 1; }
+      unzip -qo "$archive" || return 1
     else
-      tar -xf "$archive" -C "$folder" || { rm -rf "$folder"; return 1; }
+      tar -xf "$archive" --strip-components=1 -C "$folder" || return 1
     fi
-    flatten_directory "$folder"
+    touch "$folder/.aspen_extract_complete" || return 1
   fi
   if [[ -n "$build_func" ]]; then
     pushd "$folder" > /dev/null || return 1
@@ -131,30 +129,6 @@ download_and_extract() {
     touch "$folder/.aspen_build_complete" || return 1
   fi
   rm -f "$archive"
-}
-
-flatten_directory() {
-  local folder="$1"
-  local dir_count=0
-  local file_count=0
-  local single_dir=""
-  for d in "$folder"/*/; do
-    if [[ -d "$d" ]]; then
-      ((++dir_count))
-      single_dir="$d"
-    fi
-  done
-  for f in "$folder"/*; do
-    if [[ -f "$f" ]]; then
-      ((++file_count))
-    fi
-  done
-  if [[ "$dir_count" -eq 1 ]] && [[ "$file_count" -eq 0 ]]; then
-    shopt -s dotglob
-    mv "$single_dir"* "$folder/" 2>/dev/null || true
-    shopt -u dotglob
-    rmdir "$single_dir" 2>/dev/null || true
-  fi
 }
 
 main "$@"

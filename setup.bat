@@ -86,9 +86,8 @@ FOR /F "tokens=* delims=/" %%A IN ("!URL!") DO (
   SET "ARCHIVE=%%~nxA"
 )
 IF EXIST "!FOLDER!" (
-  IF NOT DEFINED BUILD_LABEL EXIT /B 0
   IF EXIST "!FOLDER!\.aspen_build_complete" EXIT /B 0
-  GOTO BuildDependency
+  IF EXIST "!FOLDER!\.aspen_extract_complete" GOTO BuildDependency
 )
 IF NOT EXIST "!ARCHIVE!" (
   curl -fsL -o "!ARCHIVE!" "!URL!" || EXIT /B 1
@@ -106,31 +105,11 @@ IF /I NOT "!ACTUAL_HASH!"=="!EXPECTED_HASH!" (
   EXIT /B 1
 )
 SET "ACTUAL_HASH="
-MD "!FOLDER!" || EXIT /B 1
-tar -xf "!ARCHIVE!" -C "!FOLDER!"
-IF ERRORLEVEL 1 (
-  RD /S /Q "!FOLDER!" >NUL 2>NUL
-  EXIT /B 1
+IF NOT EXIST "!FOLDER!" (
+  MD "!FOLDER!" || EXIT /B 1
 )
-SET "DIR_COUNT=0"
-SET "FILE_COUNT=0"
-SET "SINGLE_DIR="
-FOR /D %%D IN ("!FOLDER!\*") DO (
-  SET /A DIR_COUNT+=1
-  SET "SINGLE_DIR=%%~nxD"
-)
-FOR %%F IN ("!FOLDER!\*") DO (
-  SET /A FILE_COUNT+=1
-)
-IF "!DIR_COUNT!"=="1" IF "!FILE_COUNT!"=="0" (
-  FOR /F "delims=" %%D IN ('DIR /AD /B "!FOLDER!\!SINGLE_DIR!" 2^>NUL') DO (
-    MOVE "!FOLDER!\!SINGLE_DIR!\%%D" "!FOLDER!" >NUL
-  )
-  FOR /F "delims=" %%F IN ('DIR /A-D /B "!FOLDER!\!SINGLE_DIR!" 2^>NUL') DO (
-    MOVE "!FOLDER!\!SINGLE_DIR!\%%F" "!FOLDER!" >NUL
-  )
-  RD /S /Q "!FOLDER!\!SINGLE_DIR!" 2>NUL
-)
+tar -xf "!ARCHIVE!" --strip-components=1 -C "!FOLDER!" || EXIT /B 1
+TYPE NUL > "!FOLDER!\.aspen_extract_complete" || EXIT /B 1
 :BuildDependency
 IF DEFINED BUILD_LABEL (
   PUSHD "!FOLDER!" || EXIT /B 1
