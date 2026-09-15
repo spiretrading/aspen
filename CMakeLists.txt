@@ -15,7 +15,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 if(WIN32)
   set(configure_script
-    cmd /c "CALL ${CMAKE_SOURCE_DIR}/configure.bat -DD=${D}")
+    cmd /c CALL "${CMAKE_SOURCE_DIR}/configure.bat" -DD "${D}")
 elseif(UNIX)
   set(configure_script "${CMAKE_SOURCE_DIR}/configure.sh" "-DD=${D}"
     "${CMAKE_BUILD_TYPE}")
@@ -67,3 +67,19 @@ add_custom_target(aspen SOURCES ${aspen_header_files})
 add_subdirectory(Config/ConcurrencyTests)
 add_subdirectory(Config/Python)
 add_subdirectory(Config/Tests)
+set(clean_outputs)
+set(clean_tracking_directories)
+if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
+  foreach(target python aspen_tester aspen_concurrency_tester)
+    list(APPEND clean_outputs
+      "$<TARGET_FILE:${target}>" "$<TARGET_OBJECTS:${target}>"
+      "$<TARGET_PDB_FILE:${target}>")
+    list(APPEND clean_tracking_directories
+      "$<TARGET_PROPERTY:${target},BINARY_DIR>/${target}.dir/$<CONFIG>")
+  endforeach()
+  list(APPEND clean_outputs "$<TARGET_LINKER_FILE:python>")
+endif()
+configure_file(Config/clean.cmake CMakeFiles/clean.cmake.in @ONLY)
+file(GENERATE
+  OUTPUT "${PROJECT_BINARY_DIR}/CMakeFiles/aspen_clean_$<CONFIG>.cmake"
+  INPUT "${PROJECT_BINARY_DIR}/CMakeFiles/clean.cmake.in")

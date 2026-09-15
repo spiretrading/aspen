@@ -24,14 +24,18 @@ get_job_count() {
 main() {
   resolve_paths
   parse_args "$@"
-  if [[ "${CONFIG,,}" == "clean" ]]; then
+  shopt -s nocasematch
+  if [[ "$CONFIG" == "clean" ]]; then
+    shopt -u nocasematch
     clean_build "clean"
     return $?
   fi
-  if [[ "${CONFIG,,}" == "reset" ]]; then
+  if [[ "$CONFIG" == "reset" ]]; then
+    shopt -u nocasematch
     clean_build "reset"
     return $?
   fi
+  shopt -u nocasematch
   configure || return 1
   run_build
   return $?
@@ -81,10 +85,17 @@ clean_build() {
     rm -rf Dependencies
     git clean -ffxd || clean_error=1
   else
-    git clean -ffxd -e "*Dependencies*" || clean_error=1
-    if [[ -f "Dependencies/cache_files/aspen.txt" ]]; then
-      rm "Dependencies/cache_files/aspen.txt" || clean_error=1
+    if [[ ! -f "$ROOT/CMakeCache.txt" ]]; then
+      return 0
     fi
+    local scripts=("$ROOT"/CMakeFiles/aspen_clean_*.cmake)
+    if [[ ! -f "${scripts[0]}" ]]; then
+      echo "Error: Run configure.sh before cleaning this build."
+      return 1
+    fi
+    for script in "${scripts[@]}"; do
+      cmake -P "$script" || clean_error=1
+    done
   fi
   return "$clean_error"
 }
@@ -97,7 +108,8 @@ configure() {
       CONFIG="Release"
     fi
   fi
-  case "${CONFIG,,}" in
+  shopt -s nocasematch
+  case "$CONFIG" in
     release)
       CONFIG="Release"
       ;;
@@ -111,10 +123,12 @@ configure() {
       CONFIG="MinSizeRel"
       ;;
     *)
+      shopt -u nocasematch
       echo "Error: Invalid configuration \"$CONFIG\"."
       return 1
       ;;
   esac
+  shopt -u nocasematch
   if [[ -n "$DEPENDENCIES" ]]; then
     "$DIRECTORY/configure.sh" "$CONFIG" -DD="$DEPENDENCIES"
   else
@@ -125,8 +139,8 @@ configure() {
 run_build() {
   local jobs
   jobs=$(get_job_count)
-  cmake --build "$ROOT" --target install --config "$CONFIG" \
-    --parallel "$jobs" || return 1
+  cmake --build "$ROOT" --config "$CONFIG" --parallel "$jobs" || return 1
+  cmake --install "$ROOT" --config "$CONFIG" || return 1
   echo "$CONFIG" > "CMakeFiles/config.txt"
 }
 

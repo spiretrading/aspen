@@ -3,7 +3,7 @@ SETLOCAL EnableDelayedExpansion
 SET "ROOT=%cd%"
 SET "DIRECTORY=%~dp0"
 CALL :CreateForwardingScripts
-CALL :ParseArgs %*
+CALL :ParseArgs %* || EXIT /B 1
 CALL :SetupDependencies || EXIT /B 1
 CALL :CheckHashes || EXIT /B 1
 CALL :RunCMake
@@ -58,17 +58,28 @@ IF "!DEPENDENCIES!"=="" (
 EXIT /B 0
 
 :SetupDependencies
+FOR %%D IN ("!DEPENDENCIES!") DO SET "DEPENDENCIES=%%~fD"
+SET "DEPENDENCIES_ATTRIBUTES="
+IF /I NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
+  FOR %%D IN ("!ROOT!\Dependencies") DO SET "DEPENDENCIES_ATTRIBUTES=%%~aD"
+  IF DEFINED DEPENDENCIES_ATTRIBUTES (
+    IF "!DEPENDENCIES_ATTRIBUTES:l=!"=="!DEPENDENCIES_ATTRIBUTES!" (
+      ECHO Error: !ROOT!\Dependencies exists and is not a link.
+      EXIT /B 1
+    )
+  )
+)
 IF NOT EXIST "!DEPENDENCIES!" (
   MD "!DEPENDENCIES!" || EXIT /B 1
 )
-PUSHD "!DEPENDENCIES!"
+PUSHD "!DEPENDENCIES!" || EXIT /B 1
 CALL "!DIRECTORY!setup.bat" || (POPD & EXIT /B 1)
 POPD
-IF NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
-  IF EXIST Dependencies (
-    RD /S /Q Dependencies || EXIT /B 1
+IF /I NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
+  IF DEFINED DEPENDENCIES_ATTRIBUTES (
+    RD "!ROOT!\Dependencies" || EXIT /B 1
   )
-  mklink /j Dependencies "!DEPENDENCIES!" > NUL || EXIT /B 1
+  mklink /j "!ROOT!\Dependencies" "!DEPENDENCIES!" > NUL || EXIT /B 1
 )
 EXIT /B 0
 
@@ -87,6 +98,8 @@ FOR /R %%F IN (*) DO (
 )
 POPD
 CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\cmake_hash.txt"
+>"!TEMP_FILE!" ECHO !DEPENDENCIES!
+CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\dependencies_hash.txt"
 DIR /a-d /b /s "!DIRECTORY!Include\*" > "!TEMP_FILE!"
 CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\hpp_hash.txt"
 DIR /a-d /b /s "!DIRECTORY!Source\*" > "!TEMP_FILE!"
@@ -114,6 +127,9 @@ EXIT /B 0
 
 :RunCMake
 IF "!RUN_CMAKE!"=="1" (
-  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" || EXIT /B 1
+  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" || (
+    DEL /Q "CMakeFiles\cmake_hash.txt"
+    EXIT /B 1
+  )
 )
 EXIT /B 0

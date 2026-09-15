@@ -20,7 +20,6 @@ ENDLOCAL
 
 :BuildPython
 PUSHD PCbuild
-CALL build.bat -c Debug "/p:PlatformToolset=v145" || (POPD & EXIT /B 1)
 CALL build.bat -c Release "/p:PlatformToolset=v145" || (POPD & EXIT /B 1)
 POPD
 IF EXIST "PCbuild\amd64\pyconfig.h" (
@@ -87,7 +86,9 @@ FOR /F "tokens=* delims=/" %%A IN ("!URL!") DO (
   SET "ARCHIVE=%%~nxA"
 )
 IF EXIST "!FOLDER!" (
-  EXIT /B 0
+  IF NOT DEFINED BUILD_LABEL EXIT /B 0
+  IF EXIST "!FOLDER!\.aspen_build_complete" EXIT /B 0
+  GOTO BuildDependency
 )
 IF NOT EXIST "!ARCHIVE!" (
   curl -fsL -o "!ARCHIVE!" "!URL!" || EXIT /B 1
@@ -130,12 +131,14 @@ IF "!DIR_COUNT!"=="1" IF "!FILE_COUNT!"=="0" (
   )
   RD /S /Q "!FOLDER!\!SINGLE_DIR!" 2>NUL
 )
+:BuildDependency
 IF DEFINED BUILD_LABEL (
-  PUSHD "!FOLDER!"
+  PUSHD "!FOLDER!" || EXIT /B 1
   CALL !BUILD_LABEL!
   SET "BUILD_RESULT=!ERRORLEVEL!"
   POPD
   IF NOT "!BUILD_RESULT!"=="0" EXIT /B !BUILD_RESULT!
+  TYPE NUL > "!FOLDER!\.aspen_build_complete" || EXIT /B 1
 )
-DEL /F /Q "!ARCHIVE!"
+IF EXIST "!ARCHIVE!" DEL /F /Q "!ARCHIVE!"
 EXIT /B 0

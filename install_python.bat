@@ -1,6 +1,6 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
-SET "DIRECTORY=%~dp0"
+SET "DIRECTORY=%cd%\"
 SET "CONFIG=%~1"
 IF "!CONFIG!"=="" SET "CONFIG=Release"
 IF /I "!CONFIG!"=="release" (

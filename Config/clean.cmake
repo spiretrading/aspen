@@ -1,0 +1,37 @@
+if("@CMAKE_GENERATOR@" MATCHES "^Visual Studio ")
+  set(outputs "@clean_outputs@")
+  set(tracking_directories "@clean_tracking_directories@")
+  string(TOLOWER "@PROJECT_BINARY_DIR@" build_directory)
+  foreach(directory IN LISTS tracking_directories)
+    file(GLOB logs "${directory}/*.tlog/*.write.*.tlog")
+    foreach(log IN LISTS logs)
+      file(STRINGS "${log}" entries)
+      foreach(entry IN LISTS entries)
+        if(IS_ABSOLUTE "${entry}")
+          file(TO_CMAKE_PATH "${entry}" output)
+          string(TOLOWER "${output}" normalized_output)
+          cmake_path(IS_PREFIX build_directory "${normalized_output}"
+            NORMALIZE is_build_output)
+          if(is_build_output)
+            list(APPEND outputs "${output}")
+          endif()
+        endif()
+      endforeach()
+    endforeach()
+  endforeach()
+  list(REMOVE_DUPLICATES outputs)
+  file(REMOVE ${outputs})
+else()
+  execute_process(COMMAND "@CMAKE_COMMAND@" --build "@PROJECT_BINARY_DIR@"
+    --config "$<CONFIG>" --target clean RESULT_VARIABLE clean_result)
+  if(NOT clean_result EQUAL 0)
+    message(FATAL_ERROR "Failed to clean $<CONFIG>.")
+  endif()
+endif()
+set(library_directory "@LIB_INSTALL_DIRECTORY@/$<CONFIG>")
+set(test_directory "@TEST_INSTALL_DIRECTORY@/$<CONFIG>")
+file(REMOVE
+  "${library_directory}/$<TARGET_FILE_NAME:python>"
+  "${library_directory}/$<TARGET_LINKER_FILE_NAME:python>"
+  "${test_directory}/$<TARGET_FILE_NAME:aspen_tester>"
+  "${test_directory}/$<TARGET_FILE_NAME:aspen_concurrency_tester>")

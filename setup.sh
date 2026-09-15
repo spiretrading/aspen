@@ -99,31 +99,36 @@ download_and_extract() {
   local build_func="$4"
   local archive="${url##*/}"
   if [[ -d "$folder" ]]; then
-    return 0
+    if [[ -z "$build_func" ]] || [[ -f "$folder/.aspen_build_complete" ]]; then
+      return 0
+    fi
   fi
-  if [[ ! -f "$archive" ]]; then
-    curl -fsSL -o "$archive" "$url" || return 1
+  if [[ ! -d "$folder" ]]; then
+    if [[ ! -f "$archive" ]]; then
+      curl -fsSL -o "$archive" "$url" || return 1
+    fi
+    local actual_hash
+    actual_hash=$(sha256 "$archive")
+    if [[ "$actual_hash" != "$expected_hash" ]]; then
+      echo "Error: SHA256 mismatch for $archive."
+      echo "  Expected: $expected_hash"
+      echo "  Actual:   $actual_hash"
+      rm -f "$archive"
+      return 1
+    fi
+    mkdir -p "$folder" || return 1
+    if [[ "$archive" == *.zip ]]; then
+      unzip -q "$archive" -d "$folder" || { rm -rf "$folder"; return 1; }
+    else
+      tar -xf "$archive" -C "$folder" || { rm -rf "$folder"; return 1; }
+    fi
+    flatten_directory "$folder"
   fi
-  local actual_hash
-  actual_hash=$(sha256 "$archive")
-  if [[ "$actual_hash" != "$expected_hash" ]]; then
-    echo "Error: SHA256 mismatch for $archive."
-    echo "  Expected: $expected_hash"
-    echo "  Actual:   $actual_hash"
-    rm -f "$archive"
-    return 1
-  fi
-  mkdir -p "$folder" || return 1
-  if [[ "$archive" == *.zip ]]; then
-    unzip -q "$archive" -d "$folder" || { rm -rf "$folder"; return 1; }
-  else
-    tar -xf "$archive" -C "$folder" || { rm -rf "$folder"; return 1; }
-  fi
-  flatten_directory "$folder"
   if [[ -n "$build_func" ]]; then
-    pushd "$folder" > /dev/null
+    pushd "$folder" > /dev/null || return 1
     $build_func || { popd > /dev/null; return 1; }
     popd > /dev/null
+    touch "$folder/.aspen_build_complete" || return 1
   fi
   rm -f "$archive"
 }

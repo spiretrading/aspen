@@ -5,24 +5,15 @@ DIRECTORY=""
 CONFIG=""
 
 main() {
-  resolve_paths
+  DIRECTORY="$(pwd -P)"
   parse_args "$@"
   install_python
 }
 
-resolve_paths() {
-  local source="${BASH_SOURCE[0]}"
-  while [[ -h "$source" ]]; do
-    local dir="$(cd -P "$(dirname "$source")" >/dev/null && pwd -P)"
-    source="$(readlink "$source")"
-    [[ $source != /* ]] && source="$dir/$source"
-  done
-  DIRECTORY="$(cd -P "$(dirname "$source")" >/dev/null && pwd -P)"
-}
-
 parse_args() {
   CONFIG="${1:-Release}"
-  case "${CONFIG,,}" in
+  shopt -s nocasematch
+  case "$CONFIG" in
     release)
       CONFIG="Release"
       ;;
@@ -36,10 +27,12 @@ parse_args() {
       CONFIG="MinSizeRel"
       ;;
     *)
+      shopt -u nocasematch
       echo "Error: Invalid configuration \"$CONFIG\"."
       return 1
       ;;
   esac
+  shopt -u nocasematch
 }
 
 install_python() {

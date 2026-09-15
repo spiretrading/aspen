@@ -73,13 +73,21 @@ setup_dependencies() {
   if [[ ! -d "$DEPENDENCIES" ]]; then
     mkdir -p "$DEPENDENCIES" || return 1
   fi
-  pushd "$DEPENDENCIES" > /dev/null
+  DEPENDENCIES="$(cd "$DEPENDENCIES" && pwd -P)" || return 1
+  if [[ -e "$ROOT/Dependencies" ]] &&
+      [[ ! "$ROOT/Dependencies" -ef "$DEPENDENCIES" ]] &&
+      [[ ! -L "$ROOT/Dependencies" ]]; then
+    echo "Error: $ROOT/Dependencies exists and is not a symbolic link."
+    return 1
+  fi
+  pushd "$DEPENDENCIES" > /dev/null || return 1
   "$DIRECTORY/setup.sh" || { popd > /dev/null; return 1; }
   popd > /dev/null
-  if [[ "$DEPENDENCIES" != "$ROOT/Dependencies" ]] &&
-      [[ ! -d Dependencies ]]; then
-    rm -rf Dependencies
-    ln -s "$DEPENDENCIES" Dependencies
+  if [[ ! "$ROOT/Dependencies" -ef "$DEPENDENCIES" ]]; then
+    if [[ -L "$ROOT/Dependencies" ]]; then
+      rm "$ROOT/Dependencies" || return 1
+    fi
+    ln -s "$DEPENDENCIES" "$ROOT/Dependencies" || return 1
   fi
 }
 
@@ -98,6 +106,7 @@ check_hashes() {
   fi
   check_cmake_hash
   check_file_hash "$CONFIG" "CMakeFiles/config.txt"
+  check_file_hash "$DEPENDENCIES" "CMakeFiles/dependencies.txt"
   check_directory_hash "$DIRECTORY/Include" "CMakeFiles/hpp_hash.txt"
   check_directory_hash "$DIRECTORY/Source" "CMakeFiles/cpp_hash.txt"
 }
@@ -147,8 +156,11 @@ check_directory_hash() {
 
 run_cmake() {
   if [[ "$RUN_CMAKE" == "1" ]]; then
-    cmake -S "$DIRECTORY" -DCMAKE_BUILD_TYPE="$CONFIG" -DD="$DEPENDENCIES" ||
+    if ! cmake -S "$DIRECTORY" -DCMAKE_BUILD_TYPE="$CONFIG" \
+        -DD="$DEPENDENCIES"; then
+      rm -f CMakeFiles/cmake_hash.txt
       return 1
+    fi
   fi
 }
 
