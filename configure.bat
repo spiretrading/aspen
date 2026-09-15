@@ -159,4 +159,5 @@ IF "!RUN_CMAKE!"=="1" (
     EXIT /B 1
   )
 )
+(ECHO !CONFIG!) >"CMakeFiles\config.txt" || EXIT /B 1
 EXIT /B 0

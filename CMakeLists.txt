@@ -71,16 +71,18 @@ add_subdirectory(Config/Python)
 add_subdirectory(Config/Tests)
 set(clean_outputs)
 set(clean_tracking_directories)
-if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
-  foreach(target python aspen_tester aspen_concurrency_tester)
-    list(APPEND clean_outputs
-      "$<TARGET_FILE:${target}>" "$<TARGET_OBJECTS:${target}>"
-      "$<TARGET_PDB_FILE:${target}>")
+foreach(target python aspen_tester aspen_concurrency_tester)
+  list(APPEND clean_outputs
+    "$<TARGET_FILE:${target}>" "$<TARGET_OBJECTS:${target}>")
+  if(MSVC)
+    list(APPEND clean_outputs "$<TARGET_PDB_FILE:${target}>")
+  endif()
+  if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
     list(APPEND clean_tracking_directories
       "$<TARGET_PROPERTY:${target},BINARY_DIR>/${target}.dir/$<CONFIG>")
-  endforeach()
-  list(APPEND clean_outputs "$<TARGET_LINKER_FILE:python>")
-endif()
+  endif()
+endforeach()
+list(APPEND clean_outputs "$<TARGET_LINKER_FILE:python>")
 configure_file(Config/clean.cmake CMakeFiles/clean.cmake.in @ONLY)
 file(GENERATE
   OUTPUT "${PROJECT_BINARY_DIR}/CMakeFiles/aspen_clean_$<CONFIG>.cmake"
