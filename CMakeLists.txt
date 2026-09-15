@@ -75,7 +75,13 @@ foreach(target python aspen_tester aspen_concurrency_tester)
   list(APPEND clean_outputs
     "$<TARGET_FILE:${target}>" "$<TARGET_OBJECTS:${target}>")
   if(MSVC)
-    list(APPEND clean_outputs "$<TARGET_PDB_FILE:${target}>")
+    get_target_property(target_directory ${target} BINARY_DIR)
+    set(compile_pdb_directory "${target_directory}/${target}.dir/$<CONFIG>")
+    set_target_properties(${target} PROPERTIES COMPILE_PDB_NAME "${target}"
+      COMPILE_PDB_OUTPUT_DIRECTORY "${compile_pdb_directory}")
+    list(APPEND clean_outputs "$<TARGET_PDB_FILE:${target}>"
+      "${compile_pdb_directory}/${target}.pdb"
+      "$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>.ilk")
   endif()
   if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
     list(APPEND clean_tracking_directories
@@ -83,6 +89,10 @@ foreach(target python aspen_tester aspen_concurrency_tester)
   endif()
 endforeach()
 list(APPEND clean_outputs "$<TARGET_LINKER_FILE:python>")
+if(MSVC)
+  list(APPEND clean_outputs
+    "$<PATH:REPLACE_EXTENSION,LAST_ONLY,$<TARGET_LINKER_FILE:python>,.exp>")
+endif()
 configure_file(Config/clean.cmake CMakeFiles/clean.cmake.in @ONLY)
 file(GENERATE
   OUTPUT "${PROJECT_BINARY_DIR}/CMakeFiles/aspen_clean_$<CONFIG>.cmake"
