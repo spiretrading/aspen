@@ -51,7 +51,9 @@ EXIT /B 0
 :SetupVSEnvironment
 SET "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 FOR /F "usebackq delims=" %%i IN (` ^
-    "!VSWHERE!" -prerelease -latest -property installationPath`) DO (
+    "!VSWHERE!" -prerelease -latest -products * ^
+      -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ^
+      -property installationPath`) DO (
   IF EXIST "%%i\Common7\Tools\vsdevcmd.bat" (
     CALL "%%i\Common7\Tools\vsdevcmd.bat"
   )

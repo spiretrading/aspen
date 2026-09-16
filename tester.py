@@ -1,3 +1,5 @@
+import importlib.machinery
+import importlib.util
 import os
 import sys
 import unittest
@@ -40,9 +42,12 @@ def main():
     print('No built Aspen module found. Build Aspen before running tests.',
       file=sys.stderr)
     return 1
-  sys.path.insert(0, os.path.dirname(module))
+  loader = importlib.machinery.ExtensionFileLoader('aspen', module)
+  spec = importlib.util.spec_from_file_location('aspen', module, loader=loader)
+  aspen = importlib.util.module_from_spec(spec)
+  sys.modules['aspen'] = aspen
+  loader.exec_module(aspen)
   sys.path.insert(0, DIRECTORY)
-  import aspen
   print('Testing {}'.format(aspen.__file__), flush=True)
   tests = unittest.defaultTestLoader.discover(DIRECTORY, pattern=pattern)
   if tests.countTestCases() == 0:
