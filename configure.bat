@@ -132,7 +132,7 @@ TYPE "!DIRECTORY!CMakeLists.txt" > "!TEMP_FILE!"
 FOR %%F IN ("!DIRECTORY!Config\*.cmake") DO (
   TYPE "%%F" >> "!TEMP_FILE!"
 )
-PUSHD "!DIRECTORY!Config"
+PUSHD "!DIRECTORY!Config" || EXIT /B 1
 FOR /R %%F IN (*) DO (
   IF "%%~nxF"=="CMakeLists.txt" TYPE "%%F" >> "!TEMP_FILE!"
 )
