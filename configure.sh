@@ -124,6 +124,17 @@ md5hash() {
 check_hashes() {
   if [[ ! -f "CMakeCache.txt" ]]; then
     RUN_CMAKE=1
+  else
+    local cached_config="" configuration_types="" key value
+    while IFS='=' read -r key value; do
+      case "$key" in
+        CMAKE_BUILD_TYPE:*) cached_config="${value%$'\r'}" ;;
+        CMAKE_CONFIGURATION_TYPES:*) configuration_types="${value%$'\r'}" ;;
+      esac
+    done < CMakeCache.txt
+    if [[ -z "$configuration_types" && "$cached_config" != "$CONFIG" ]]; then
+      RUN_CMAKE=1
+    fi
   fi
   if [[ ! -d "CMakeFiles" ]]; then
     mkdir -p CMakeFiles || return 1
