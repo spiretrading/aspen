@@ -6,15 +6,20 @@ ROOT=""
 DEPENDENCIES=""
 CONFIG=""
 RUN_CMAKE=""
+HASH_FILES=()
+HASH_VALUES=()
 
 main() {
   resolve_paths
   create_forwarding_scripts
   parse_args "$@"
   setup_dependencies || return 1
+  if [[ "${ASPEN_SKIP_CMAKE:-}" == "1" ]]; then
+    return 0
+  fi
   check_hashes || return 1
-  run_cmake
-  return "$?"
+  run_cmake || return 1
+  commit_hashes
 }
 
 resolve_paths() {
@@ -141,9 +146,8 @@ check_file_hash() {
   else
     RUN_CMAKE=1
   fi
-  if [[ "$RUN_CMAKE" == "1" ]]; then
-    echo "$current_hash" > "$hash_file"
-  fi
+  HASH_FILES+=("$hash_file")
+  HASH_VALUES+=("$current_hash")
 }
 
 check_directory_hash() {
@@ -158,15 +162,18 @@ check_directory_hash() {
 }
 
 run_cmake() {
-  if [[ "${ASPEN_SKIP_CMAKE:-}" == "1" ]]; then
-    return 0
-  fi
   if [[ "$RUN_CMAKE" == "1" ]]; then
-    if ! cmake -S "$DIRECTORY" -DCMAKE_BUILD_TYPE="$CONFIG" \
-        -DD="$DEPENDENCIES"; then
-      rm -f CMakeFiles/cmake_hash.txt
+    cmake -S "$DIRECTORY" -DCMAKE_BUILD_TYPE="$CONFIG" -DD="$DEPENDENCIES" ||
       return 1
-    fi
+  fi
+}
+
+commit_hashes() {
+  if [[ "$RUN_CMAKE" == "1" ]]; then
+    local i
+    for ((i = 0; i < ${#HASH_FILES[@]}; ++i)); do
+      printf '%s\n' "${HASH_VALUES[i]}" > "${HASH_FILES[i]}" || return 1
+    done
   fi
 }
 

@@ -5,8 +5,10 @@ SET "DIRECTORY=%~dp0"
 CALL :CreateForwardingScripts
 CALL :ParseArgs %* || EXIT /B 1
 CALL :SetupDependencies || EXIT /B 1
+IF "!ASPEN_SKIP_CMAKE!"=="1" EXIT /B 0
 CALL :CheckHashes || EXIT /B 1
-CALL :RunCMake
+CALL :RunCMake || EXIT /B 1
+CALL :CommitHashes
 EXIT /B !ERRORLEVEL!
 ENDLOCAL
 
@@ -80,10 +82,14 @@ IF "!DEPENDENCIES!"=="" (
 EXIT /B 0
 
 :SetupDependencies
-FOR %%D IN ("!DEPENDENCIES!") DO SET "DEPENDENCIES=%%~fD"
+FOR %%D IN ("!DEPENDENCIES!") DO (
+  SET "DEPENDENCIES=%%~fD"
+)
 SET "DEPENDENCIES_ATTRIBUTES="
 IF /I NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
-  FOR %%D IN ("!ROOT!\Dependencies") DO SET "DEPENDENCIES_ATTRIBUTES=%%~aD"
+  FOR %%D IN ("!ROOT!\Dependencies") DO (
+    SET "DEPENDENCIES_ATTRIBUTES=%%~aD"
+  )
   IF DEFINED DEPENDENCIES_ATTRIBUTES (
     IF "!DEPENDENCIES_ATTRIBUTES:l=!"=="!DEPENDENCIES_ATTRIBUTES!" (
       ECHO Error: !ROOT!\Dependencies exists and is not a link.
@@ -107,6 +113,7 @@ EXIT /B 0
 
 :CheckHashes
 SET "RUN_CMAKE="
+SET "HASH_FILES="
 IF NOT EXIST CMakeCache.txt SET "RUN_CMAKE=1"
 IF NOT EXIST CMakeFiles (
   MD CMakeFiles || EXIT /B 1
@@ -114,7 +121,9 @@ IF NOT EXIST CMakeFiles (
 )
 SET "TEMP_FILE=!ROOT!\temp_%RANDOM%%RANDOM%.txt"
 TYPE "!DIRECTORY!CMakeLists.txt" > "!TEMP_FILE!"
-FOR %%F IN ("!DIRECTORY!Config\*.cmake") DO TYPE "%%F" >> "!TEMP_FILE!"
+FOR %%F IN ("!DIRECTORY!Config\*.cmake") DO (
+  TYPE "%%F" >> "!TEMP_FILE!"
+)
 PUSHD "!DIRECTORY!Config"
 FOR /R %%F IN (*) DO (
   IF "%%~nxF"=="CMakeLists.txt" TYPE "%%F" >> "!TEMP_FILE!"
@@ -143,20 +152,23 @@ IF EXIST "%~2" (
 ) ELSE (
   SET RUN_CMAKE=1
 )
-IF "!RUN_CMAKE!"=="1" (
-  >"%~2" ECHO !CURRENT_HASH!
-)
+SET "HASH_FILES=!HASH_FILES! %~2"
+SET "HASH[%~2]=!CURRENT_HASH!"
 SET CURRENT_HASH=
 SET CACHED_HASH=
 EXIT /B 0
 
 :RunCMake
-IF "!ASPEN_SKIP_CMAKE!"=="1" EXIT /B 0
 IF "!RUN_CMAKE!"=="1" (
-  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" ^
-    -DCMAKE_BUILD_TYPE="!CONFIG!" || (
-    DEL /Q "CMakeFiles\cmake_hash.txt"
+  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" -DCMAKE_BUILD_TYPE=!CONFIG! || ^
     EXIT /B 1
+)
+EXIT /B 0
+
+:CommitHashes
+IF "!RUN_CMAKE!"=="1" (
+  FOR %%F IN (!HASH_FILES!) DO (
+    (ECHO !HASH[%%F]!) >"%%F" || EXIT /B 1
   )
 )
 (ECHO !CONFIG!) >"CMakeFiles\config.txt" || EXIT /B 1

@@ -54,6 +54,11 @@ EXIT /B 0
 :CleanBuild
 SET "CLEAN_ERROR=0"
 IF "%~1"=="reset" (
+  git rev-parse --show-toplevel >NUL 2>NUL
+  IF ERRORLEVEL 1 (
+    cmake -DBUILD_DIRECTORY:PATH="!ROOT!" -P "!DIRECTORY!Config\reset.cmake"
+    EXIT /B !ERRORLEVEL!
+  )
   RD /S /Q Dependencies 2>NUL
   git clean -ffxd || SET "CLEAN_ERROR=1"
 ) ELSE (

@@ -82,6 +82,10 @@ clean_build() {
   local clean_type="$1"
   local clean_error=0
   if [[ "$clean_type" == "reset" ]]; then
+    if ! git rev-parse --show-toplevel > /dev/null 2>&1; then
+      cmake -DBUILD_DIRECTORY:PATH="$ROOT" -P "$DIRECTORY/Config/reset.cmake"
+      return $?
+    fi
     rm -rf Dependencies
     git clean -ffxd || clean_error=1
   else
