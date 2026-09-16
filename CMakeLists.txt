@@ -13,6 +13,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
+if(CMAKE_CONFIGURATION_TYPES AND
+    NOT "MinSizeRel" IN_LIST CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES};MinSizeRel"
+    CACHE STRING "Available build configurations." FORCE)
+endif()
 if(WIN32)
   set(configure_script
     cmd /c CALL "${CMAKE_SOURCE_DIR}/configure.bat" -DD "${D}"

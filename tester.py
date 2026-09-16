@@ -36,8 +36,11 @@ def main():
   else:
     pattern = '*_tester.py'
   module = _built_module()
-  if module:
-    sys.path.insert(0, os.path.dirname(module))
+  if not module:
+    print('No built Aspen module found. Build Aspen before running tests.',
+      file=sys.stderr)
+    return 1
+  sys.path.insert(0, os.path.dirname(module))
   sys.path.insert(0, DIRECTORY)
   import aspen
   print('Testing {}'.format(aspen.__file__), flush=True)
