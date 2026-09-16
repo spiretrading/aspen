@@ -1,3 +1,4 @@
+import argparse
 import importlib.machinery
 import importlib.util
 import os
@@ -19,28 +20,40 @@ def _roots():
   return roots
 
 
-def _built_module():
+def _built_module(configuration):
   for root in _roots():
-    modules = []
-    for configuration in CONFIGURATIONS:
-      for module in MODULES:
-        path = os.path.join(root, 'Libraries', configuration, module)
-        if os.path.isfile(path):
-          modules.append(path)
-    if modules:
-      return max(modules, key=os.path.getmtime)
+    selected = configuration
+    if not selected:
+      config = os.path.join(root, 'CMakeFiles', 'config.txt')
+      if not os.path.isfile(config):
+        continue
+      with open(config) as source:
+        selected = source.read().strip()
+    if selected not in CONFIGURATIONS:
+      return None
+    for module in MODULES:
+      path = os.path.join(root, 'Libraries', selected, module)
+      if os.path.isfile(path):
+        return path
+    if not configuration:
+      return None
   return None
 
 
 def main():
-  if len(sys.argv) > 1:
-    pattern = '{}*.py'.format(sys.argv[1])
+  parser = argparse.ArgumentParser()
+  parser.add_argument('prefix', nargs='?', help='Test filename prefix.')
+  parser.add_argument('--config', choices=CONFIGURATIONS,
+    help='Build configuration (defaults to the saved build configuration).')
+  args = parser.parse_args()
+  if args.prefix:
+    pattern = '{}*.py'.format(args.prefix)
   else:
     pattern = '*_tester.py'
-  module = _built_module()
+  module = _built_module(args.config)
   if not module:
-    print('No built Aspen module found. Build Aspen before running tests.',
-      file=sys.stderr)
+    print('No Aspen module found for the selected build configuration. '
+      'Run build or specify --config.', file=sys.stderr)
     return 1
   loader = importlib.machinery.ExtensionFileLoader('aspen', module)
   spec = importlib.util.spec_from_file_location('aspen', module, loader=loader)
