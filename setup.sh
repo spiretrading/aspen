@@ -96,12 +96,15 @@ download_and_extract() {
   local folder="$1"
   local url="$2"
   local expected_hash="$3"
+  local build_hash="$expected_hash $SETUP_HASH"
   local build_func="$4"
   local archive="${url##*/}"
-  if [[ -f "$folder/.aspen_build_complete" ]]; then
+  if [[ -f "$folder/.aspen_build_complete" ]] &&
+      [[ "$(< "$folder/.aspen_build_complete")" == "$build_hash" ]]; then
     return 0
   fi
-  if [[ ! -f "$folder/.aspen_extract_complete" ]]; then
+  if [[ ! -f "$folder/.aspen_extract_complete" ]] ||
+      [[ "$(< "$folder/.aspen_extract_complete")" != "$expected_hash" ]]; then
     if [[ ! -f "$archive" ]]; then
       curl -fsSL -o "$archive" "$url" || return 1
     fi
@@ -120,14 +123,14 @@ download_and_extract() {
     else
       tar -xf "$archive" --strip-components=1 -C "$folder" || return 1
     fi
-    touch "$folder/.aspen_extract_complete" || return 1
+    echo "$expected_hash" > "$folder/.aspen_extract_complete" || return 1
   fi
   if [[ -n "$build_func" ]]; then
     pushd "$folder" > /dev/null || return 1
     $build_func || { popd > /dev/null; return 1; }
     popd > /dev/null
-    touch "$folder/.aspen_build_complete" || return 1
   fi
+  echo "$build_hash" > "$folder/.aspen_build_complete" || return 1
   rm -f "$archive"
 }
 

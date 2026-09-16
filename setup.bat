@@ -82,14 +82,20 @@ GOTO InstallDependenciesLoop
 SET "FOLDER=%~1"
 SET "URL=%~2"
 SET "EXPECTED_HASH=%~3"
+SET "BUILD_HASH=!EXPECTED_HASH! !SETUP_HASH!"
 SET "BUILD_LABEL=%~4"
 SET "ACTUAL_HASH="
 FOR /F "tokens=* delims=/" %%A IN ("!URL!") DO (
   SET "ARCHIVE=%%~nxA"
 )
-IF EXIST "!FOLDER!" (
-  IF EXIST "!FOLDER!\.aspen_build_complete" EXIT /B 0
-  IF EXIST "!FOLDER!\.aspen_extract_complete" GOTO BuildDependency
+SET "CACHED_HASH="
+IF EXIST "!FOLDER!\.aspen_build_complete" (
+  SET /P CACHED_HASH=<"!FOLDER!\.aspen_build_complete"
+  IF "!CACHED_HASH!"=="!BUILD_HASH!" EXIT /B 0
+)
+IF EXIST "!FOLDER!\.aspen_extract_complete" (
+  SET /P CACHED_HASH=<"!FOLDER!\.aspen_extract_complete"
+  IF "!CACHED_HASH!"=="!EXPECTED_HASH!" GOTO BuildDependency
 )
 IF NOT EXIST "!ARCHIVE!" (
   curl -fsL -o "!ARCHIVE!" "!URL!" || EXIT /B 1
@@ -111,7 +117,7 @@ IF NOT EXIST "!FOLDER!" (
   MD "!FOLDER!" || EXIT /B 1
 )
 tar -xf "!ARCHIVE!" --strip-components=1 -C "!FOLDER!" || EXIT /B 1
-TYPE NUL > "!FOLDER!\.aspen_extract_complete" || EXIT /B 1
+(ECHO !EXPECTED_HASH!) >"!FOLDER!\.aspen_extract_complete" || EXIT /B 1
 :BuildDependency
 IF DEFINED BUILD_LABEL (
   PUSHD "!FOLDER!" || EXIT /B 1
@@ -119,7 +125,7 @@ IF DEFINED BUILD_LABEL (
   SET "BUILD_RESULT=!ERRORLEVEL!"
   POPD
   IF NOT "!BUILD_RESULT!"=="0" EXIT /B !BUILD_RESULT!
-  TYPE NUL > "!FOLDER!\.aspen_build_complete" || EXIT /B 1
 )
+(ECHO !BUILD_HASH!) >"!FOLDER!\.aspen_build_complete" || EXIT /B 1
 IF EXIST "!ARCHIVE!" DEL /F /Q "!ARCHIVE!"
 EXIT /B 0
