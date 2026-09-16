@@ -67,8 +67,25 @@ parse_args() {
     return 1
   fi
   if [[ -z "$CONFIG" ]]; then
-    CONFIG="Release"
+    if [[ -f "CMakeFiles/config.txt" ]]; then
+      CONFIG=$(< "CMakeFiles/config.txt")
+    else
+      CONFIG="Release"
+    fi
   fi
+  shopt -s nocasematch
+  case "$CONFIG" in
+    release) CONFIG="Release" ;;
+    debug) CONFIG="Debug" ;;
+    relwithdebinfo) CONFIG="RelWithDebInfo" ;;
+    minsizerel) CONFIG="MinSizeRel" ;;
+    *)
+      shopt -u nocasematch
+      echo "Error: Invalid configuration \"$CONFIG\"."
+      return 1
+      ;;
+  esac
+  shopt -u nocasematch
   if [[ -z "$DEPENDENCIES" ]]; then
     DEPENDENCIES="$ROOT/Dependencies"
   fi

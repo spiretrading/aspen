@@ -1,11 +1,14 @@
 @ECHO OFF
 SETLOCAL EnableDelayedExpansion
-CALL :CheckCache "aspen"
-IF ERRORLEVEL 1 EXIT /B 0
-IF EXIST "cache_files\!CACHE_NAME!.txt" (
-  DEL /F /Q "cache_files\!CACHE_NAME!.txt"
-  IF EXIST "cache_files\!CACHE_NAME!.txt" EXIT /B 1
+FOR /F "delims==" %%V IN ('SET DEPENDENCIES[ 2^>NUL') DO (
+  SET "%%V="
 )
+SET "NEXT_DEPENDENCY_INDEX=0"
+SET "SETUP_HASH="
+FOR /F "skip=1" %%H IN ('certutil -hashfile "%~dp0setup.bat" SHA256') DO (
+  IF NOT DEFINED SETUP_HASH SET "SETUP_HASH=%%H"
+)
+IF NOT DEFINED SETUP_HASH EXIT /B 1
 CALL :SetupVSEnvironment
 CALL :AddDependency "doctest-2.4.12" ^
   "https://github.com/doctest/doctest/archive/refs/tags/v2.4.12.zip" ^
@@ -18,8 +21,7 @@ CALL :AddDependency "Python-3.14.4" ^
   "b4c059d5895f030e7df9663894ce3732bfa1b32cd3ab2883980266a45ce3cb3b" ^
   ":BuildPython"
 CALL :InstallDependencies || EXIT /B 1
-CALL :Commit
-EXIT /B !ERRORLEVEL!
+EXIT /B 0
 ENDLOCAL
 
 :BuildPython
@@ -32,25 +34,6 @@ IF EXIST "PCbuild\amd64\pyconfig.h" (
   COPY /Y "PC\pyconfig.h" "Include\pyconfig.h"
 )
 EXIT /B !ERRORLEVEL!
-
-:CheckCache
-SET "CACHE_NAME=%~1"
-SET "SETUP_HASH="
-FOR /F "skip=1" %%H IN ('certutil -hashfile "%~dp0setup.bat" SHA256') DO (
-  IF NOT DEFINED SETUP_HASH SET "SETUP_HASH=%%H"
-)
-IF EXIST "cache_files\!CACHE_NAME!.txt" (
-  SET /P CACHED_HASH=<"cache_files\!CACHE_NAME!.txt"
-  IF "!SETUP_HASH!"=="!CACHED_HASH!" EXIT /B 1
-)
-EXIT /B 0
-
-:Commit
-IF NOT EXIST cache_files (
-  MD cache_files || EXIT /B 1
-)
->"cache_files\!CACHE_NAME!.txt" ECHO !SETUP_HASH!
-EXIT /B 0
 
 :SetupVSEnvironment
 SET "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -65,7 +48,6 @@ FOR /F "usebackq delims=" %%i IN (` ^
 EXIT /B 0
 
 :AddDependency
-IF NOT DEFINED NEXT_DEPENDENCY_INDEX SET "NEXT_DEPENDENCY_INDEX=0"
 SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].NAME=%~1"
 SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].URL=%~2"
 SET "DEPENDENCIES[%NEXT_DEPENDENCY_INDEX%].HASH=%~3"
