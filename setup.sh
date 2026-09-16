@@ -22,6 +22,7 @@ get_core_count() {
 main() {
   resolve_paths
   check_cache "aspen" || exit 0
+  rm -f "cache_files/$CACHE_NAME.txt" || return 1
   add_dependency "doctest-2.4.12" \
     "https://github.com/doctest/doctest/archive/refs/tags/v2.4.12.zip" \
     "7a7afb5f70d0b749d49ddfcb8a454299a8fcd53e9db9c131abe99b456e88a1fe"
@@ -103,8 +104,10 @@ download_and_extract() {
       [[ "$(< "$folder/.aspen_build_complete")" == "$build_hash" ]]; then
     return 0
   fi
+  rm -f "$folder/.aspen_build_complete" || return 1
   if [[ ! -f "$folder/.aspen_extract_complete" ]] ||
       [[ "$(< "$folder/.aspen_extract_complete")" != "$expected_hash" ]]; then
+    rm -f "$folder/.aspen_extract_complete" || return 1
     if [[ ! -f "$archive" ]]; then
       curl -fsSL -o "$archive" "$url" || return 1
     fi
