@@ -160,6 +160,11 @@ EXIT /B 0
 
 :RunCMake
 IF "!RUN_CMAKE!"=="1" (
+  DEL /F /Q "CMakeFiles\cmake_hash.txt" >NUL 2>&1
+  IF EXIST "CMakeFiles\cmake_hash.txt" (
+    ECHO Error: Unable to remove CMakeFiles\cmake_hash.txt.
+    EXIT /B 1
+  )
   cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" -DCMAKE_BUILD_TYPE=!CONFIG! || (
     EXIT /B 1
   )
