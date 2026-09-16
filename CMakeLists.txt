@@ -32,7 +32,8 @@ execute_process(
   OUTPUT_VARIABLE configure_output ERROR_VARIABLE configure_error
   OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
 if(NOT configure_result EQUAL 0)
-  message(FATAL_ERROR "Configuration script failed with error:\n${configure_error}\nOutput:\n${configure_output}")
+  message(FATAL_ERROR "Configuration script failed with error:\n"
+    "${configure_error}\nOutput:\n${configure_output}")
 endif()
 include(Config/dependencies.cmake)
 set(TEST_INSTALL_DIRECTORY "${PROJECT_BINARY_DIR}/Tests")

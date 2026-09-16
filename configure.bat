@@ -160,8 +160,9 @@ EXIT /B 0
 
 :RunCMake
 IF "!RUN_CMAKE!"=="1" (
-  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" -DCMAKE_BUILD_TYPE=!CONFIG! || ^
+  cmake -S "!DIRECTORY!." -DD="!DEPENDENCIES!" -DCMAKE_BUILD_TYPE=!CONFIG! || (
     EXIT /B 1
+  )
 )
 EXIT /B 0
 
