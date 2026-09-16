@@ -112,11 +112,11 @@ check_hashes() {
     mkdir -p CMakeFiles || return 1
     RUN_CMAKE=1
   fi
-  check_cmake_hash
   check_file_hash "$CONFIG" "CMakeFiles/config.txt"
   check_file_hash "$DEPENDENCIES" "CMakeFiles/dependencies.txt"
   check_directory_hash "$DIRECTORY/Include" "CMakeFiles/hpp_hash.txt"
   check_directory_hash "$DIRECTORY/Source" "CMakeFiles/cpp_hash.txt"
+  check_cmake_hash
 }
 
 check_cmake_hash() {

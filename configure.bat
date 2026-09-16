@@ -120,6 +120,14 @@ IF NOT EXIST CMakeFiles (
   SET "RUN_CMAKE=1"
 )
 SET "TEMP_FILE=!ROOT!\temp_%RANDOM%%RANDOM%.txt"
+>"!TEMP_FILE!" ECHO !CONFIG!
+CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\config_hash.txt"
+>"!TEMP_FILE!" ECHO !DEPENDENCIES!
+CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\dependencies_hash.txt"
+DIR /a-d /b /s "!DIRECTORY!Include\*" > "!TEMP_FILE!"
+CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\hpp_hash.txt"
+DIR /a-d /b /s "!DIRECTORY!Source\*" > "!TEMP_FILE!"
+CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\cpp_hash.txt"
 TYPE "!DIRECTORY!CMakeLists.txt" > "!TEMP_FILE!"
 FOR %%F IN ("!DIRECTORY!Config\*.cmake") DO (
   TYPE "%%F" >> "!TEMP_FILE!"
@@ -130,14 +138,6 @@ FOR /R %%F IN (*) DO (
 )
 POPD
 CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\cmake_hash.txt"
->"!TEMP_FILE!" ECHO !CONFIG!
-CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\config_hash.txt"
->"!TEMP_FILE!" ECHO !DEPENDENCIES!
-CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\dependencies_hash.txt"
-DIR /a-d /b /s "!DIRECTORY!Include\*" > "!TEMP_FILE!"
-CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\hpp_hash.txt"
-DIR /a-d /b /s "!DIRECTORY!Source\*" > "!TEMP_FILE!"
-CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\cpp_hash.txt"
 EXIT /B 0
 
 :CheckFileHash
@@ -172,10 +172,10 @@ IF "!RUN_CMAKE!"=="1" (
 EXIT /B 0
 
 :CommitHashes
+(ECHO !CONFIG!) >"CMakeFiles\config.txt" || EXIT /B 1
 IF "!RUN_CMAKE!"=="1" (
   FOR %%F IN (!HASH_FILES!) DO (
     (ECHO !HASH[%%F]!) >"%%F" || EXIT /B 1
   )
 )
-(ECHO !CONFIG!) >"CMakeFiles\config.txt" || EXIT /B 1
 EXIT /B 0
