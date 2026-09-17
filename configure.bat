@@ -34,6 +34,10 @@ IF NOT EXIST configure.bat (
   >configure.bat ECHO @ECHO OFF
   >>configure.bat ECHO CALL "%~dp0configure.bat" %%*
 )
+IF NOT EXIST install_python.bat (
+  >install_python.bat ECHO @ECHO OFF
+  >>install_python.bat ECHO CALL "%~dp0install_python.bat" %%*
+)
 EXIT /B 0
 
 :ParseArgs

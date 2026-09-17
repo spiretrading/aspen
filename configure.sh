@@ -54,6 +54,9 @@ create_forwarding_scripts() {
   if [[ ! -f "configure.sh" ]]; then
     ln -s "$DIRECTORY/configure.sh" configure.sh
   fi
+  if [[ ! -f "install_python.sh" ]]; then
+    ln -s "$DIRECTORY/install_python.sh" install_python.sh
+  fi
 }
 
 parse_args() {
