@@ -122,6 +122,10 @@ md5hash() {
 }
 
 check_hashes() {
+  local scripts=(CMakeFiles/aspen_clean_*.cmake)
+  if [[ ! -f "${scripts[0]}" ]]; then
+    RUN_CMAKE=1
+  fi
   if [[ ! -f "CMakeCache.txt" ]]; then
     RUN_CMAKE=1
   else

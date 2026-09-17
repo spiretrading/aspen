@@ -114,6 +114,7 @@ EXIT /B 0
 :CheckHashes
 SET "RUN_CMAKE="
 SET "HASH_FILES="
+IF NOT EXIST "CMakeFiles\aspen_clean_*.cmake" SET "RUN_CMAKE=1"
 IF NOT EXIST CMakeCache.txt (
   SET "RUN_CMAKE=1"
 ) ELSE (

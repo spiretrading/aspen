@@ -94,7 +94,12 @@ clean_build() {
     fi
     local scripts=("$ROOT"/CMakeFiles/aspen_clean_*.cmake)
     if [[ ! -f "${scripts[0]}" ]]; then
-      echo "Error: Run configure.sh before cleaning this build."
+      CONFIG=""
+      configure || return 1
+      scripts=("$ROOT"/CMakeFiles/aspen_clean_*.cmake)
+    fi
+    if [[ ! -f "${scripts[0]}" ]]; then
+      echo "Error: Configuration did not generate cleanup scripts."
       return 1
     fi
     for script in "${scripts[@]}"; do

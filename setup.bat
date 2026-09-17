@@ -106,7 +106,8 @@ SET "ACTUAL_HASH="
 IF NOT EXIST "!FOLDER!" (
   MD "!FOLDER!" || EXIT /B 1
 )
-tar -xf "!ARCHIVE!" --strip-components=1 -C "!FOLDER!" || EXIT /B 1
+cmake -DARCHIVE:FILEPATH="!ARCHIVE!" -DDESTINATION:PATH="!FOLDER!" ^
+  -DSTRIP_COMPONENTS=1 -P "%~dp0Config\extract.cmake" || EXIT /B 1
 (ECHO !EXPECTED_HASH!) >"!FOLDER!\.aspen_extract_complete" || EXIT /B 1
 :BuildDependency
 IF DEFINED BUILD_LABEL (

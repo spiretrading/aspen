@@ -64,7 +64,11 @@ IF "%~1"=="reset" (
 ) ELSE (
   IF NOT EXIST "!ROOT!\CMakeCache.txt" EXIT /B 0
   IF NOT EXIST "!ROOT!\CMakeFiles\aspen_clean_*.cmake" (
-    ECHO Error: Run configure.bat before cleaning this build.
+    SET "CONFIG="
+    CALL :Configure || EXIT /B 1
+  )
+  IF NOT EXIST "!ROOT!\CMakeFiles\aspen_clean_*.cmake" (
+    ECHO Error: Configuration did not generate cleanup scripts.
     EXIT /B 1
   )
   FOR %%F IN ("!ROOT!\CMakeFiles\aspen_clean_*.cmake") DO (
