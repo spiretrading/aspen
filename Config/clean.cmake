@@ -18,7 +18,7 @@ endfunction()
 set(outputs "@clean_outputs@")
 set(arguments)
 if("@CMAKE_GENERATOR@" MATCHES "^Visual Studio ")
-  set(arguments -- /nologo)
+  set(arguments -- /nologo /p:ExtensionsToDeleteOnClean=__no_files__)
 endif()
 execute_process(COMMAND "@CMAKE_COMMAND@" --build "@PROJECT_BINARY_DIR@"
   --config "$<CONFIG>" --target clean ${arguments}
