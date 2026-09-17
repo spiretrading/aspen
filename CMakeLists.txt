@@ -42,6 +42,9 @@ set(ASPEN_SANITIZER "none" CACHE STRING "The sanitizer to build with.")
 set_property(CACHE ASPEN_SANITIZER PROPERTY STRINGS "none" "address" "thread")
 enable_testing()
 if(MSVC)
+  list(APPEND CMAKE_VS_GLOBALS
+    UseMultiToolTask=true EnforceProcessCountAcrossBuilds=true
+    "CL_MPCount=$([System.Environment]::ProcessorCount)")
   add_compile_options(/bigobj /external:anglebrackets /external:W0
     $<$<CONFIG:Release>:/GL> /MP /WX /Zc:__cplusplus /Zc:preprocessor)
   add_compile_definitions(_CRT_SECURE_NO_DEPRECATE NOMINMAX
