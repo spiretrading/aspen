@@ -17,10 +17,13 @@ if(UNIX)
 endif()
 if(APPLE)
   set_target_properties(python PROPERTIES SUFFIX ".so")
+  target_link_options(python PRIVATE "LINKER:-undefined,dynamic_lookup")
 endif()
 set_target_properties(python PROPERTIES
   CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
-target_link_libraries(python PRIVATE
-  $<$<CONFIG:Debug>:${PYTHON_LIBRARY_DEBUG_PATH}>
-  $<$<NOT:$<CONFIG:Debug>>:${PYTHON_LIBRARY_OPTIMIZED_PATH}>)
+if(WIN32)
+  target_link_libraries(python PRIVATE
+    $<$<CONFIG:Debug>:${PYTHON_LIBRARY_DEBUG_PATH}>
+    $<$<NOT:$<CONFIG:Debug>>:${PYTHON_LIBRARY_OPTIMIZED_PATH}>)
+endif()
 install(TARGETS python DESTINATION "${LIB_INSTALL_DIRECTORY}/$<CONFIG>")
