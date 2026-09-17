@@ -17,9 +17,23 @@ main() {
   if [[ "${ASPEN_SKIP_CMAKE:-}" == "1" ]]; then
     return 0
   fi
+  generated_files begin || return 1
+  local configure_error=0
+  configure_build || configure_error=$?
+  generated_files end || return 1
+  return "$configure_error"
+}
+
+configure_build() {
   check_hashes || return 1
   run_cmake || return 1
   commit_hashes
+}
+
+generated_files() {
+  cmake -DBUILD_DIRECTORY:PATH="$ROOT" \
+    -DDEPENDENCIES_DIRECTORY:PATH="$DEPENDENCIES" -DACTION="$1" \
+    -P "$DIRECTORY/Config/generated_files.cmake"
 }
 
 resolve_paths() {
