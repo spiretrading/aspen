@@ -95,5 +95,5 @@ if(MSVC)
 endif()
 configure_file(Config/clean.cmake CMakeFiles/clean.cmake.in @ONLY)
 file(GENERATE
-  OUTPUT "${PROJECT_BINARY_DIR}/CMakeFiles/aspen_clean_$<CONFIG>.cmake"
+  OUTPUT "${PROJECT_BINARY_DIR}/CMakeFiles/aspen_clean_outputs_$<CONFIG>.cmake"
   INPUT "${PROJECT_BINARY_DIR}/CMakeFiles/clean.cmake.in")

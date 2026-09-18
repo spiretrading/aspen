@@ -59,17 +59,14 @@ SET "CLEAN_ERROR=0"
 IF NOT EXIST "!ROOT!\CMakeCache.txt" (
   GOTO CleanConfiguration
 )
-IF NOT EXIST "!ROOT!\CMakeFiles\aspen_clean_*.cmake" (
-  SET "CONFIG="
-  CALL :Configure || EXIT /B 1
-)
-IF NOT EXIST "!ROOT!\CMakeFiles\aspen_clean_*.cmake" (
-  ECHO Error: Configuration did not generate cleanup scripts.
-  EXIT /B 1
-)
 CALL :GeneratedFiles begin || EXIT /B 1
-FOR %%F IN ("!ROOT!\CMakeFiles\aspen_clean_*.cmake") DO (
-  cmake -P "%%F" || SET "CLEAN_ERROR=1"
+cmake -DBUILD_DIRECTORY:PATH="!ROOT!" ^
+  -P "!DIRECTORY!Config\native_clean.cmake" || SET "CLEAN_ERROR=1"
+IF !CLEAN_ERROR! EQU 0 IF EXIST ^
+    "!ROOT!\CMakeFiles\aspen_clean_outputs_*.cmake" (
+  FOR %%F IN ("!ROOT!\CMakeFiles\aspen_clean_outputs_*.cmake") DO (
+    cmake -P "%%F" || SET "CLEAN_ERROR=1"
+  )
 )
 CALL :GeneratedFiles end || EXIT /B 1
 :CleanConfiguration

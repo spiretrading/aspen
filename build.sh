@@ -85,20 +85,15 @@ clean_build() {
   local clean_type="$1"
   local clean_error=0
   if [[ -f "$ROOT/CMakeCache.txt" ]]; then
-    local scripts=("$ROOT"/CMakeFiles/aspen_clean_*.cmake)
-    if [[ ! -f "${scripts[0]}" ]]; then
-      CONFIG=""
-      configure || return 1
-      scripts=("$ROOT"/CMakeFiles/aspen_clean_*.cmake)
-    fi
-    if [[ ! -f "${scripts[0]}" ]]; then
-      echo "Error: Configuration did not generate cleanup scripts."
-      return 1
-    fi
     generated_files begin || return 1
-    for script in "${scripts[@]}"; do
-      cmake -P "$script" || clean_error=1
-    done
+    cmake -DBUILD_DIRECTORY:PATH="$ROOT" \
+      -P "$DIRECTORY/Config/native_clean.cmake" || clean_error=1
+    local scripts=("$ROOT"/CMakeFiles/aspen_clean_outputs_*.cmake)
+    if [[ "$clean_error" == "0" && -f "${scripts[0]}" ]]; then
+      for script in "${scripts[@]}"; do
+        cmake -P "$script" || clean_error=1
+      done
+    fi
     generated_files end || return 1
   fi
   if [[ "$clean_error" == "0" ]]; then
