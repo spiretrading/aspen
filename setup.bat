@@ -96,7 +96,10 @@ IF EXIST "!FOLDER!\.aspen_extract_complete" (
   IF EXIST "!FOLDER!\.aspen_extract_complete" EXIT /B 1
 )
 IF NOT EXIST "!ARCHIVE!" (
-  curl -fsL -o "!ARCHIVE!" "!URL!" || EXIT /B 1
+  curl -fsL -o "!ARCHIVE!" "!URL!" || (
+    IF EXIST "!ARCHIVE!" DEL /F /Q "!ARCHIVE!"
+    EXIT /B 1
+  )
 )
 FOR /F "skip=1 tokens=*" %%H IN ('certutil -hashfile "!ARCHIVE!" SHA256') DO (
   IF NOT DEFINED ACTUAL_HASH SET "ACTUAL_HASH=%%H"

@@ -29,6 +29,10 @@ CMakeFiles
 CMakeScripts
 Testing
 Makefile
+build.ninja
+build-*.ninja
+.ninja_deps
+.ninja_log
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
@@ -366,3 +370,12 @@ ASALocalRun/
 # Web Artifacts
 package-lock.json
 .vscode/
+
+# Generated project outputs
+Config/ConcurrencyTests/aspen_concurrency_tester
+Config/Python/**/aspen.exp
+Config/Python/**/aspen.pyd
+Config/Tests/aspen_tester
+Libraries/*/aspen.pyd
+Tests/*/aspen_concurrency_tester
+Tests/*/aspen_tester
