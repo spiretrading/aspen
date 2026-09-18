@@ -6,15 +6,19 @@ CALL :CreateForwardingScripts
 CALL :ParseArgs %* || EXIT /B 1
 CALL :SetupDependencies || EXIT /B 1
 IF "!ASPEN_SKIP_CMAKE!"=="1" EXIT /B 0
-CALL :GeneratedFiles begin || EXIT /B 1
+CALL :CheckHashes || EXIT /B 1
+IF "!RUN_CMAKE!"=="1" (
+  CALL :GeneratedFiles begin || EXIT /B 1
+)
 CALL :ConfigureBuild
 SET "CONFIGURE_ERROR=!ERRORLEVEL!"
-CALL :GeneratedFiles end || EXIT /B 1
+IF "!RUN_CMAKE!"=="1" (
+  CALL :GeneratedFiles end || EXIT /B 1
+)
 EXIT /B !CONFIGURE_ERROR!
 ENDLOCAL
 
 :ConfigureBuild
-CALL :CheckHashes || EXIT /B 1
 CALL :RunCMake || EXIT /B 1
 CALL :CommitHashes
 EXIT /B !ERRORLEVEL!
@@ -117,9 +121,11 @@ IF /I NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
 IF NOT EXIST "!DEPENDENCIES!" (
   MD "!DEPENDENCIES!" || EXIT /B 1
 )
-PUSHD "!DEPENDENCIES!" || EXIT /B 1
-CALL "!DIRECTORY!setup.bat" || (POPD & EXIT /B 1)
-POPD
+IF /I NOT "!ASPEN_SETUP_DIRECTORY!"=="!DEPENDENCIES!" (
+  cmake -DDEPENDENCIES_DIRECTORY:PATH="!DEPENDENCIES!" ^
+    -P "!DIRECTORY!Config\configure_dependencies.cmake" || EXIT /B 1
+  SET "ASPEN_SETUP_DIRECTORY=!DEPENDENCIES!"
+)
 IF /I NOT "!DEPENDENCIES!"=="!ROOT!\Dependencies" (
   IF DEFINED DEPENDENCIES_ATTRIBUTES (
     RD "!ROOT!\Dependencies" || EXIT /B 1
@@ -147,10 +153,7 @@ IF NOT EXIST CMakeCache.txt (
     IF NOT "!CACHED_CONFIG!"=="!CONFIG!" SET "RUN_CMAKE=1"
   )
 )
-IF NOT EXIST CMakeFiles (
-  MD CMakeFiles || EXIT /B 1
-  SET "RUN_CMAKE=1"
-)
+IF NOT EXIST CMakeFiles SET "RUN_CMAKE=1"
 SET "TEMP_FILE=!ROOT!\temp_%RANDOM%%RANDOM%.txt"
 >"!TEMP_FILE!" ECHO !CONFIG!
 CALL :CheckFileHash "!TEMP_FILE!" "CMakeFiles\config_hash.txt"

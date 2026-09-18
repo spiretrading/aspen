@@ -17,15 +17,19 @@ main() {
   if [[ "${ASPEN_SKIP_CMAKE:-}" == "1" ]]; then
     return 0
   fi
-  generated_files begin || return 1
+  check_hashes || return 1
+  if [[ "$RUN_CMAKE" == "1" ]]; then
+    generated_files begin || return 1
+  fi
   local configure_error=0
   configure_build || configure_error=$?
-  generated_files end || return 1
+  if [[ "$RUN_CMAKE" == "1" ]]; then
+    generated_files end || return 1
+  fi
   return "$configure_error"
 }
 
 configure_build() {
-  check_hashes || return 1
   run_cmake || return 1
   commit_hashes
 }
@@ -119,9 +123,11 @@ setup_dependencies() {
     echo "Error: $ROOT/Dependencies exists and is not a symbolic link."
     return 1
   fi
-  pushd "$DEPENDENCIES" > /dev/null || return 1
-  "$DIRECTORY/setup.sh" || { popd > /dev/null; return 1; }
-  popd > /dev/null
+  if [[ "${ASPEN_SETUP_DIRECTORY:-}" != "$DEPENDENCIES" ]]; then
+    cmake -DDEPENDENCIES_DIRECTORY:PATH="$DEPENDENCIES" \
+      -P "$DIRECTORY/Config/configure_dependencies.cmake" || return 1
+    export ASPEN_SETUP_DIRECTORY="$DEPENDENCIES"
+  fi
   if [[ ! "$ROOT/Dependencies" -ef "$DEPENDENCIES" ]]; then
     if [[ -L "$ROOT/Dependencies" ]]; then
       rm "$ROOT/Dependencies" || return 1
@@ -158,7 +164,6 @@ check_hashes() {
     fi
   fi
   if [[ ! -d "CMakeFiles" ]]; then
-    mkdir -p CMakeFiles || return 1
     RUN_CMAKE=1
   fi
   check_file_hash "$CONFIG" "CMakeFiles/config.txt"
