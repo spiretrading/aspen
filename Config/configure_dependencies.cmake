@@ -7,7 +7,8 @@ function(fingerprint result)
   file(GLOB inputs
     "${source_directory}/setup.*"
     "${source_directory}/Config/extract.cmake"
-    "${dependencies_directory}/*/.aspen_*_complete")
+    "${dependencies_directory}/*/.aspen_*_complete"
+    "${dependencies_directory}/cache_files/aspen/*.build_complete")
   list(APPEND inputs "${CMAKE_CURRENT_FUNCTION_LIST_FILE}")
   list(SORT inputs)
   set(contents)

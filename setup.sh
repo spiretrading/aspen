@@ -3,6 +3,7 @@ set -o errexit
 set -o pipefail
 DIRECTORY=""
 ROOT=""
+CACHE_DIRECTORY=""
 SETUP_HASH=""
 DEPENDENCIES=()
 
@@ -20,6 +21,8 @@ get_core_count() {
 
 main() {
   resolve_paths
+  CACHE_DIRECTORY="$ROOT/cache_files/aspen"
+  mkdir -p "$CACHE_DIRECTORY" || return 1
   SETUP_HASH=$(sha256 "$DIRECTORY/setup.sh") || return 1
   add_dependency "doctest-2.4.12" \
     "https://github.com/doctest/doctest/archive/refs/tags/v2.4.12.zip" \
@@ -72,16 +75,17 @@ install_dependencies() {
 
 download_and_extract() {
   local folder="$1"
+  local build_marker="$CACHE_DIRECTORY/$folder.build_complete"
   local url="$2"
   local expected_hash="$3"
   local build_hash="$expected_hash $SETUP_HASH"
   local build_func="$4"
   local archive="${url##*/}"
-  if [[ -f "$folder/.aspen_build_complete" ]] &&
-      [[ "$(< "$folder/.aspen_build_complete")" == "$build_hash" ]]; then
+  if [[ -d "$folder" && -f "$build_marker" ]] &&
+      [[ "$(< "$build_marker")" == "$build_hash" ]]; then
     return 0
   fi
-  rm -f "$folder/.aspen_build_complete" || return 1
+  rm -f "$build_marker" || return 1
   if [[ ! -f "$folder/.aspen_extract_complete" ]] ||
       [[ "$(< "$folder/.aspen_extract_complete")" != "$expected_hash" ]]; then
     rm -f "$folder/.aspen_extract_complete" || return 1
@@ -110,7 +114,7 @@ download_and_extract() {
     $build_func || { popd > /dev/null; return 1; }
     popd > /dev/null
   fi
-  echo "$build_hash" > "$folder/.aspen_build_complete" || return 1
+  echo "$build_hash" > "$build_marker" || return 1
   rm -f "$archive"
 }
 
