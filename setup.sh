@@ -4,7 +4,6 @@ set -o pipefail
 DIRECTORY=""
 ROOT=""
 CACHE_DIRECTORY=""
-SETUP_HASH=""
 DEPENDENCIES=()
 
 sha256() {
@@ -23,16 +22,15 @@ main() {
   resolve_paths
   CACHE_DIRECTORY="$ROOT/cache_files/aspen"
   mkdir -p "$CACHE_DIRECTORY" || return 1
-  SETUP_HASH=$(sha256 "$DIRECTORY/setup.sh") || return 1
   add_dependency "doctest-2.4.12" \
     "https://github.com/doctest/doctest/archive/refs/tags/v2.4.12.zip" \
-    "7a7afb5f70d0b749d49ddfcb8a454299a8fcd53e9db9c131abe99b456e88a1fe"
+    "7a7afb5f70d0b749d49ddfcb8a454299a8fcd53e9db9c131abe99b456e88a1fe" 1
   add_dependency "pybind11-3.0.1" \
     "https://github.com/pybind/pybind11/archive/refs/tags/v3.0.1.zip" \
-    "20fb420fe163d0657a262a8decb619b7c3101ea91db35f1a7227e67c426d4c7e"
+    "20fb420fe163d0657a262a8decb619b7c3101ea91db35f1a7227e67c426d4c7e" 1
   add_dependency "Python-3.14.4" \
     "https://www.python.org/ftp/python/3.14.4/Python-3.14.4.tgz" \
-    "b4c059d5895f030e7df9663894ce3732bfa1b32cd3ab2883980266a45ce3cb3b" \
+    "b4c059d5895f030e7df9663894ce3732bfa1b32cd3ab2883980266a45ce3cb3b" 1 \
     "build_python"
   install_dependencies || return 1
 }
@@ -62,14 +60,16 @@ add_dependency() {
   local name="$1"
   local url="$2"
   local hash="$3"
-  local build="${4:-}"
-  DEPENDENCIES+=("$name|$url|$hash|$build")
+  local revision="$4"
+  local build="${5:-}"
+  DEPENDENCIES+=("$name|$url|$hash|$revision|$build")
 }
 
 install_dependencies() {
   for dep in "${DEPENDENCIES[@]}"; do
-    IFS='|' read -r name url hash build <<< "$dep"
-    download_and_extract "$name" "$url" "$hash" "$build" || return 1
+    IFS='|' read -r name url hash revision build <<< "$dep"
+    download_and_extract "$name" "$url" "$hash" "$revision" "$build" ||
+      return 1
   done
 }
 
@@ -78,8 +78,8 @@ download_and_extract() {
   local build_marker="$CACHE_DIRECTORY/$folder.build_complete"
   local url="$2"
   local expected_hash="$3"
-  local build_hash="$expected_hash $SETUP_HASH"
-  local build_func="$4"
+  local build_hash="$expected_hash posix-$4"
+  local build_func="$5"
   local archive="${url##*/}"
   if [[ -d "$folder" && -f "$build_marker" ]] &&
       [[ "$(< "$build_marker")" == "$build_hash" ]]; then
