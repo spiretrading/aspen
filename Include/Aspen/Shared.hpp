@@ -322,6 +322,10 @@ namespace Details {
       Details::Sequence& last_evaluation, CommitFlag* current) {
     if(evaluator.m_sequence.m_is_set &&
         sequence <= evaluator.m_sequence.m_value) {
+      auto& flag = evaluator.m_state->m_flag;
+      if(current && current != &flag && flag.is_raised()) {
+        current->raise();
+      }
       if(last_evaluation < evaluator.m_state->m_last_evaluation) {
         last_evaluation = evaluator.m_state->m_last_evaluation;
         return combine(evaluator.m_state->m_state, State::EVALUATED);

@@ -12,11 +12,43 @@
 #include "Aspen/Shared.hpp"
 #include "Aspen/StateReactor.hpp"
 #include "Aspen/Tests/ReactorTests.hpp"
+#include "Aspen/Weak.hpp"
 
 using namespace Aspen;
 using namespace Aspen::Tests;
 
 TEST_SUITE("Shared") {
+  TEST_CASE("cached_commit_wakeup") {
+    auto source = Shared<Queue<int>>();
+    auto flag = CommitFlag();
+    auto shared = Branch(source);
+    auto weak = Branch(Weak(source));
+    auto scope = CommitFlagScope(flag);
+    auto test = [&] (auto& first, auto& second) {
+      source->push(1);
+      flag.clear();
+      REQUIRE(first.commit(0) == State::EVALUATED);
+      REQUIRE(second.commit(0) == State::EVALUATED);
+      source->push(2);
+      REQUIRE(flag.is_raised());
+      flag.clear();
+      REQUIRE(first.commit(1) == State::EVALUATED);
+      source->set_complete();
+      REQUIRE(second.commit(1) == State::EVALUATED);
+      REQUIRE(second->eval() == 2);
+      REQUIRE(flag.is_raised());
+      flag.clear();
+      REQUIRE(first.commit(2) == State::COMPLETE);
+      REQUIRE(second.commit(2) == State::COMPLETE);
+    };
+    SUBCASE("shared") {
+      test(weak, shared);
+    }
+    SUBCASE("weak") {
+      test(shared, weak);
+    }
+  }
+
   TEST_CASE("chain") {
     auto s1 = Shared(Chain(constant(10), constant(9)));
     auto s2 = s1;
